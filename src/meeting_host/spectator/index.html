@@ -190,6 +190,12 @@
   .u-line.gloss .gc-term { font-size: 14px; }
   .u-line.gloss .gc-tag { font-size: 11px; color: var(--dim); letter-spacing: .04em; }
   .u-cursor { color: var(--dim); animation: blink 1s steps(2) infinite; }
+  .u-line.now.placeholder .u-live { color: var(--dim); }
+  .u-line.now.placeholder .u-cursor { display: none; }
+  .u-line.now { transition: opacity .6s ease; }
+  .u-line.now.stale { opacity: .35; }
+  .u-line.settle .u-text { animation: settle .35s ease-out; }
+  @keyframes settle { from { color: var(--dim); } to { color: inherit; } }
   @keyframes blink { to { visibility: hidden; } }
   .gc-head { display: flex; align-items: baseline; gap: 8px; }
   .gc-term { font-size: 13px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
@@ -449,6 +455,7 @@
     phaseMarks: [],         // 時間軸的階段切換 {t, phase}
     phaseHint: null,        // 偵測器最近一次建議（與現況不同才顯示）
     partials: {},           // 各人這段目前講到哪（partial 累積全文），utterance 定稿後清掉
+    liveAt: {},             // 各人活的那行最後一次更新的會議時間（過期用）
     maxSilence: 0,          // 全場最長沉默（各參與者沉默秒數取最小值的歷史最大）
     // 慢路判斷是三態，不是兩態：admissible 只代表「排進佇列」，真正有沒有開口
     // 要等後續事件才定案——可能真的 spoken；也可能連佇列都沒排進去（Chair.request()
@@ -630,6 +637,11 @@
       '</div>');
   }
 
+  var liveNodes = {};   // speaker → 活的那行的 DOM 節點（跨 render 保留）
+  var LIVE_STALE_S = 6;  // 多久沒新的 partial 就淡出
+  var LIVE_DROP_S = 10;  // 多久沒新的 partial 就移除
+  function isLiveNode(el) { return !!(el && el.classList && el.classList.contains("now")); }
+
   function renderTranscript() {
     var box = el("transcript");
     var atBottom = isNearBottom(box);
@@ -638,32 +650,59 @@
       box.innerHTML = "";
       renderedCount = 0;
       nodes = [];
+      liveNodes = {};
       state.transcriptDirty = false;
-    } else {
-      box.querySelectorAll(".u-line.now").forEach(function (n) { n.remove(); });
     }
 
     for (; renderedCount < state.transcript.length; renderedCount++) {
-      var node = buildLine(state.transcript[renderedCount]);
-      box.appendChild(node);
+      var item = state.transcript[renderedCount];
+      var node = buildLine(item);
+      var live = item.kind !== "chair" && item.kind !== "gloss" ? liveNodes[item.speaker] : null;
+      if (live && live.parentNode === box) {
+        // 定稿到了：在活的那行**原位**換成正式行，不是刪一行再加一行——位置不跳、
+        // 文字從淡色過渡到正文色（.settle）。
+        node.classList.add("settle");
+        box.replaceChild(node, live);
+        delete liveNodes[item.speaker];
+      } else {
+        box.appendChild(node);
+      }
       nodes[renderedCount] = node;
     }
 
-    // 活的那幾行：正在說話的每個人一行，有 partial 就顯示這段目前的全文（每筆覆蓋），
-    // 沒有就顯示「正在說話…」。ephemeral，不進 state.transcript，每次 render 重貼到底部。
-    var active = Object.keys(state.speaking).filter(function (s) { return state.speaking[s]; });
-    if (!state.ended) {
-      active.forEach(function (who) {
-        var live = state.partials[who];
-        box.appendChild(nodeFromHtml(
-          '<div class="u-line now">' +
-          '<div class="u-time mono">' + esc(fmtEventTime(state.serverNow)) + '</div>' +
-          (live
-            ? '<div class="u-text"><span class="u-speaker">' + esc(who) + '</span>　' + esc(live) + '<span class="u-cursor">▏</span></div>'
-            : '<div class="u-text">' + esc(who) + ' 正在說話…</div>') +
-          '</div>'));
-      });
-    }
+    // 活的那幾行：正在說話的每個人**一個固定節點**，partial 來了就地改字——不重建，
+    // 游標動畫不重來、捲動不跳。不進 state.transcript。
+    // 過期：短句被 STT 當雜音丟掉、或一直沒 commit 時，「定稿」與「speaking=false」都不會來，
+    // 活的那行會一直掛著（實測：「哇！」掛了好一陣子）。實測 partial 間隔 p90 是 4.8s，
+    // 所以 LIVE_STALE_S 之後視為沒在更新→淡出，LIVE_DROP_S 之後移除。
+    var active = state.ended ? [] : Object.keys(state.speaking).filter(function (s) {
+      if (!state.speaking[s]) return false;
+      var age = state.liveAt[s] == null ? 0 : state.serverNow - state.liveAt[s];
+      return age < LIVE_DROP_S;
+    });
+    Object.keys(liveNodes).forEach(function (who) {
+      if (active.indexOf(who) < 0) { liveNodes[who].remove(); delete liveNodes[who]; }
+    });
+    active.forEach(function (who) {
+      var live = state.partials[who];
+      var node = liveNodes[who];
+      if (!node) {
+        node = nodeFromHtml(
+          '<div class="u-line now" data-live-for="' + esc(who) + '">' +
+          '<div class="u-time mono"></div>' +
+          '<div class="u-text"><span class="u-speaker"></span>　<span class="u-live"></span><span class="u-cursor">▏</span></div></div>');
+        liveNodes[who] = node;
+      }
+      node.querySelector(".u-time").textContent = fmtEventTime(state.serverNow);
+      node.querySelector(".u-speaker").textContent = who;
+      var span = node.querySelector(".u-live");
+      var want = live || "正在說話…";
+      if (span.textContent !== want) span.textContent = want;
+      node.classList.toggle("placeholder", !live);
+      var age = state.liveAt[who] == null ? 0 : state.serverNow - state.liveAt[who];
+      node.classList.toggle("stale", age >= LIVE_STALE_S);
+      if (node.parentNode !== box || node !== box.lastElementChild && !isLiveNode(box.lastElementChild)) box.appendChild(node);
+    });
 
     if (atBottom) box.scrollTop = box.scrollHeight;
   }
@@ -982,10 +1021,12 @@
         break;
       case "speaking":
         state.speaking[data.speaker] = !!data.active;
-        if (!data.active) delete state.partials[data.speaker];
+        if (data.active) state.liveAt[data.speaker] = ev.t;
+        if (!data.active) { delete state.partials[data.speaker]; delete state.liveAt[data.speaker]; }
         renderTranscript();
         break;
       case "fast_timer":
+        if (Object.keys(liveNodes).length) renderTranscript();   // 讓活的那行的過期規則每秒有機會生效
         // 全場沉默＝所有人「距離上次發言」的最小值；取歷史最大就是最長沉默。
         var silent = data.silent || {};
         var names = Object.keys(silent);
@@ -1099,6 +1140,7 @@
       case "partial":
         // 這段目前的全文（累積），覆蓋上一筆；只影響活的那一行
         state.partials[data.speaker] = data.text;
+        state.liveAt[data.speaker] = ev.t;
         renderTranscript();
         break;
       case "phase":
@@ -1145,6 +1187,7 @@
     state.transcriptDirty = false;
     state.speaking = {};
     state.partials = {};
+    state.liveAt = {};
     state.pendingQueued = [];
     state.lastSpokenAt = null;
     state.share = {};

@@ -53,16 +53,26 @@ def test_live_line_shows_partial_then_is_replaced_by_utterance():
                     page.evaluate('__spectator.handleEvent({kind:"speaking", t: 3000, data:{speaker:"林同", active:true}})')
                     before = page.eval_on_selector("#transcript .u-line.now", "el => el.textContent")
                     page.evaluate('__spectator.handleEvent({kind:"partial", t: 3001, data:{speaker:"林同", text:"今天的會"}})')
+                    page.evaluate('document.querySelector("#transcript .u-line.now").dataset.mark = "same-node"')
                     page.evaluate('__spectator.handleEvent({kind:"partial", t: 3002, data:{speaker:"林同", text:"今天的會議討論了"}})')
+                    same_node = page.evaluate('document.querySelector("#transcript .u-line.now").dataset.mark === "same-node"')
                     live = page.eval_on_selector("#transcript .u-line.now", "el => el.textContent")
                     n_live = page.evaluate('document.querySelectorAll("#transcript .u-line.now").length')
                     page.evaluate('__spectator.handleEvent({kind:"utterance", t: 3005, data:{speaker:"林同", text:"今天的會議討論了下一季。", start: 3000, end: 3004}})')
                     page.evaluate('__spectator.handleEvent({kind:"speaking", t: 3005, data:{speaker:"林同", active:false}})')
                     after_live = page.evaluate('document.querySelectorAll("#transcript .u-line.now").length')
                     last = page.evaluate('(() => { const ls = document.querySelectorAll("#transcript .u-line:not(.now)"); return ls[ls.length-1].textContent; })()')
+                    # 過期：有人 speaking 但 partial 停了——6 秒後淡出、10 秒後移除
+                    page.evaluate('__spectator.handleEvent({kind:"speaking", t: 3100, data:{speaker:"沈禾", active:true}})')
+                    page.evaluate('__spectator.handleEvent({kind:"partial", t: 3100.5, data:{speaker:"沈禾", text:"哇！"}})')
+                    page.evaluate('__spectator.handleEvent({kind:"fast_timer", t: 3107, data:{run:null, silent:{}, remaining:100}})')
+                    stale = page.evaluate('document.querySelector("#transcript .u-line.now").classList.contains("stale")')
+                    page.evaluate('__spectator.handleEvent({kind:"fast_timer", t: 3111, data:{run:null, silent:{}, remaining:100}})')
+                    dropped = page.evaluate('document.querySelectorAll("#transcript .u-line.now").length')
+                    settled = page.evaluate('(() => { const ls = document.querySelectorAll("#transcript .u-line:not(.now)"); return ls[ls.length-1].classList.contains("settle"); })()')
                     browser.close()
                     assert not errors, f"頁面 JS 例外：{errors}"
-                    return {"before": before, "live": live, "n_live": n_live, "after_live": after_live, "last": last}
+                    return {"before": before, "live": live, "n_live": n_live, "after_live": after_live, "last": last, "same_node": same_node, "settled": settled, "stale": stale, "dropped": dropped}
             return await asyncio.to_thread(check)
         finally:
             await server.close()
@@ -71,3 +81,6 @@ def test_live_line_shows_partial_then_is_replaced_by_utterance():
     assert "今天的會議討論了" in out["live"] and "今天的會" in out["live"] and out["n_live"] == 1   # 覆蓋不是追加
     assert out["after_live"] == 0                                    # 定稿後活的那行消失
     assert "今天的會議討論了下一季。" in out["last"]                    # 正式逐字稿接上
+    assert out["same_node"] is True                                  # partial 是就地改字，不是重建節點
+    assert out["settled"] is True                                    # 定稿是在原位換成正式行（帶過場）
+    assert out["stale"] is True and out["dropped"] == 0                # 沒定稿的短句：6 秒淡出、10 秒移除

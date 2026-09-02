@@ -53,10 +53,16 @@ def test_live_line_shows_partial_then_is_replaced_by_utterance():
                     page.evaluate('__spectator.handleEvent({kind:"speaking", t: 3000, data:{speaker:"林同", active:true}})')
                     before = page.eval_on_selector("#transcript .u-line.now", "el => el.textContent")
                     page.evaluate('__spectator.handleEvent({kind:"partial", t: 3001, data:{speaker:"林同", text:"今天的會"}})')
+                    first_shown = page.evaluate('__spectator.typers["林同"].shown')          # 第一筆不打字，直接顯示
                     page.evaluate('document.querySelector("#transcript .u-line.now").dataset.mark = "same-node"')
                     page.evaluate('__spectator.handleEvent({kind:"partial", t: 3002, data:{speaker:"林同", text:"今天的會議討論了"}})')
+                    typing = page.evaluate('({shown: __spectator.typers["林同"].shown, target: __spectator.typers["林同"].target})')
+                    page.wait_for_timeout(1000)                                              # 打字機預算 700ms
                     same_node = page.evaluate('document.querySelector("#transcript .u-line.now").dataset.mark === "same-node"')
                     live = page.eval_on_selector("#transcript .u-line.now", "el => el.textContent")
+                    # 改寫：縮回去的 partial 直接換、閃一下
+                    page.evaluate('__spectator.handleEvent({kind:"partial", t: 3003, data:{speaker:"林同", text:"哇！"}})')
+                    rewrite = page.evaluate('({shown: __spectator.typers["林同"].shown, cls: document.querySelector("#transcript .u-live").className})')
                     n_live = page.evaluate('document.querySelectorAll("#transcript .u-line.now").length')
                     page.evaluate('__spectator.handleEvent({kind:"utterance", t: 3005, data:{speaker:"林同", text:"今天的會議討論了下一季。", start: 3000, end: 3004}})')
                     page.evaluate('__spectator.handleEvent({kind:"speaking", t: 3005, data:{speaker:"林同", active:false}})')
@@ -69,10 +75,10 @@ def test_live_line_shows_partial_then_is_replaced_by_utterance():
                     stale = page.evaluate('document.querySelector("#transcript .u-line.now").classList.contains("stale")')
                     page.evaluate('__spectator.handleEvent({kind:"fast_timer", t: 3111, data:{run:null, silent:{}, remaining:100}})')
                     dropped = page.evaluate('document.querySelectorAll("#transcript .u-line.now").length')
-                    settled = page.evaluate('(() => { const ls = document.querySelectorAll("#transcript .u-line:not(.now)"); return ls[ls.length-1].classList.contains("settle"); })()')
+                    settled = page.evaluate('(() => { const ls = document.querySelectorAll("#transcript .u-line:not(.now)"); return ls[ls.length-1].className; })()')
                     browser.close()
                     assert not errors, f"頁面 JS 例外：{errors}"
-                    return {"before": before, "live": live, "n_live": n_live, "after_live": after_live, "last": last, "same_node": same_node, "settled": settled, "stale": stale, "dropped": dropped}
+                    return {"before": before, "live": live, "n_live": n_live, "after_live": after_live, "last": last, "same_node": same_node, "settled": settled, "stale": stale, "dropped": dropped, "first_shown": first_shown, "typing": typing, "rewrite": rewrite}
             return await asyncio.to_thread(check)
         finally:
             await server.close()
@@ -82,5 +88,10 @@ def test_live_line_shows_partial_then_is_replaced_by_utterance():
     assert out["after_live"] == 0                                    # 定稿後活的那行消失
     assert "今天的會議討論了下一季。" in out["last"]                    # 正式逐字稿接上
     assert out["same_node"] is True                                  # partial 是就地改字，不是重建節點
-    assert out["settled"] is True                                    # 定稿是在原位換成正式行（帶過場）
+    assert "rewrite-settle" in out["settled"]                        # 定稿內容跟最後 partial（哇！）不同 → 交叉淡入
+    assert out["first_shown"] == "今天的會"                          # 第一筆不打字
+    # 送出當下只揭開了一部分（第一個字同步揭開，其餘排程）：shown 是 target 的嚴格前綴
+    assert out["typing"]["target"] == "今天的會議討論了"
+    assert out["typing"]["target"].startswith(out["typing"]["shown"]) and len(out["typing"]["shown"]) < len(out["typing"]["target"])
+    assert out["rewrite"]["shown"] == "哇！" and "rewrite" in out["rewrite"]["cls"]              # 改寫直接換＋閃
     assert out["stale"] is True and out["dropped"] == 0                # 沒定稿的短句：6 秒淡出、10 秒移除

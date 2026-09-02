@@ -195,6 +195,10 @@
   .u-line.now { transition: opacity .6s ease; }
   .u-line.now.stale { opacity: .35; }
   .u-line.settle .u-text { animation: settle .35s ease-out; }
+  .u-line.rewrite-settle .u-text { animation: crossfade .25s ease-out; }
+  @keyframes crossfade { from { opacity: .15; } to { opacity: 1; } }
+  .u-live.rewrite { animation: flick .15s ease; }
+  @keyframes flick { from { opacity: .25; } to { opacity: 1; } }
   @keyframes settle { from { color: var(--dim); } to { color: inherit; } }
   @keyframes blink { to { visibility: hidden; } }
   .gc-head { display: flex; align-items: baseline; gap: 8px; }
@@ -600,6 +604,7 @@
   // 測試用：讓瀏覽器測試能讀狀態、灌單筆事件（見 tests/test_spectator_phase.py）
   window.__spectator.state = state;
   window.__spectator.handleEvent = handleEvent;
+  Object.defineProperty(window.__spectator, "typers", { get: function () { return typers; } });   // var 提升：取用時才讀
 
   // ── 逐字稿（append-only；使用者位於底部時才自動捲到最新） ──
   var renderedCount = 0;
@@ -638,6 +643,36 @@
   }
 
   var liveNodes = {};   // speaker → 活的那行的 DOM 節點（跨 render 保留）
+  // 打字機：partial 約每秒一筆、每筆多 4 個字（實測），整段貼上會一坨一坨跳。
+  // 新增的字在 TYPE_BUDGET_MS 內逐字揭開，剛好用掉下一筆到來前的空檔；
+  // 內容改寫（縮回去、整句換，實測約 1/5）不打字，直接換並閃一下。
+  var TYPE_BUDGET_MS = 700;
+  var typers = {};     // speaker → {target, shown, timer}
+  function stopTyper(st) { if (st && st.timer) { clearTimeout(st.timer); st.timer = null; } }
+  function setLiveText(who, node, text) {
+    var span = node.querySelector(".u-live");
+    var st = typers[who] || (typers[who] = { target: "", shown: "", timer: null });
+    if (!text) {                                  // 還沒有 partial：佔位，不打字
+      stopTyper(st); st.target = st.shown = "正在說話…"; span.textContent = st.shown; return;
+    }
+    if (text === st.target) return;
+    var extends_ = st.shown !== "正在說話…" && text.indexOf(st.target) === 0;
+    st.target = text;
+    if (!extends_) {                              // 改寫：直接換
+      stopTyper(st); st.shown = text; span.textContent = text;
+      span.classList.remove("rewrite"); void span.offsetWidth; span.classList.add("rewrite");
+      return;
+    }
+    if (!st.timer) tick();
+    function tick() {
+      st.timer = null;
+      if (st.shown.length >= st.target.length) { st.shown = st.target; span.textContent = st.shown; return; }
+      st.shown = st.target.slice(0, st.shown.length + 1);
+      span.textContent = st.shown;
+      var remaining = st.target.length - st.shown.length;
+      st.timer = setTimeout(tick, Math.max(40, Math.min(160, TYPE_BUDGET_MS / (remaining + 1))));
+    }
+  }
   var LIVE_STALE_S = 6;  // 多久沒新的 partial 就淡出
   var LIVE_DROP_S = 10;  // 多久沒新的 partial 就移除
   function isLiveNode(el) { return !!(el && el.classList && el.classList.contains("now")); }
@@ -661,9 +696,12 @@
       if (live && live.parentNode === box) {
         // 定稿到了：在活的那行**原位**換成正式行，不是刪一行再加一行——位置不跳、
         // 文字從淡色過渡到正文色（.settle）。
-        node.classList.add("settle");
+        var ty = typers[item.speaker];
+        var target = ty ? ty.target.replace(/[。，、！？…]+$/, "") : "";
+        var isRewrite = !!target && target !== "正在說話" && String(item.text).indexOf(target) !== 0;
+        node.classList.add(isRewrite ? "rewrite-settle" : "settle");
         box.replaceChild(node, live);
-        delete liveNodes[item.speaker];
+        delete liveNodes[item.speaker]; stopTyper(ty); delete typers[item.speaker];
       } else {
         box.appendChild(node);
       }
@@ -681,7 +719,7 @@
       return age < LIVE_DROP_S;
     });
     Object.keys(liveNodes).forEach(function (who) {
-      if (active.indexOf(who) < 0) { liveNodes[who].remove(); delete liveNodes[who]; }
+      if (active.indexOf(who) < 0) { liveNodes[who].remove(); delete liveNodes[who]; stopTyper(typers[who]); delete typers[who]; }
     });
     active.forEach(function (who) {
       var live = state.partials[who];
@@ -695,9 +733,7 @@
       }
       node.querySelector(".u-time").textContent = fmtEventTime(state.serverNow);
       node.querySelector(".u-speaker").textContent = who;
-      var span = node.querySelector(".u-live");
-      var want = live || "正在說話…";
-      if (span.textContent !== want) span.textContent = want;
+      setLiveText(who, node, live);
       node.classList.toggle("placeholder", !live);
       var age = state.liveAt[who] == null ? 0 : state.serverNow - state.liveAt[who];
       node.classList.toggle("stale", age >= LIVE_STALE_S);

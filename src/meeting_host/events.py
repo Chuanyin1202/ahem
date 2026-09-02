@@ -51,6 +51,13 @@ class Event:
     #     （固定 UTC+8，不用瀏覽器本地時區）。回放模式讀到 T16 之前錄的舊
     #     events.jsonl 時這個欄位不存在，前端要能容錯退回顯示相對時間。
 
+    # ── kind="partial" 補充說明（即時逐字顯示）──────────────────────────────
+    # data {"speaker": str, "text": str}：這個人**這段目前為止的全文**（ElevenLabs
+    # partial_transcript 是累積的，不是新增片段；實測約每秒一筆），已轉繁體。
+    # 消費端用「覆蓋」不是「追加」：同一人的下一筆 partial 取代上一筆，該人的下一筆
+    # "utterance" 是定稿、取代 partial；"speaking" active=False 時清掉。
+    # **只給畫面用**：不進 MeetingState、不進逐字稿、快路慢路都不讀它。
+
     # ── kind="phase" / "phase_suggestion" 補充說明（階段自動判斷）─────────────
     # "phase"：階段**真的改變了**。data {"phase": str, "source": "manual"|"auto"}。
     #   manual＝觀戰畫面 POST /phase；auto＝--auto-phase apply 由偵測器套用。

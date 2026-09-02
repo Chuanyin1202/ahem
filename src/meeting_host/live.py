@@ -649,9 +649,12 @@ class Session:
         - SpeakingStopped：某人的 STT 連線結束 → 清掉他的「正在說話」，那句不會再 commit
         - Utterance：某人「講完一段」（來自 commit）→ 進逐字稿與統計
         """
-        from .stt import Speaking, SpeakingStopped
+        from .stt import Partial, Speaking, SpeakingStopped
         async for ev in pool.utterances():
             self._sync_participants()  # 名單長度變了（新人進頻道）→ 重送 meeting
+            if isinstance(ev, Partial):
+                self.on_partial(ev)
+                continue
             if isinstance(ev, Speaking):
                 self.st.speaking_now(ev.speaker, ev.since)
                 self.emit("speaking", {"speaker": ev.speaker, "active": True})
@@ -837,6 +840,11 @@ class Session:
             if self.chair is None:
                 continue
             last_n = await self._run_slow_score(last_n)
+
+    def on_partial(self, ev) -> None:
+        """partial 逐字稿：只 emit 給畫面，不碰 MeetingState、不進逐字稿、不餵任何規則。
+        規則只看 commit 後的 Utterance——partial 會被修正，拿它判斷等於拿草稿判斷。"""
+        self.emit("partial", {"speaker": ev.speaker, "text": ev.text})
 
     def set_phase(self, phase: str, source: str) -> None:
         """改階段的唯一入口（觀戰畫面 POST /phase 與偵測器都走這裡），改了才 emit。"""

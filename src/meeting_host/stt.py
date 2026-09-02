@@ -33,6 +33,19 @@ class Speaking:
         self.since = since
 
 
+class Partial:
+    """「某人這段目前講到哪」——partial_transcript 的**累積全文**（實測：每筆帶這段到目前為止的
+    整句，不是新增片段，約每秒一筆，commit 時被定稿取代）。只給畫面即時顯示用；判斷規則
+    一律只吃 commit 後的 `Utterance`，這個類別不進 `MeetingState`。已過 `to_traditional()`。"""
+
+    __slots__ = ("speaker", "text", "since")
+
+    def __init__(self, speaker: str, text: str, since: float):
+        self.speaker = speaker
+        self.text = text
+        self.since = since
+
+
 class SpeakingStopped:
     """「這條連線結束了，別再把他算成正在說話」。
 
@@ -348,6 +361,10 @@ class SpeakerStream:
                 # 送出「正在說話」訊號——超時規則靠這個，不能等 commit
                 if self._speech_start is not None:
                     await self.out.put(Speaking(self.speaker, self._speech_start))
+                    # 這段目前的全文，給畫面即時顯示；空字串不送
+                    ptext = to_traditional(msg.get("text", "").strip())
+                    if ptext:
+                        await self.out.put(Partial(self.speaker, ptext, self._speech_start))
                 continue
             if mt != "committed_transcript":
                 continue

@@ -189,6 +189,8 @@
   .u-line.gloss .gcard { font-size: 13px; max-width: 560px; }
   .u-line.gloss .gc-term { font-size: 14px; }
   .u-line.gloss .gc-tag { font-size: 11px; color: var(--dim); letter-spacing: .04em; }
+  .u-cursor { color: var(--dim); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { to { visibility: hidden; } }
   .gc-head { display: flex; align-items: baseline; gap: 8px; }
   .gc-term { font-size: 13px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
   .gc-count { font-size: 11px; color: var(--muted); flex-shrink: 0; margin-left: auto; }
@@ -446,6 +448,7 @@
     withheldMarks: [],      // 時間軸的忍住 t
     phaseMarks: [],         // 時間軸的階段切換 {t, phase}
     phaseHint: null,        // 偵測器最近一次建議（與現況不同才顯示）
+    partials: {},           // 各人這段目前講到哪（partial 累積全文），utterance 定稿後清掉
     maxSilence: 0,          // 全場最長沉默（各參與者沉默秒數取最小值的歷史最大）
     // 慢路判斷是三態，不是兩態：admissible 只代表「排進佇列」，真正有沒有開口
     // 要等後續事件才定案——可能真的 spoken；也可能連佇列都沒排進去（Chair.request()
@@ -646,13 +649,20 @@
       nodes[renderedCount] = node;
     }
 
-    // 「正在說話…」是 ephemeral 提示，不進 state.transcript，每次 render 都重貼到底部
+    // 活的那幾行：正在說話的每個人一行，有 partial 就顯示這段目前的全文（每筆覆蓋），
+    // 沒有就顯示「正在說話…」。ephemeral，不進 state.transcript，每次 render 重貼到底部。
     var active = Object.keys(state.speaking).filter(function (s) { return state.speaking[s]; });
-    if (active.length > 0 && !state.ended) {
-      box.appendChild(nodeFromHtml(
-        '<div class="u-line now">' +
-        '<div class="u-time mono">' + esc(fmtEventTime(state.serverNow)) + '</div>' +
-        '<div class="u-text">' + esc(active[0]) + ' 正在說話…</div></div>'));
+    if (!state.ended) {
+      active.forEach(function (who) {
+        var live = state.partials[who];
+        box.appendChild(nodeFromHtml(
+          '<div class="u-line now">' +
+          '<div class="u-time mono">' + esc(fmtEventTime(state.serverNow)) + '</div>' +
+          (live
+            ? '<div class="u-text"><span class="u-speaker">' + esc(who) + '</span>　' + esc(live) + '<span class="u-cursor">▏</span></div>'
+            : '<div class="u-text">' + esc(who) + ' 正在說話…</div>') +
+          '</div>'));
+      });
     }
 
     if (atBottom) box.scrollTop = box.scrollHeight;
@@ -963,6 +973,7 @@
         renderTop();
         break;
       case "utterance":
+        delete state.partials[data.speaker];   // 定稿到了，活的那行由正式逐字稿取代
         pushTranscript({ kind: "utterance", t: data.start, speaker: data.speaker, text: data.text });
         state.segments.push({ start: data.start, end: data.end });
         renderTranscript();
@@ -971,6 +982,7 @@
         break;
       case "speaking":
         state.speaking[data.speaker] = !!data.active;
+        if (!data.active) delete state.partials[data.speaker];
         renderTranscript();
         break;
       case "fast_timer":
@@ -1084,6 +1096,11 @@
         state.hearing = data;
         renderAlerts();
         break;
+      case "partial":
+        // 這段目前的全文（累積），覆蓋上一筆；只影響活的那一行
+        state.partials[data.speaker] = data.text;
+        renderTranscript();
+        break;
       case "phase":
         // 階段真的改了（人或偵測器）：更新現況、時間軸標記、清掉建議提示
         if (state.meeting) state.meeting.phase = data.phase;
@@ -1127,6 +1144,7 @@
     state.transcript = [];
     state.transcriptDirty = false;
     state.speaking = {};
+    state.partials = {};
     state.pendingQueued = [];
     state.lastSpokenAt = null;
     state.share = {};
@@ -1156,7 +1174,7 @@
   // ── SSE ──
   var KINDS = ["meeting", "utterance", "speaking", "fast_timer", "slow_score",
     "queued", "spoken", "failed", "dropped", "share", "minutes", "glossary", "hearing",
-    "phase", "phase_suggestion"];
+    "phase", "phase_suggestion", "partial"];
 
   var source = new EventSource("/events");
   source.addEventListener("snapshot", function (e) {

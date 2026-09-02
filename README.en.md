@@ -149,6 +149,7 @@ docs/  (Chinese)
   evaluation.md            evaluation method
   prior-art.md             related research and open source
   specs/                   three design specs
+  design/                  spectator design files and principles (design/README.md)
 ```
 
 ## Contributing and security

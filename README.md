@@ -149,6 +149,7 @@ docs/
   evaluation.md            評估方法
   prior-art.md             相關研究與開源盤點
   specs/                   三份設計規格
+  design/                  觀戰畫面設計稿與設計原則（design/README.md）
 ```
 
 ## 貢獻與回報

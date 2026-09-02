@@ -293,6 +293,7 @@
 {"kind": "fast_timer", "t": 188.05, "data": {"run": null, "silent": {"林同": 3.85, "沈禾": 21.05, "周葵": 11.85}, "remaining": 711.95}}
 {"kind": "fast_timer", "t": 189.05, "data": {"run": null, "silent": {"林同": 4.85, "沈禾": 22.05, "周葵": 12.85}, "remaining": 710.95}}
 {"kind": "slow_score", "t": 190, "data": {"positive": 2, "negative": 2, "none": 2, "type": "僵局", "verdict": "不介入", "utterance": "", "pros": ["示範"], "cons": ["示範"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "meeting", "t": 190.0, "data": {"topic": "新功能該先做哪一個", "duration_min": 15, "phase": "呻吟區", "participants": ["林同", "沈禾", "周葵"]}}
 {"kind": "fast_timer", "t": 190.05, "data": {"run": null, "silent": {"林同": 5.85, "沈禾": 23.05, "周葵": 13.85}, "remaining": 709.95}}
 {"kind": "fast_timer", "t": 191.05, "data": {"run": null, "silent": {"林同": 6.85, "沈禾": 24.05, "周葵": 14.85}, "remaining": 708.95}}
 {"kind": "fast_timer", "t": 192.05, "data": {"run": null, "silent": {"林同": 7.85, "沈禾": 25.05, "周葵": 15.85}, "remaining": 707.95}}

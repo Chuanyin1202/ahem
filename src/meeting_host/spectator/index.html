@@ -587,6 +587,9 @@
 
   window.__spectator = window.__spectator || {};
   window.__spectator.setEnded = setEnded;
+  // 測試用：讓瀏覽器測試能讀狀態、灌單筆事件（見 tests/test_spectator_phase.py）
+  window.__spectator.state = state;
+  window.__spectator.handleEvent = handleEvent;
 
   // ── 逐字稿（append-only；使用者位於底部時才自動捲到最新） ──
   var renderedCount = 0;

@@ -90,7 +90,7 @@ Ahem has chaired and been measured on two real Discord meetings (14 and 43 minut
 | Aspect | Status |
 |---|---|
 | Phrasing quality | Solved. After the split into two calls, 32 of 34 scoring points quote the transcript verbatim (2 of 34 before) |
-| Judgement stability | **The main open problem.** Re-running the same scoring points five times, the chair speaks between 1 and 5 times; of the three moments labelled "should speak", it misses all three in 3 rounds out of 5. Majority voting was measured and helps little: the problem is the decision scale, not sampling |
+| Judgement stability | **The main open problem.** Re-running the same scoring points five times, the chair speaks between 1 and 5 times; of the three moments labelled "should speak", it misses all three in 3 rounds out of 5. Majority voting was measured and helps little; three judgement-prompt variants (coarser scale, explicit criteria, two-stage) each improved one recording at the other's expense: raising sensitivity raises false positives in step |
 | Housekeeping misfires | Fixed. Adjusting audio or locating a file was read as off-topic in 5 of 5 rounds; now 0 of 5, with no loss on genuine off-topic detection |
 | Intervention coverage | Of the six types, "false consensus" and "factual error" have never fired in a real meeting |
 | STT failure detection | Implemented; verified offline only |

@@ -60,7 +60,7 @@ cp .env.example .env        # 填入 ELEVENLABS_API_KEY、OPENAI_API_KEY、DISCO
 ```bash
 PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
     --topic "黑客松籌備" --duration 30 --say-hello --spectator-port 8765 \
-    [--channel <頻道 ID>] [--keyterms 詞1 詞2] [--phase 發散期|呻吟區|收斂期] [--auto-phase suggest|apply] [--no-llm]
+    [--channel <頻道 ID>] [--keyterms 詞1 詞2] [--phase 發散期|呻吟區|收斂期] [--auto-phase suggest|apply] [--style strict|gentle|efficient] [--no-llm]
 ```
 
 觀戰畫面在 `http://localhost:8765`。`Ctrl-C` 結束會議並寫出記錄到 `meetings/`。
@@ -97,7 +97,7 @@ Ahem 已在兩場真實 Discord 會議（14 分鐘與 43 分鐘，皆有人工�
 **尚未完成**：
 
 - **群體過程階段的自動判斷**（發散／呻吟區／收斂，依 Sam Kaner 的 Diamond 模型）——這是產品定位的基礎。已有第一版偵測器（`--auto-phase suggest`：每 60 秒判一次、連續兩次一致才建議、單人或無人說話時不判），預設只建議、由人在觀戰畫面確認；`apply` 才自動套用。**只做過反面驗證**（全程發散的錄音上不亂切），正面驗證要等一場真的走完三階段的會議。
-- 主持風格檔位（嚴格／溫和／效率優先，既有參數的組合）。
+- 主持風格檔位已有第一版（`--style`，三組既有快路門檻的組合），**未調校**：哪組適合哪種會議要靠真實會議實測。
 
 **已定的設計決定**：一個主席、只做中文、不做人格設定、不做 avatar、不做本地備援（預設雲端服務可用）。理由見 [docs/product-definition.md](docs/product-definition.md) 與 [docs/development-plan.md](docs/development-plan.md)。
 
@@ -125,11 +125,13 @@ src/meeting_host/
   fast_path.py        快路四規則                    slow_path.py  慢路：判斷與話術兩次呼叫
   phrasing.py         快路話術庫                    hearing.py    STT 失效偵測
   phase.py            階段自動判斷（LLM 讀數＋遲滯，預設只建議）
+  style.py            主持風格檔位（快路門檻的三組預設，未調校）
   speaker.py          提示音、TTS、Chair 狀態機      glossary.py   術語補充卡
   events.py           事件 schema（各模組的接縫）    minutes.py    會後兩份記錄
   spectator.py        觀戰畫面與回放伺服器           state.py      會議狀態
 examples/
   synthetic-meeting.events.jsonl         虛構會議的事件檔，供回放與看格式
+  synthetic-phases.events.jsonl          虛構的三階段會議，含階段建議與切換事件
 experiments/
   rescore_slow_path.py / score_run.py    重評與窗口計分
   holdout/                               自備會議資料（不進版控）
@@ -138,6 +140,7 @@ docs/
   interruption-design.md   插話機制：評分準則、階段感知、提示音策略
   tech-architecture.md     技術架構與選型
   development-plan.md      開發方案與完成狀態
+  demo-runbook.md          現場流程：會前檢查、啟動、出事處理、結束
   validation-results.md    驗證摘要（現況一覽與各輪結論）
   validation-log.md        完整工程紀錄，按驗證輪次累積
   results.json             機器可讀的實測數字

@@ -820,6 +820,11 @@
     return '<div class="gcard">' + parts.join("") + "</div>";
   }
 
+  function lastMarkIs(phase) {
+    var n = state.phaseMarks.length;
+    return n > 0 && state.phaseMarks[n - 1].phase === phase;
+  }
+
   // ── 右欄：發言分佈 ──
   function renderShare() {
     var names = Object.keys(state.share).filter(function (n) { return n !== "主席"; });
@@ -946,7 +951,8 @@
     switch (ev.kind) {
       case "meeting":
         // 階段真的變了才記一筆時間軸標記；第一筆 meeting 是初始階段，不算切換。
-        if (state.meeting && state.meeting.phase !== data.phase) {
+        // `phase` 事件（人或偵測器切換）也會推標記；meeting 重送時若最後一筆已是同階段就不重畫。
+        if (state.meeting && state.meeting.phase !== data.phase && !lastMarkIs(data.phase)) {
           state.phaseMarks.push({ t: ev.t, phase: data.phase });
           renderTimeline();
         }
@@ -1078,7 +1084,7 @@
       case "phase":
         // 階段真的改了（人或偵測器）：更新現況、時間軸標記、清掉建議提示
         if (state.meeting) state.meeting.phase = data.phase;
-        state.phaseMarks.push({ t: ev.t, phase: data.phase });
+        if (!lastMarkIs(data.phase)) state.phaseMarks.push({ t: ev.t, phase: data.phase });
         state.phaseHint = null;
         renderTop(); renderTimeline();
         break;

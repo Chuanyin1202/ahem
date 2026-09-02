@@ -18,7 +18,7 @@
 | P0#5 earcon＋TTS | ✅ `speaker.py`，真實會議驗證 |
 | P0#6 觀戰 UI | ✅ `spectator/`，三態（開口／受阻／忍住）＋守恆不變式 |
 | P0#7 會議記錄 A＋B | ✅ `minutes.py`；8/31 那場抽出 4 決議、4 待辦、5 未解決 |
-| P1#8 主持風格檔位 | ❌ 只有一行 TODO 註解 |
+| P1#8 主持風格檔位 | ⚠️ 第一版（2026-09-02）：`style.py`，`--style strict|gentle|efficient` 覆寫快路門檻，預設不動；未調校 |
 | P1#9 Discord | ✅ |
 | P1#10 事實錯誤、重複 | ⚠️ 重複驗到一次；事實錯誤未觸發 |
 | P1#11 自動回放評估 | ✅ `experiments/rescore_slow_path.py`＋`score_run.py`，兩份 real-holdout 含標註 |

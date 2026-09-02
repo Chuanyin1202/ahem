@@ -60,7 +60,7 @@ Chair a meeting (have participants join the voice channel first, or pass the cha
 ```bash
 PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
     --topic "Hackathon planning" --duration 30 --say-hello --spectator-port 8765 \
-    [--channel <id>] [--keyterms term1 term2] [--phase 發散期|呻吟區|收斂期] [--auto-phase suggest|apply] [--no-llm]
+    [--channel <id>] [--keyterms term1 term2] [--phase 發散期|呻吟區|收斂期] [--auto-phase suggest|apply] [--style strict|gentle|efficient] [--no-llm]
 ```
 
 The spectator view is at `http://localhost:8765`. `Ctrl-C` ends the meeting and writes the records to `meetings/`.
@@ -97,7 +97,7 @@ Ahem has chaired and been measured on two real Discord meetings (14 and 43 minut
 **Not done:**
 
 - **Automatic detection of the group-process phase** (divergent / groan zone / convergent, after Sam Kaner's Diamond model), the basis of the positioning. A first detector exists (`--auto-phase suggest`: one reading a minute, two agreeing readings before a suggestion, no judgement when only one person is speaking or nobody is). It suggests by default and a person confirms in the spectator view; `apply` switches automatically. **Only negatively validated** so far (no spurious switches on recordings that stay divergent); positive validation needs a meeting that actually crosses phases.
-- Chairing style presets (strict / gentle / efficient, as combinations of existing parameters).
+- Chairing style presets exist as a first version (`--style`, three combinations of existing fast-path thresholds) but are **untuned**: which suits which meeting needs real-meeting measurement.
 
 **Settled design decisions**: one chair; Mandarin only; no persona; no avatar; no local fallback (cloud services are assumed available). Reasoning in [docs/product-definition.md](docs/product-definition.md) and [docs/development-plan.md](docs/development-plan.md) (Chinese).
 
@@ -125,11 +125,13 @@ src/meeting_host/
   fast_path.py        the four fast rules                  slow_path.py  slow path: judge and phrase calls
   phrasing.py         fast-path phrase bank                hearing.py    STT failure detection
   phase.py            phase detection (LLM readings with hysteresis; suggests by default)
+  style.py            chairing style presets (three fast-path threshold sets, untuned)
   speaker.py          chime, TTS, Chair state machine      glossary.py   silent term cards
   events.py           event schema (the seam between modules)   minutes.py    the two records
   spectator.py        spectator view and replay server     state.py      meeting state
 examples/
   synthetic-meeting.events.jsonl         event log of a fictional meeting, for replay and as a format sample
+  synthetic-phases.events.jsonl          a fictional three-phase meeting with phase suggestion and switch events
 experiments/
   rescore_slow_path.py / score_run.py    re-scoring and window-based scoring
   holdout/                               your own meeting data (not versioned)
@@ -138,6 +140,7 @@ docs/  (Chinese)
   interruption-design.md   interruption mechanics: scoring, phase awareness, the chime
   tech-architecture.md     architecture and choices
   development-plan.md      plan and completion status
+  demo-runbook.md          on-site runbook: pre-flight, start, failures, shutdown (Chinese)
   validation-results.md    validation summary (current figures and per-round conclusions)
   validation-log.md        full engineering log, by verification round
   results.json             machine-readable figures

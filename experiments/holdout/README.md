@@ -67,6 +67,28 @@ PYTHONPATH=src python experiments/rescore_slow_path.py experiments/holdout/<案�
 - ⚠️ **沒有被任何窗口涵蓋的時間，裡面的介入一律算誤報**。所以留白不是中立，等於宣告「這裡不該講」。
 - 窗口邊界要從**逐字稿或規則門檻**推，不要貼著主席實際介入的時間畫——貼著畫的窗口永遠推翻不了主席。
 
+### 階段真值：`phase_truth`（選填，給階段偵測用）
+
+如果這場會議真的走過不同階段，在 `labels.json` 加一個 `phase_truth`，由在場者依序標出每段的階段：
+
+```json
+"phase_truth": [
+  {"phase": "發散期", "range_seconds": [0, 900]},
+  {"phase": "呻吟區", "range_seconds": [900, 1500]},
+  {"phase": "收斂期", "range_seconds": [1500, 2100]}
+]
+```
+
+然後對真值計分（每分鐘一次 LLM 讀數，遲滯後看它有沒有在每個窗口內切到對的階段、切換延遲幾秒、有沒有誤切）：
+
+```bash
+PYTHONPATH=src python experiments/phase_replay.py experiments/holdout/<案例>/meeting.events.jsonl \
+    --truth experiments/holdout/<案例>/labels.json
+```
+
+沒有 `phase_truth` 時用 `--expect <階段>` 做反面驗證（全程單一階段的錄音上不得切換）。
+標階段時的判準見 `src/meeting_host/phase.py` 的 `CRITERIA`——特別注意：**針對主席、工具或流程的爭執不算呻吟區**，只有在議題上走不出去的衝突才算。
+
 其他欄位（`participants`、`topic`、`provenance` 的程式碼 SHA 與常數、`labelled_by`、`notes`）是給人看的，計分不讀，但建議填：
 `provenance.code` 填主持那場會議時的 commit，`fast_path`／`slow_path` 填當時生效的常數，之後才對得回「這個數字是哪一版跑的」。
 

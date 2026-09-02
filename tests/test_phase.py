@@ -80,3 +80,118 @@ def test_prompt_counts_chair_interventions_in_window_and_states_the_exclusion():
     p = ph.build_prompt(st, 600.0, "發散期", [])
     assert "主席在這段窗口介入了 2 次" in p
     assert "衝突的對象必須是議題本身才算呻吟區" in p
+
+
+# ── watch_phase 整合：stub 掉 LLM，走真的 Session／emit ─────────────────
+import asyncio
+import sys
+from pathlib import Path as _Path
+from meeting_host.live import Session
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "experiments"))
+import phase_replay  # noqa: E402
+
+
+class _FakeChair:
+    pending = None
+    playing = None
+
+
+def _two_speaker_state():
+    st = MeetingState(topic="t", duration_min=30, participants=["甲", "乙"])
+    for i, (who, txt) in enumerate([("甲", "一"), ("乙", "二"), ("甲", "三"), ("乙", "四")]):
+        st.add(Utterance(who, txt, 1.0 + i, 1.5 + i))
+    return st
+
+
+def _run_watch_phase(session, monkeypatch, readings, ticks):
+    """跑 watch_phase 直到消耗掉 `readings`（每 tick 一筆），回傳 emit 的事件。"""
+    it = iter(readings)
+    monkeypatch.setattr(ph, "PHASE_TICK_SECONDS", 0.001)
+    monkeypatch.setattr(ph, "MIN_DWELL_SECONDS", 0.0)
+    monkeypatch.setattr(ph, "judge", lambda st, now, cur, types: next(it))
+    monkeypatch.setattr(ph, "WINDOW_SECONDS", 10_000.0)   # 測試的 now 很小，窗口要蓋到所有發言
+    session.chair = _FakeChair()
+    got = []
+    session.subscribers.append(lambda e: got.append(e))
+
+    async def go():
+        task = asyncio.create_task(session.watch_phase())
+        for _ in range(200):
+            await asyncio.sleep(0.002)
+            if sum(1 for e in got if e.kind == "phase_suggestion") >= ticks:
+                break
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+    asyncio.run(go())
+    return got
+
+
+def test_suggest_mode_emits_suggestions_but_never_changes_phase(monkeypatch):
+    s = Session(_two_speaker_state(), auto_phase="suggest")
+    got = _run_watch_phase(s, monkeypatch, [r("呻吟區"), r("呻吟區"), r("呻吟區")], ticks=3)
+    sugg = [e for e in got if e.kind == "phase_suggestion"]
+    assert len(sugg) == 3 and all(e.data["applied"] is False for e in sugg)
+    assert not [e for e in got if e.kind == "phase"]
+    assert s.phase == "發散期"
+    assert sugg[1].data["phase"] == "呻吟區" and sugg[1].data["current"] == "發散期"
+
+
+def test_apply_mode_switches_after_two_readings_and_emits_phase(monkeypatch):
+    s = Session(_two_speaker_state(), auto_phase="apply")
+    got = _run_watch_phase(s, monkeypatch, [r("呻吟區"), r("呻吟區")], ticks=2)
+    phases = [e for e in got if e.kind == "phase"]
+    assert len(phases) == 1 and phases[0].data == {"phase": "呻吟區", "source": "auto"}
+    assert s.phase == "呻吟區"
+    assert [e.data["applied"] for e in got if e.kind == "phase_suggestion"] == [False, True]
+
+
+def test_manual_switch_goes_through_set_phase_and_emits_manual_source():
+    s = Session(_two_speaker_state())
+    got = []; s.subscribers.append(lambda e: got.append(e))
+    s.set_phase("收斂期", "manual"); s.set_phase("收斂期", "manual")   # 第二次沒變，不 emit
+    assert [e.data for e in got if e.kind == "phase"] == [{"phase": "收斂期", "source": "manual"}]
+
+
+def test_watch_phase_off_by_default():
+    assert Session(_two_speaker_state()).auto_phase is None
+
+
+# ── 真值計分（純函式）──
+def test_score_against_truth_reports_hits_latency_and_false_switches():
+    readings = [{"t": t, "phase": p, "confidence": 0.9, "reason": ""} for t, p in
+                [(60, "發散期"), (120, "發散期"), (180, "呻吟區"), (240, "呻吟區"), (300, "收斂期"), (360, "收斂期")]]
+    switches = [(240.0, "呻吟區"), (360.0, "收斂期")]
+    truth = [{"phase": "發散期", "range_seconds": [0, 150]},
+             {"phase": "呻吟區", "range_seconds": [150, 280]},
+             {"phase": "收斂期", "range_seconds": [280, 400]}]
+    rep = phase_replay.score_against_truth(readings, switches, truth, "發散期")
+    assert rep["hits"] == 3 and rep["false_switches"] == []
+    lat = [w["latency_s"] for w in rep["windows"]]
+    assert lat == [0.0, 90.0, 80.0]
+    assert [w["majority"] for w in rep["windows"]] == ["發散期", "呻吟區", "收斂期"]
+
+
+def test_score_against_truth_flags_a_switch_that_contradicts_truth():
+    readings = []
+    truth = [{"phase": "發散期", "range_seconds": [0, 300]}]
+    rep = phase_replay.score_against_truth(readings, [(120.0, "收斂期")], truth, "發散期")
+    assert rep["hits"] == 0 and rep["false_switches"] == [(120.0, "收斂期")]
+
+
+# ── 風格檔位 ──
+def test_style_none_changes_nothing_and_named_style_sets_only_its_keys(monkeypatch):
+    from meeting_host import style, fast_path
+    before = style.defaults()
+    assert style.apply(None) == {} and style.defaults() == before
+    applied = style.apply("strict")
+    assert applied["OVERTIME_SECONDS"] == 120.0 and fast_path.OVERTIME_SECONDS == 120.0
+    assert fast_path.AGENDA_WARN_RATIO == before["AGENDA_WARN_RATIO"]     # strict 沒動這個
+    for k, v in before.items():
+        setattr(fast_path, k, v)      # 還原，別影響其他測試
+    import pytest
+    with pytest.raises(ValueError):
+        style.apply("angry")

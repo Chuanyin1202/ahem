@@ -656,8 +656,12 @@
       stopTyper(st); st.target = st.shown = "正在說話…"; span.textContent = st.shown; return;
     }
     if (text === st.target) return;
-    var extends_ = st.shown !== "正在說話…" && text.indexOf(st.target) === 0;
+    // 是不是接續：前一筆結尾的標點常被下一筆換掉（「過程，」→「過程沒有很漂亮。」），
+    // 所以拿掉前一筆結尾標點再比前綴；已揭開的部分若含那個標點，先縮回去再往下打。
+    var base = st.target.replace(/[。，、！？…：；]+$/, "");
+    var extends_ = st.shown !== "正在說話…" && base.length > 0 && text.indexOf(base) === 0 && text.length > base.length;
     st.target = text;
+    if (extends_ && st.shown.length > base.length) { st.shown = base; span.textContent = st.shown; }
     if (!extends_) {                              // 改寫：直接換
       stopTyper(st); st.shown = text; span.textContent = text;
       span.classList.remove("rewrite"); void span.offsetWidth; span.classList.add("rewrite");

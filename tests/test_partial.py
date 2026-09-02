@@ -60,6 +60,13 @@ def test_live_line_shows_partial_then_is_replaced_by_utterance():
                     page.wait_for_timeout(1000)                                              # 打字機預算 700ms
                     same_node = page.evaluate('document.querySelector("#transcript .u-line.now").dataset.mark === "same-node"')
                     live = page.eval_on_selector("#transcript .u-line.now", "el => el.textContent")
+                    # 真實案例：前一筆結尾標點被換掉仍算接續（要打字，不是直接換）
+                    page.evaluate('__spectator.handleEvent({kind:"partial", t: 3002.5, data:{speaker:"林同", text:"今天的會議討論了，"}})')
+                    page.wait_for_timeout(1000)
+                    page.evaluate('__spectator.handleEvent({kind:"partial", t: 3002.8, data:{speaker:"林同", text:"今天的會議討論了下一季的規劃"}})')
+                    comma_case = page.evaluate('({shown: __spectator.typers["林同"].shown, target: __spectator.typers["林同"].target})')
+                    page.wait_for_timeout(1000)
+                    comma_done = page.evaluate('__spectator.typers["林同"].shown')
                     # 改寫：縮回去的 partial 直接換、閃一下
                     page.evaluate('__spectator.handleEvent({kind:"partial", t: 3003, data:{speaker:"林同", text:"哇！"}})')
                     rewrite = page.evaluate('({shown: __spectator.typers["林同"].shown, cls: document.querySelector("#transcript .u-live").className})')
@@ -78,7 +85,7 @@ def test_live_line_shows_partial_then_is_replaced_by_utterance():
                     settled = page.evaluate('(() => { const ls = document.querySelectorAll("#transcript .u-line:not(.now)"); return ls[ls.length-1].className; })()')
                     browser.close()
                     assert not errors, f"頁面 JS 例外：{errors}"
-                    return {"before": before, "live": live, "n_live": n_live, "after_live": after_live, "last": last, "same_node": same_node, "settled": settled, "stale": stale, "dropped": dropped, "first_shown": first_shown, "typing": typing, "rewrite": rewrite}
+                    return {"before": before, "live": live, "n_live": n_live, "after_live": after_live, "last": last, "same_node": same_node, "settled": settled, "stale": stale, "dropped": dropped, "first_shown": first_shown, "typing": typing, "rewrite": rewrite, "comma_case": comma_case, "comma_done": comma_done}
             return await asyncio.to_thread(check)
         finally:
             await server.close()
@@ -95,3 +102,7 @@ def test_live_line_shows_partial_then_is_replaced_by_utterance():
     assert out["typing"]["target"].startswith(out["typing"]["shown"]) and len(out["typing"]["shown"]) < len(out["typing"]["target"])
     assert out["rewrite"]["shown"] == "哇！" and "rewrite" in out["rewrite"]["cls"]              # 改寫直接換＋閃
     assert out["stale"] is True and out["dropped"] == 0                # 沒定稿的短句：6 秒淡出、10 秒移除
+    # 逗號被換掉：當下 shown 是去標點後的前綴且比 target 短（在打字），1 秒後完整
+    assert out["comma_case"]["target"] == "今天的會議討論了下一季的規劃"
+    assert out["comma_case"]["target"].startswith(out["comma_case"]["shown"]) and len(out["comma_case"]["shown"]) < len(out["comma_case"]["target"])
+    assert out["comma_done"] == "今天的會議討論了下一季的規劃"

@@ -1,0 +1,7 @@
+{"kind": "meeting", "t": 0.0, "data": {"topic": "合成測試會議", "duration_min": 10, "phase": "發散期", "participants": ["A", "B"], "start_epoch": 1000000000.0}}
+{"kind": "utterance", "t": 5.0, "data": {"speaker": "A", "text": "我們先把攤位的動線確定下來。", "start": 1.0, "end": 5.0}}
+{"kind": "queued", "t": 20.0, "data": {"kind": "全場沉默", "target": null, "text": "現場安靜了一陣子，要不要有人先分享一下目前的想法？", "hard": false}}
+{"kind": "failed", "t": 21.0, "data": {"kind": "全場沉默", "target": null, "text": "現場安靜了一陣子，要不要有人先分享一下目前的想法？", "reason": "TTS 失敗：TTS HTTP 401: quota_exceeded"}}
+{"kind": "hearing", "t": 47.0, "data": {"ok": false, "reason": "STT 連線中斷", "voiced_seconds": 45.3}}
+{"kind": "queued", "t": 60.0, "data": {"kind": "議程超時", "target": null, "text": "只剩3分鐘，我們往結論收。", "hard": false}}
+{"kind": "failed", "t": 61.0, "data": {"kind": "議程超時", "target": null, "text": "只剩3分鐘，我們往結論收。", "reason": "TTS 失敗：TTS HTTP 401: quota_exceeded"}}

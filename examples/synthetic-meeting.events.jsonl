@@ -1,0 +1,271 @@
+{"kind": "meeting", "t": 4.5, "data": {"topic": "第二季產品上線排程", "duration_min": 20, "phase": "發散期", "participants": ["林同", "沈禾", "周葵"]}}
+{"kind": "fast_timer", "t": 5.05, "data": {"run": null, "silent": {"林同": 0.55, "沈禾": 0.55, "周葵": 0.55}, "remaining": 1194.95}}
+{"kind": "fast_timer", "t": 6.05, "data": {"run": null, "silent": {"林同": 1.55, "沈禾": 1.55, "周葵": 1.55}, "remaining": 1193.95}}
+{"kind": "fast_timer", "t": 7.05, "data": {"run": null, "silent": {"林同": 2.55, "沈禾": 2.55, "周葵": 2.55}, "remaining": 1192.95}}
+{"kind": "fast_timer", "t": 8.05, "data": {"run": null, "silent": {"林同": 3.55, "沈禾": 3.55, "周葵": 3.55}, "remaining": 1191.95}}
+{"kind": "fast_timer", "t": 9.05, "data": {"run": null, "silent": {"林同": 4.55, "沈禾": 4.55, "周葵": 4.55}, "remaining": 1190.95}}
+{"kind": "fast_timer", "t": 10.05, "data": {"run": null, "silent": {"林同": 5.55, "沈禾": 5.55, "周葵": 5.55}, "remaining": 1189.95}}
+{"kind": "fast_timer", "t": 11.05, "data": {"run": null, "silent": {"林同": 6.55, "沈禾": 6.55, "周葵": 6.55}, "remaining": 1188.95}}
+{"kind": "speaking", "t": 11.7, "data": {"speaker": "林同", "active": true}}
+{"kind": "voice", "t": 11.8, "data": {"speaker": "林同", "active": true}}
+{"kind": "fast_timer", "t": 12.05, "data": {"run": null, "silent": {"林同": 7.55, "沈禾": 7.55, "周葵": 7.55}, "remaining": 1187.95}}
+{"kind": "fast_timer", "t": 13.05, "data": {"run": null, "silent": {"林同": 8.55, "沈禾": 8.55, "周葵": 8.55}, "remaining": 1186.95}}
+{"kind": "fast_timer", "t": 14.05, "data": {"run": null, "silent": {"林同": 9.55, "沈禾": 9.55, "周葵": 9.55}, "remaining": 1185.95}}
+{"kind": "fast_timer", "t": 15.05, "data": {"run": null, "silent": {"林同": 10.55, "沈禾": 10.55, "周葵": 10.55}, "remaining": 1184.95}}
+{"kind": "fast_timer", "t": 16.05, "data": {"run": null, "silent": {"林同": 11.55, "沈禾": 11.55, "周葵": 11.55}, "remaining": 1183.95}}
+{"kind": "fast_timer", "t": 17.05, "data": {"run": null, "silent": {"林同": 12.55, "沈禾": 12.55, "周葵": 12.55}, "remaining": 1182.95}}
+{"kind": "fast_timer", "t": 18.05, "data": {"run": null, "silent": {"林同": 13.55, "沈禾": 13.55, "周葵": 13.55}, "remaining": 1181.95}}
+{"kind": "speaking", "t": 18.26, "data": {"speaker": "林同", "active": false}}
+{"kind": "voice", "t": 18.36, "data": {"speaker": "林同", "active": false}}
+{"kind": "utterance", "t": 18.56, "data": {"speaker": "林同", "text": "先確認一下，這次上線的範圍包含後台報表跟通知中心，對嗎？", "start": 12.0, "end": 18.16}}
+{"kind": "share", "t": 18.66, "data": {"林同": 1.0, "沈禾": 0.0, "周葵": 0.0, "主席": 0.0}}
+{"kind": "speaking", "t": 18.7, "data": {"speaker": "沈禾", "active": true}}
+{"kind": "voice", "t": 18.8, "data": {"speaker": "沈禾", "active": true}}
+{"kind": "fast_timer", "t": 19.05, "data": {"run": null, "silent": {"林同": 0.89, "沈禾": 14.55, "周葵": 14.55}, "remaining": 1180.95}}
+{"kind": "fast_timer", "t": 20.05, "data": {"run": null, "silent": {"林同": 1.89, "沈禾": 15.55, "周葵": 15.55}, "remaining": 1179.95}}
+{"kind": "fast_timer", "t": 21.05, "data": {"run": null, "silent": {"林同": 2.89, "沈禾": 16.55, "周葵": 16.55}, "remaining": 1178.95}}
+{"kind": "fast_timer", "t": 22.05, "data": {"run": null, "silent": {"林同": 3.89, "沈禾": 17.55, "周葵": 17.55}, "remaining": 1177.95}}
+{"kind": "fast_timer", "t": 23.05, "data": {"run": null, "silent": {"林同": 4.89, "沈禾": 18.55, "周葵": 18.55}, "remaining": 1176.95}}
+{"kind": "fast_timer", "t": 24.05, "data": {"run": null, "silent": {"林同": 5.89, "沈禾": 19.55, "周葵": 19.55}, "remaining": 1175.95}}
+{"kind": "fast_timer", "t": 25.05, "data": {"run": null, "silent": {"林同": 6.89, "沈禾": 20.55, "周葵": 20.55}, "remaining": 1174.95}}
+{"kind": "slow_score", "t": 25.3, "data": {"positive": 2, "negative": 1, "none": 3, "type": "無", "verdict": "不介入", "utterance": "", "pros": ["討論仍在議題內", "尚無明顯失衡"], "cons": ["發散期不應催促", "此刻無需介入"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "fast_timer", "t": 26.05, "data": {"run": null, "silent": {"林同": 7.89, "沈禾": 21.55, "周葵": 21.55}, "remaining": 1173.95}}
+{"kind": "speaking", "t": 26.8, "data": {"speaker": "沈禾", "active": false}}
+{"kind": "voice", "t": 26.9, "data": {"speaker": "沈禾", "active": false}}
+{"kind": "fast_timer", "t": 27.05, "data": {"run": null, "silent": {"林同": 8.89, "沈禾": 0.35, "周葵": 22.55}, "remaining": 1172.95}}
+{"kind": "utterance", "t": 27.1, "data": {"speaker": "沈禾", "text": "報表是確定的，通知中心我覺得要再看一下工程排程，前端那邊人力有點吃緊。", "start": 19.0, "end": 26.7}}
+{"kind": "share", "t": 27.2, "data": {"林同": 0.4444, "沈禾": 0.5556, "周葵": 0.0, "主席": 0.0}}
+{"kind": "fast_timer", "t": 28.05, "data": {"run": null, "silent": {"林同": 9.89, "沈禾": 1.35, "周葵": 23.55}, "remaining": 1171.95}}
+{"kind": "fast_timer", "t": 29.05, "data": {"run": null, "silent": {"林同": 10.89, "沈禾": 2.35, "周葵": 24.55}, "remaining": 1170.95}}
+{"kind": "speaking", "t": 29.7, "data": {"speaker": "周葵", "active": true}}
+{"kind": "voice", "t": 29.8, "data": {"speaker": "周葵", "active": true}}
+{"kind": "fast_timer", "t": 30.05, "data": {"run": null, "silent": {"林同": 11.89, "沈禾": 3.35, "周葵": 25.55}, "remaining": 1169.95}}
+{"kind": "fast_timer", "t": 31.05, "data": {"run": null, "silent": {"林同": 12.89, "沈禾": 4.35, "周葵": 26.55}, "remaining": 1168.95}}
+{"kind": "fast_timer", "t": 32.05, "data": {"run": null, "silent": {"林同": 13.89, "沈禾": 5.35, "周葵": 27.55}, "remaining": 1167.95}}
+{"kind": "fast_timer", "t": 33.05, "data": {"run": null, "silent": {"林同": 14.89, "沈禾": 6.35, "周葵": 28.55}, "remaining": 1166.95}}
+{"kind": "fast_timer", "t": 34.05, "data": {"run": null, "silent": {"林同": 15.89, "沈禾": 7.35, "周葵": 29.55}, "remaining": 1165.95}}
+{"kind": "fast_timer", "t": 35.05, "data": {"run": null, "silent": {"林同": 16.89, "沈禾": 8.35, "周葵": 30.55}, "remaining": 1164.95}}
+{"kind": "speaking", "t": 35.6, "data": {"speaker": "周葵", "active": false}}
+{"kind": "voice", "t": 35.7, "data": {"speaker": "周葵", "active": false}}
+{"kind": "utterance", "t": 35.9, "data": {"speaker": "周葵", "text": "通知中心如果拆成兩期呢？先做站內通知，推播下一期。", "start": 30.0, "end": 35.5}}
+{"kind": "share", "t": 36.0, "data": {"林同": 0.3182, "沈禾": 0.3977, "周葵": 0.2841, "主席": 0.0}}
+{"kind": "fast_timer", "t": 36.05, "data": {"run": null, "silent": {"林同": 17.89, "沈禾": 9.35, "周葵": 0.55}, "remaining": 1163.95}}
+{"kind": "fast_timer", "t": 37.05, "data": {"run": null, "silent": {"林同": 18.89, "沈禾": 10.35, "周葵": 1.55}, "remaining": 1162.95}}
+{"kind": "fast_timer", "t": 38.05, "data": {"run": null, "silent": {"林同": 19.89, "沈禾": 11.35, "周葵": 2.55}, "remaining": 1161.95}}
+{"kind": "fast_timer", "t": 39.05, "data": {"run": null, "silent": {"林同": 20.89, "沈禾": 12.35, "周葵": 3.55}, "remaining": 1160.95}}
+{"kind": "fast_timer", "t": 40.05, "data": {"run": null, "silent": {"林同": 21.89, "沈禾": 13.35, "周葵": 4.55}, "remaining": 1159.95}}
+{"kind": "speaking", "t": 40.7, "data": {"speaker": "林同", "active": true}}
+{"kind": "voice", "t": 40.8, "data": {"speaker": "林同", "active": true}}
+{"kind": "fast_timer", "t": 41.05, "data": {"run": null, "silent": {"林同": 22.89, "沈禾": 14.35, "周葵": 5.55}, "remaining": 1158.95}}
+{"kind": "fast_timer", "t": 42.05, "data": {"run": null, "silent": {"林同": 23.89, "沈禾": 15.35, "周葵": 6.55}, "remaining": 1157.95}}
+{"kind": "fast_timer", "t": 43.05, "data": {"run": null, "silent": {"林同": 24.89, "沈禾": 16.35, "周葵": 7.55}, "remaining": 1156.95}}
+{"kind": "fast_timer", "t": 44.05, "data": {"run": null, "silent": {"林同": 25.89, "沈禾": 17.35, "周葵": 8.55}, "remaining": 1155.95}}
+{"kind": "fast_timer", "t": 45.05, "data": {"run": null, "silent": {"林同": 26.89, "沈禾": 18.35, "周葵": 9.55}, "remaining": 1154.95}}
+{"kind": "slow_score", "t": 46.0, "data": {"positive": 2, "negative": 2, "none": 3, "type": "無", "verdict": "不介入", "utterance": "", "pros": ["討論仍在議題內", "尚無明顯失衡"], "cons": ["發散期不應催促", "此刻無需介入"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "fast_timer", "t": 46.05, "data": {"run": null, "silent": {"林同": 27.89, "沈禾": 19.35, "周葵": 10.55}, "remaining": 1153.95}}
+{"kind": "fast_timer", "t": 47.05, "data": {"run": null, "silent": {"林同": 28.89, "沈禾": 20.35, "周葵": 11.55}, "remaining": 1152.95}}
+{"kind": "speaking", "t": 47.92, "data": {"speaker": "林同", "active": false}}
+{"kind": "voice", "t": 48.02, "data": {"speaker": "林同", "active": false}}
+{"kind": "fast_timer", "t": 48.05, "data": {"run": null, "silent": {"林同": 0.23, "沈禾": 21.35, "周葵": 12.55}, "remaining": 1151.95}}
+{"kind": "utterance", "t": 48.22, "data": {"speaker": "林同", "text": "可以，但客服那邊已經答應客戶四月底會有推播，拆期要先跟他們講。", "start": 41.0, "end": 47.82}}
+{"kind": "share", "t": 48.32, "data": {"林同": 0.4958, "沈禾": 0.2941, "周葵": 0.2101, "主席": 0.0}}
+{"kind": "fast_timer", "t": 49.05, "data": {"run": null, "silent": {"林同": 1.23, "沈禾": 22.35, "周葵": 13.55}, "remaining": 1150.95}}
+{"kind": "fast_timer", "t": 50.05, "data": {"run": null, "silent": {"林同": 2.23, "沈禾": 23.35, "周葵": 14.55}, "remaining": 1149.95}}
+{"kind": "fast_timer", "t": 51.05, "data": {"run": null, "silent": {"林同": 3.23, "沈禾": 24.35, "周葵": 15.55}, "remaining": 1148.95}}
+{"kind": "fast_timer", "t": 52.05, "data": {"run": null, "silent": {"林同": 4.23, "沈禾": 25.35, "周葵": 16.55}, "remaining": 1147.95}}
+{"kind": "fast_timer", "t": 53.05, "data": {"run": null, "silent": {"林同": 5.23, "沈禾": 26.35, "周葵": 17.55}, "remaining": 1146.95}}
+{"kind": "fast_timer", "t": 54.05, "data": {"run": null, "silent": {"林同": 6.23, "沈禾": 27.35, "周葵": 18.55}, "remaining": 1145.95}}
+{"kind": "speaking", "t": 54.7, "data": {"speaker": "沈禾", "active": true}}
+{"kind": "voice", "t": 54.8, "data": {"speaker": "沈禾", "active": true}}
+{"kind": "fast_timer", "t": 55.05, "data": {"run": null, "silent": {"林同": 7.23, "沈禾": 28.35, "周葵": 19.55}, "remaining": 1144.95}}
+{"kind": "fast_timer", "t": 56.05, "data": {"run": null, "silent": {"林同": 8.23, "沈禾": 29.35, "周葵": 20.55}, "remaining": 1143.95}}
+{"kind": "fast_timer", "t": 57.05, "data": {"run": null, "silent": {"林同": 9.23, "沈禾": 30.35, "周葵": 21.55}, "remaining": 1142.95}}
+{"kind": "fast_timer", "t": 58.05, "data": {"run": null, "silent": {"林同": 10.23, "沈禾": 31.35, "周葵": 22.55}, "remaining": 1141.95}}
+{"kind": "speaking", "t": 58.4, "data": {"speaker": "沈禾", "active": false}}
+{"kind": "voice", "t": 58.5, "data": {"speaker": "沈禾", "active": false}}
+{"kind": "utterance", "t": 58.7, "data": {"speaker": "沈禾", "text": "對，我今天下午就去跟客服確認。", "start": 55.0, "end": 58.3}}
+{"kind": "share", "t": 58.8, "data": {"林同": 0.4403, "沈禾": 0.3731, "周葵": 0.1866, "主席": 0.0}}
+{"kind": "fast_timer", "t": 59.05, "data": {"run": null, "silent": {"林同": 11.23, "沈禾": 0.75, "周葵": 23.55}, "remaining": 1140.95}}
+{"kind": "fast_timer", "t": 60.05, "data": {"run": null, "silent": {"林同": 12.23, "沈禾": 1.75, "周葵": 24.55}, "remaining": 1139.95}}
+{"kind": "fast_timer", "t": 61.05, "data": {"run": null, "silent": {"林同": 13.23, "沈禾": 2.75, "周葵": 25.55}, "remaining": 1138.95}}
+{"kind": "fast_timer", "t": 62.05, "data": {"run": null, "silent": {"林同": 14.23, "沈禾": 3.75, "周葵": 26.55}, "remaining": 1137.95}}
+{"kind": "speaking", "t": 62.7, "data": {"speaker": "周葵", "active": true}}
+{"kind": "voice", "t": 62.8, "data": {"speaker": "周葵", "active": true}}
+{"kind": "fast_timer", "t": 63.05, "data": {"run": null, "silent": {"林同": 15.23, "沈禾": 4.75, "周葵": 27.55}, "remaining": 1136.95}}
+{"kind": "fast_timer", "t": 64.05, "data": {"run": null, "silent": {"林同": 16.23, "沈禾": 5.75, "周葵": 28.55}, "remaining": 1135.95}}
+{"kind": "fast_timer", "t": 65.05, "data": {"run": null, "silent": {"林同": 17.23, "沈禾": 6.75, "周葵": 29.55}, "remaining": 1134.95}}
+{"kind": "fast_timer", "t": 66.05, "data": {"run": null, "silent": {"林同": 18.23, "沈禾": 7.75, "周葵": 30.55}, "remaining": 1133.95}}
+{"kind": "fast_timer", "t": 67.05, "data": {"run": null, "silent": {"林同": 19.23, "沈禾": 8.75, "周葵": 31.55}, "remaining": 1132.95}}
+{"kind": "fast_timer", "t": 68.05, "data": {"run": null, "silent": {"林同": 20.23, "沈禾": 9.75, "周葵": 32.55}, "remaining": 1131.95}}
+{"kind": "speaking", "t": 68.38, "data": {"speaker": "周葵", "active": false}}
+{"kind": "voice", "t": 68.48, "data": {"speaker": "周葵", "active": false}}
+{"kind": "utterance", "t": 68.68, "data": {"speaker": "周葵", "text": "對了昨天那家新開的拉麵店你們去了嗎？湯頭超濃的。", "start": 63.0, "end": 68.28}}
+{"kind": "share", "t": 68.78, "data": {"林同": 0.3734, "沈禾": 0.3165, "周葵": 0.3101, "主席": 0.0}}
+{"kind": "fast_timer", "t": 69.05, "data": {"run": null, "silent": {"林同": 21.23, "沈禾": 10.75, "周葵": 0.77}, "remaining": 1130.95}}
+{"kind": "speaking", "t": 69.7, "data": {"speaker": "林同", "active": true}}
+{"kind": "voice", "t": 69.8, "data": {"speaker": "林同", "active": true}}
+{"kind": "fast_timer", "t": 70.05, "data": {"run": null, "silent": {"林同": 22.23, "沈禾": 11.75, "周葵": 1.77}, "remaining": 1129.95}}
+{"kind": "fast_timer", "t": 71.05, "data": {"run": null, "silent": {"林同": 23.23, "沈禾": 12.75, "周葵": 2.77}, "remaining": 1128.95}}
+{"kind": "fast_timer", "t": 72.05, "data": {"run": null, "silent": {"林同": 24.23, "沈禾": 13.75, "周葵": 3.77}, "remaining": 1127.95}}
+{"kind": "fast_timer", "t": 73.05, "data": {"run": null, "silent": {"林同": 25.23, "沈禾": 14.75, "周葵": 4.77}, "remaining": 1126.95}}
+{"kind": "fast_timer", "t": 74.05, "data": {"run": null, "silent": {"林同": 26.23, "沈禾": 15.75, "周葵": 5.77}, "remaining": 1125.95}}
+{"kind": "fast_timer", "t": 75.05, "data": {"run": null, "silent": {"林同": 27.23, "沈禾": 16.75, "周葵": 6.77}, "remaining": 1124.95}}
+{"kind": "speaking", "t": 75.16, "data": {"speaker": "林同", "active": false}}
+{"kind": "voice", "t": 75.26, "data": {"speaker": "林同", "active": false}}
+{"kind": "utterance", "t": 75.46, "data": {"speaker": "林同", "text": "有啊我排了四十分鐘，不過真的值得，下次揪一下。", "start": 70.0, "end": 75.06}}
+{"kind": "share", "t": 75.56, "data": {"林同": 0.453, "沈禾": 0.2762, "周葵": 0.2707, "主席": 0.0}}
+{"kind": "fast_timer", "t": 76.05, "data": {"run": null, "silent": {"林同": 0.99, "沈禾": 17.75, "周葵": 7.77}, "remaining": 1123.95}}
+{"kind": "speaking", "t": 76.7, "data": {"speaker": "沈禾", "active": true}}
+{"kind": "voice", "t": 76.8, "data": {"speaker": "沈禾", "active": true}}
+{"kind": "fast_timer", "t": 77.05, "data": {"run": null, "silent": {"林同": 1.99, "沈禾": 18.75, "周葵": 8.77}, "remaining": 1122.95}}
+{"kind": "fast_timer", "t": 78.05, "data": {"run": null, "silent": {"林同": 2.99, "沈禾": 19.75, "周葵": 9.77}, "remaining": 1121.95}}
+{"kind": "fast_timer", "t": 79.05, "data": {"run": null, "silent": {"林同": 3.99, "沈禾": 20.75, "周葵": 10.77}, "remaining": 1120.95}}
+{"kind": "speaking", "t": 79.52, "data": {"speaker": "沈禾", "active": false}}
+{"kind": "voice", "t": 79.62, "data": {"speaker": "沈禾", "active": false}}
+{"kind": "utterance", "t": 79.82, "data": {"speaker": "沈禾", "text": "哈哈好，那家我也想去。", "start": 77.0, "end": 79.42}}
+{"kind": "share", "t": 79.92, "data": {"林同": 0.4271, "沈禾": 0.3177, "周葵": 0.2552, "主席": 0.0}}
+{"kind": "fast_timer", "t": 80.05, "data": {"run": null, "silent": {"林同": 4.99, "沈禾": 0.63, "周葵": 11.77}, "remaining": 1119.95}}
+{"kind": "fast_timer", "t": 81.05, "data": {"run": null, "silent": {"林同": 5.99, "沈禾": 1.63, "周葵": 12.77}, "remaining": 1118.95}}
+{"kind": "fast_timer", "t": 82.05, "data": {"run": null, "silent": {"林同": 6.99, "沈禾": 2.63, "周葵": 13.77}, "remaining": 1117.95}}
+{"kind": "fast_timer", "t": 83.05, "data": {"run": null, "silent": {"林同": 7.99, "沈禾": 3.63, "周葵": 14.77}, "remaining": 1116.95}}
+{"kind": "fast_timer", "t": 84.05, "data": {"run": null, "silent": {"林同": 8.99, "沈禾": 4.63, "周葵": 15.77}, "remaining": 1115.95}}
+{"kind": "slow_score", "t": 84.6, "data": {"positive": 1, "negative": 4, "none": 1, "type": "離題", "verdict": "負向介入", "utterance": "你們剛聊到「那家新開的拉麵店」，先回到第二季上線排程，通知中心拆期還沒定。", "pros": ["話題已從上線排程轉到餐廳，持續約 20 秒，三人都參與", "通知中心拆期的決定尚未收尾，此刻拉回可延續原討論"], "cons": ["發散期允許短暫閒聊，可能只是短暫放鬆", "介入會打斷剛建立的輕鬆氣氛"], "admissible": true, "reason": "", "utterance_seconds": 1.6}}
+{"kind": "queued", "t": 84.7, "data": {"kind": "離題", "target": null, "text": "你們剛聊到「那家新開的拉麵店」，先回到第二季上線排程，通知中心拆期還沒定。", "hard": false}}
+{"kind": "fast_timer", "t": 85.05, "data": {"run": null, "silent": {"林同": 9.99, "沈禾": 5.63, "周葵": 16.77}, "remaining": 1114.95}}
+{"kind": "fast_timer", "t": 86.05, "data": {"run": null, "silent": {"林同": 10.99, "沈禾": 6.63, "周葵": 17.77}, "remaining": 1113.95}}
+{"kind": "fast_timer", "t": 87.05, "data": {"run": null, "silent": {"林同": 11.99, "沈禾": 7.63, "周葵": 18.77}, "remaining": 1112.95}}
+{"kind": "fast_timer", "t": 88.05, "data": {"run": null, "silent": {"林同": 12.99, "沈禾": 8.63, "周葵": 19.77}, "remaining": 1111.95}}
+{"kind": "spoken", "t": 88.2, "data": {"kind": "離題", "target": null, "text": "你們剛聊到「那家新開的拉麵店」，先回到第二季上線排程，通知中心拆期還沒定。", "hard": false, "at": 88.2}}
+{"kind": "fast_timer", "t": 89.05, "data": {"run": null, "silent": {"林同": 13.99, "沈禾": 9.63, "周葵": 20.77}, "remaining": 1110.95}}
+{"kind": "fast_timer", "t": 90.05, "data": {"run": null, "silent": {"林同": 14.99, "沈禾": 10.63, "周葵": 21.77}, "remaining": 1109.95}}
+{"kind": "fast_timer", "t": 91.05, "data": {"run": null, "silent": {"林同": 15.99, "沈禾": 11.63, "周葵": 22.77}, "remaining": 1108.95}}
+{"kind": "fast_timer", "t": 92.05, "data": {"run": null, "silent": {"林同": 16.99, "沈禾": 12.63, "周葵": 23.77}, "remaining": 1107.95}}
+{"kind": "fast_timer", "t": 93.05, "data": {"run": null, "silent": {"林同": 17.99, "沈禾": 13.63, "周葵": 24.77}, "remaining": 1106.95}}
+{"kind": "fast_timer", "t": 94.05, "data": {"run": null, "silent": {"林同": 18.99, "沈禾": 14.63, "周葵": 25.77}, "remaining": 1105.95}}
+{"kind": "fast_timer", "t": 95.05, "data": {"run": null, "silent": {"林同": 19.99, "沈禾": 15.63, "周葵": 26.77}, "remaining": 1104.95}}
+{"kind": "speaking", "t": 95.7, "data": {"speaker": "周葵", "active": true}}
+{"kind": "voice", "t": 95.8, "data": {"speaker": "周葵", "active": true}}
+{"kind": "fast_timer", "t": 96.05, "data": {"run": null, "silent": {"林同": 20.99, "沈禾": 16.63, "周葵": 27.77}, "remaining": 1103.95}}
+{"kind": "fast_timer", "t": 97.05, "data": {"run": null, "silent": {"林同": 21.99, "沈禾": 17.63, "周葵": 28.77}, "remaining": 1102.95}}
+{"kind": "fast_timer", "t": 98.05, "data": {"run": null, "silent": {"林同": 22.99, "沈禾": 18.63, "周葵": 29.77}, "remaining": 1101.95}}
+{"kind": "fast_timer", "t": 99.05, "data": {"run": null, "silent": {"林同": 23.99, "沈禾": 19.63, "周葵": 30.77}, "remaining": 1100.95}}
+{"kind": "fast_timer", "t": 100.05, "data": {"run": null, "silent": {"林同": 24.99, "沈禾": 20.63, "周葵": 31.77}, "remaining": 1099.95}}
+{"kind": "speaking", "t": 100.72, "data": {"speaker": "周葵", "active": false}}
+{"kind": "voice", "t": 100.82, "data": {"speaker": "周葵", "active": false}}
+{"kind": "utterance", "t": 101.02, "data": {"speaker": "周葵", "text": "回到排程，站內通知這期我估兩週，含 QA。", "start": 96.0, "end": 100.62}}
+{"kind": "fast_timer", "t": 101.05, "data": {"run": null, "silent": {"林同": 25.99, "沈禾": 21.63, "周葵": 0.43}, "remaining": 1098.95}}
+{"kind": "share", "t": 101.12, "data": {"林同": 0.3618, "沈禾": 0.2692, "周葵": 0.3089, "主席": 0.0602}}
+{"kind": "fast_timer", "t": 102.05, "data": {"run": null, "silent": {"林同": 26.99, "沈禾": 22.63, "周葵": 1.43}, "remaining": 1097.95}}
+{"kind": "fast_timer", "t": 103.05, "data": {"run": null, "silent": {"林同": 27.99, "沈禾": 23.63, "周葵": 2.43}, "remaining": 1096.95}}
+{"kind": "fast_timer", "t": 104.05, "data": {"run": null, "silent": {"林同": 28.99, "沈禾": 24.63, "周葵": 3.43}, "remaining": 1095.95}}
+{"kind": "fast_timer", "t": 105.05, "data": {"run": null, "silent": {"林同": 29.99, "沈禾": 25.63, "周葵": 4.43}, "remaining": 1094.95}}
+{"kind": "fast_timer", "t": 106.05, "data": {"run": null, "silent": {"林同": 30.99, "沈禾": 26.63, "周葵": 5.43}, "remaining": 1093.95}}
+{"kind": "fast_timer", "t": 107.05, "data": {"run": null, "silent": {"林同": 31.99, "沈禾": 27.63, "周葵": 6.43}, "remaining": 1092.95}}
+{"kind": "speaking", "t": 107.7, "data": {"speaker": "林同", "active": true}}
+{"kind": "voice", "t": 107.8, "data": {"speaker": "林同", "active": true}}
+{"kind": "fast_timer", "t": 108.05, "data": {"run": null, "silent": {"林同": 32.99, "沈禾": 28.63, "周葵": 7.43}, "remaining": 1091.95}}
+{"kind": "fast_timer", "t": 109.05, "data": {"run": null, "silent": {"林同": 33.99, "沈禾": 29.63, "周葵": 8.43}, "remaining": 1090.95}}
+{"kind": "fast_timer", "t": 110.05, "data": {"run": null, "silent": {"林同": 34.99, "沈禾": 30.63, "周葵": 9.43}, "remaining": 1089.95}}
+{"kind": "fast_timer", "t": 111.05, "data": {"run": null, "silent": {"林同": 35.99, "沈禾": 31.63, "周葵": 10.43}, "remaining": 1088.95}}
+{"kind": "fast_timer", "t": 112.05, "data": {"run": null, "silent": {"林同": 36.99, "沈禾": 32.63, "周葵": 11.43}, "remaining": 1087.95}}
+{"kind": "fast_timer", "t": 113.05, "data": {"run": null, "silent": {"林同": 37.99, "沈禾": 33.63, "周葵": 12.43}, "remaining": 1086.95}}
+{"kind": "speaking", "t": 113.6, "data": {"speaker": "林同", "active": false}}
+{"kind": "voice", "t": 113.7, "data": {"speaker": "林同", "active": false}}
+{"kind": "slow_score", "t": 113.8, "data": {"positive": 2, "negative": 1, "none": 3, "type": "無", "verdict": "不介入", "utterance": "", "pros": ["討論仍在議題內", "尚無明顯失衡"], "cons": ["發散期不應催促", "此刻無需介入"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "utterance", "t": 113.9, "data": {"speaker": "林同", "text": "那報表兩週、通知兩週，平行做的話四月中可以進測試。", "start": 108.0, "end": 113.5}}
+{"kind": "share", "t": 114.0, "data": {"林同": 0.4252, "沈禾": 0.2424, "周葵": 0.2782, "主席": 0.0542}}
+{"kind": "fast_timer", "t": 114.05, "data": {"run": null, "silent": {"林同": 0.55, "沈禾": 34.63, "周葵": 13.43}, "remaining": 1085.95}}
+{"kind": "fast_timer", "t": 115.05, "data": {"run": null, "silent": {"林同": 1.55, "沈禾": 35.63, "周葵": 14.43}, "remaining": 1084.95}}
+{"kind": "fast_timer", "t": 116.05, "data": {"run": null, "silent": {"林同": 2.55, "沈禾": 36.63, "周葵": 15.43}, "remaining": 1083.95}}
+{"kind": "fast_timer", "t": 117.05, "data": {"run": null, "silent": {"林同": 3.55, "沈禾": 37.63, "周葵": 16.43}, "remaining": 1082.95}}
+{"kind": "glossary", "t": 118.0, "data": {"term": "QA", "mentions": 2, "first": {"speaker": "周葵", "t": 96.0, "text": "回到排程，站內通知這期我估兩週，含 QA。"}, "explained": null, "gloss": "軟體品質保證，指上線前的測試與驗收流程。", "sources": [{"title": "Software quality assurance", "url": "https://en.wikipedia.org/wiki/Software_quality_assurance"}]}}
+{"kind": "fast_timer", "t": 118.05, "data": {"run": null, "silent": {"林同": 4.55, "沈禾": 38.63, "周葵": 17.43}, "remaining": 1081.95}}
+{"kind": "fast_timer", "t": 119.05, "data": {"run": null, "silent": {"林同": 5.55, "沈禾": 39.63, "周葵": 18.43}, "remaining": 1080.95}}
+{"kind": "fast_timer", "t": 120.05, "data": {"run": null, "silent": {"林同": 6.55, "沈禾": 40.63, "周葵": 19.43}, "remaining": 1079.95}}
+{"kind": "speaking", "t": 120.7, "data": {"speaker": "沈禾", "active": true}}
+{"kind": "voice", "t": 120.8, "data": {"speaker": "沈禾", "active": true}}
+{"kind": "fast_timer", "t": 121.05, "data": {"run": null, "silent": {"林同": 7.55, "沈禾": 41.63, "周葵": 20.43}, "remaining": 1078.95}}
+{"kind": "fast_timer", "t": 122.05, "data": {"run": null, "silent": {"林同": 8.55, "沈禾": 42.63, "周葵": 21.43}, "remaining": 1077.95}}
+{"kind": "fast_timer", "t": 123.05, "data": {"run": null, "silent": {"林同": 9.55, "沈禾": 43.63, "周葵": 22.43}, "remaining": 1076.95}}
+{"kind": "fast_timer", "t": 124.05, "data": {"run": null, "silent": {"林同": 10.55, "沈禾": 44.63, "周葵": 23.43}, "remaining": 1075.95}}
+{"kind": "fast_timer", "t": 125.05, "data": {"run": null, "silent": {"林同": 11.55, "沈禾": 45.63, "周葵": 24.43}, "remaining": 1074.95}}
+{"kind": "speaking", "t": 125.5, "data": {"speaker": "沈禾", "active": false}}
+{"kind": "voice", "t": 125.6, "data": {"speaker": "沈禾", "active": false}}
+{"kind": "utterance", "t": 125.8, "data": {"speaker": "沈禾", "text": "QA 資源要先鎖，不然又會卡在最後一週。", "start": 121.0, "end": 125.4}}
+{"kind": "share", "t": 125.9, "data": {"林同": 0.3939, "沈禾": 0.2982, "周葵": 0.2577, "主席": 0.0502}}
+{"kind": "fast_timer", "t": 126.05, "data": {"run": null, "silent": {"林同": 12.55, "沈禾": 0.65, "周葵": 25.43}, "remaining": 1073.95}}
+{"kind": "fast_timer", "t": 127.05, "data": {"run": null, "silent": {"林同": 13.55, "沈禾": 1.65, "周葵": 26.43}, "remaining": 1072.95}}
+{"kind": "fast_timer", "t": 128.05, "data": {"run": null, "silent": {"林同": 14.55, "沈禾": 2.65, "周葵": 27.43}, "remaining": 1071.95}}
+{"kind": "fast_timer", "t": 129.05, "data": {"run": null, "silent": {"林同": 15.55, "沈禾": 3.65, "周葵": 28.43}, "remaining": 1070.95}}
+{"kind": "fast_timer", "t": 130.05, "data": {"run": null, "silent": {"林同": 16.55, "沈禾": 4.65, "周葵": 29.43}, "remaining": 1069.95}}
+{"kind": "fast_timer", "t": 131.05, "data": {"run": null, "silent": {"林同": 17.55, "沈禾": 5.65, "周葵": 30.43}, "remaining": 1068.95}}
+{"kind": "fast_timer", "t": 132.05, "data": {"run": null, "silent": {"林同": 18.55, "沈禾": 6.65, "周葵": 31.43}, "remaining": 1067.95}}
+{"kind": "fast_timer", "t": 133.05, "data": {"run": null, "silent": {"林同": 19.55, "沈禾": 7.65, "周葵": 32.43}, "remaining": 1066.95}}
+{"kind": "speaking", "t": 133.7, "data": {"speaker": "周葵", "active": true}}
+{"kind": "voice", "t": 133.8, "data": {"speaker": "周葵", "active": true}}
+{"kind": "fast_timer", "t": 134.05, "data": {"run": null, "silent": {"林同": 20.55, "沈禾": 8.65, "周葵": 33.43}, "remaining": 1065.95}}
+{"kind": "fast_timer", "t": 135.05, "data": {"run": null, "silent": {"林同": 21.55, "沈禾": 9.65, "周葵": 34.43}, "remaining": 1064.95}}
+{"kind": "fast_timer", "t": 136.05, "data": {"run": null, "silent": {"林同": 22.55, "沈禾": 10.65, "周葵": 35.43}, "remaining": 1063.95}}
+{"kind": "fast_timer", "t": 137.05, "data": {"run": null, "silent": {"林同": 23.55, "沈禾": 11.65, "周葵": 36.43}, "remaining": 1062.95}}
+{"kind": "speaking", "t": 137.4, "data": {"speaker": "周葵", "active": false}}
+{"kind": "voice", "t": 137.5, "data": {"speaker": "周葵", "active": false}}
+{"kind": "utterance", "t": 137.7, "data": {"speaker": "周葵", "text": "我來排 QA，這週五前給時程。", "start": 134.0, "end": 137.3}}
+{"kind": "share", "t": 137.8, "data": {"林同": 0.3733, "沈禾": 0.2826, "周葵": 0.2965, "主席": 0.0476}}
+{"kind": "fast_timer", "t": 138.05, "data": {"run": null, "silent": {"林同": 24.55, "沈禾": 12.65, "周葵": 0.75}, "remaining": 1061.95}}
+{"kind": "fast_timer", "t": 139.05, "data": {"run": null, "silent": {"林同": 25.55, "沈禾": 13.65, "周葵": 1.75}, "remaining": 1060.95}}
+{"kind": "fast_timer", "t": 140.05, "data": {"run": null, "silent": {"林同": 26.55, "沈禾": 14.65, "周葵": 2.75}, "remaining": 1059.95}}
+{"kind": "slow_score", "t": 140.2, "data": {"positive": 2, "negative": 1, "none": 4, "type": "無", "verdict": "不介入", "utterance": "", "pros": ["討論仍在議題內", "尚無明顯失衡"], "cons": ["發散期不應催促", "此刻無需介入"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "fast_timer", "t": 141.05, "data": {"run": null, "silent": {"林同": 27.55, "沈禾": 15.65, "周葵": 3.75}, "remaining": 1058.95}}
+{"kind": "fast_timer", "t": 142.05, "data": {"run": null, "silent": {"林同": 28.55, "沈禾": 16.65, "周葵": 4.75}, "remaining": 1057.95}}
+{"kind": "fast_timer", "t": 143.05, "data": {"run": null, "silent": {"林同": 29.55, "沈禾": 17.65, "周葵": 5.75}, "remaining": 1056.95}}
+{"kind": "fast_timer", "t": 144.05, "data": {"run": null, "silent": {"林同": 30.55, "沈禾": 18.65, "周葵": 6.75}, "remaining": 1055.95}}
+{"kind": "fast_timer", "t": 145.05, "data": {"run": null, "silent": {"林同": 31.55, "沈禾": 19.65, "周葵": 7.75}, "remaining": 1054.95}}
+{"kind": "fast_timer", "t": 146.05, "data": {"run": null, "silent": {"林同": 32.55, "沈禾": 20.65, "周葵": 8.75}, "remaining": 1053.95}}
+{"kind": "fast_timer", "t": 147.05, "data": {"run": null, "silent": {"林同": 33.55, "沈禾": 21.65, "周葵": 9.75}, "remaining": 1052.95}}
+{"kind": "fast_timer", "t": 148.05, "data": {"run": null, "silent": {"林同": 34.55, "沈禾": 22.65, "周葵": 10.75}, "remaining": 1051.95}}
+{"kind": "fast_timer", "t": 149.05, "data": {"run": null, "silent": {"林同": 35.55, "沈禾": 23.65, "周葵": 11.75}, "remaining": 1050.95}}
+{"kind": "speaking", "t": 149.7, "data": {"speaker": "林同", "active": true}}
+{"kind": "voice", "t": 149.8, "data": {"speaker": "林同", "active": true}}
+{"kind": "fast_timer", "t": 150.05, "data": {"run": null, "silent": {"林同": 36.55, "沈禾": 24.65, "周葵": 12.75}, "remaining": 1049.95}}
+{"kind": "fast_timer", "t": 151.05, "data": {"run": null, "silent": {"林同": 37.55, "沈禾": 25.65, "周葵": 13.75}, "remaining": 1048.95}}
+{"kind": "fast_timer", "t": 152.05, "data": {"run": null, "silent": {"林同": 38.55, "沈禾": 26.65, "周葵": 14.75}, "remaining": 1047.95}}
+{"kind": "fast_timer", "t": 153.05, "data": {"run": null, "silent": {"林同": 39.55, "沈禾": 27.65, "周葵": 15.75}, "remaining": 1046.95}}
+{"kind": "fast_timer", "t": 154.05, "data": {"run": null, "silent": {"林同": 40.55, "沈禾": 28.65, "周葵": 16.75}, "remaining": 1045.95}}
+{"kind": "fast_timer", "t": 155.05, "data": {"run": null, "silent": {"林同": 41.55, "沈禾": 29.65, "周葵": 17.75}, "remaining": 1044.95}}
+{"kind": "fast_timer", "t": 156.05, "data": {"run": null, "silent": {"林同": 42.55, "沈禾": 30.65, "周葵": 18.75}, "remaining": 1043.95}}
+{"kind": "fast_timer", "t": 157.05, "data": {"run": null, "silent": {"林同": 43.55, "沈禾": 31.65, "周葵": 19.75}, "remaining": 1042.95}}
+{"kind": "slow_score", "t": 157.5, "data": {"positive": 2, "negative": 1, "none": 4, "type": "無", "verdict": "不介入", "utterance": "", "pros": ["討論仍在議題內", "尚無明顯失衡"], "cons": ["發散期不應催促", "此刻無需介入"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "speaking", "t": 157.8, "data": {"speaker": "林同", "active": false}}
+{"kind": "voice", "t": 157.9, "data": {"speaker": "林同", "active": false}}
+{"kind": "fast_timer", "t": 158.05, "data": {"run": null, "silent": {"林同": 0.35, "沈禾": 32.65, "周葵": 20.75}, "remaining": 1041.95}}
+{"kind": "utterance", "t": 158.1, "data": {"speaker": "林同", "text": "好，那就這樣定：報表跟站內通知四月中進測試，推播下一期，客服今天確認。", "start": 150.0, "end": 157.7}}
+{"kind": "share", "t": 158.2, "data": {"林同": 0.4415, "沈禾": 0.2518, "周葵": 0.2643, "主席": 0.0424}}
+{"kind": "fast_timer", "t": 159.05, "data": {"run": null, "silent": {"林同": 1.35, "沈禾": 33.65, "周葵": 21.75}, "remaining": 1040.95}}
+{"kind": "fast_timer", "t": 160.05, "data": {"run": null, "silent": {"林同": 2.35, "沈禾": 34.65, "周葵": 22.75}, "remaining": 1039.95}}
+{"kind": "fast_timer", "t": 161.05, "data": {"run": null, "silent": {"林同": 3.35, "沈禾": 35.65, "周葵": 23.75}, "remaining": 1038.95}}
+{"kind": "speaking", "t": 161.7, "data": {"speaker": "沈禾", "active": true}}
+{"kind": "voice", "t": 161.8, "data": {"speaker": "沈禾", "active": true}}
+{"kind": "fast_timer", "t": 162.05, "data": {"run": null, "silent": {"林同": 4.35, "沈禾": 36.65, "周葵": 24.75}, "remaining": 1037.95}}
+{"kind": "fast_timer", "t": 163.05, "data": {"run": null, "silent": {"林同": 5.35, "沈禾": 37.65, "周葵": 25.75}, "remaining": 1036.95}}
+{"kind": "fast_timer", "t": 164.05, "data": {"run": null, "silent": {"林同": 6.35, "沈禾": 0.05, "周葵": 26.75}, "remaining": 1035.95}}
+{"kind": "speaking", "t": 164.1, "data": {"speaker": "沈禾", "active": false}}
+{"kind": "voice", "t": 164.2, "data": {"speaker": "沈禾", "active": false}}
+{"kind": "utterance", "t": 164.4, "data": {"speaker": "沈禾", "text": "沒問題。", "start": 162.0, "end": 164.0}}
+{"kind": "share", "t": 164.5, "data": {"林同": 0.4294, "沈禾": 0.2724, "周葵": 0.257, "主席": 0.0412}}
+{"kind": "fast_timer", "t": 165.05, "data": {"run": null, "silent": {"林同": 7.35, "沈禾": 1.05, "周葵": 27.75}, "remaining": 1034.95}}
+{"kind": "speaking", "t": 165.7, "data": {"speaker": "周葵", "active": true}}
+{"kind": "voice", "t": 165.8, "data": {"speaker": "周葵", "active": true}}
+{"kind": "fast_timer", "t": 166.05, "data": {"run": null, "silent": {"林同": 8.35, "沈禾": 2.05, "周葵": 28.75}, "remaining": 1033.95}}
+{"kind": "fast_timer", "t": 167.05, "data": {"run": null, "silent": {"林同": 9.35, "沈禾": 3.05, "周葵": 29.75}, "remaining": 1032.95}}
+{"kind": "fast_timer", "t": 168.05, "data": {"run": null, "silent": {"林同": 10.35, "沈禾": 4.05, "周葵": 0.05}, "remaining": 1031.95}}
+{"kind": "speaking", "t": 168.1, "data": {"speaker": "周葵", "active": false}}
+{"kind": "voice", "t": 168.2, "data": {"speaker": "周葵", "active": false}}
+{"kind": "utterance", "t": 168.4, "data": {"speaker": "周葵", "text": "OK。", "start": 166.0, "end": 168.0}}
+{"kind": "share", "t": 168.5, "data": {"林同": 0.4179, "沈禾": 0.2651, "周葵": 0.2769, "主席": 0.0401}}
+{"kind": "fast_timer", "t": 169.05, "data": {"run": null, "silent": {"林同": 11.35, "沈禾": 5.05, "周葵": 1.05}, "remaining": 1030.95}}
+{"kind": "fast_timer", "t": 170.05, "data": {"run": null, "silent": {"林同": 12.35, "沈禾": 6.05, "周葵": 2.05}, "remaining": 1029.95}}
+{"kind": "fast_timer", "t": 171.05, "data": {"run": null, "silent": {"林同": 13.35, "沈禾": 7.05, "周葵": 3.05}, "remaining": 1028.95}}
+{"kind": "fast_timer", "t": 172.05, "data": {"run": null, "silent": {"林同": 14.35, "沈禾": 8.05, "周葵": 4.05}, "remaining": 1027.95}}
+{"kind": "fast_timer", "t": 173.05, "data": {"run": null, "silent": {"林同": 15.35, "沈禾": 9.05, "周葵": 5.05}, "remaining": 1026.95}}
+{"kind": "fast_timer", "t": 174.05, "data": {"run": null, "silent": {"林同": 16.35, "沈禾": 10.05, "周葵": 6.05}, "remaining": 1025.95}}
+{"kind": "minutes", "t": 175.0, "data": {"path": "meetings/synthetic.minutes.md"}}

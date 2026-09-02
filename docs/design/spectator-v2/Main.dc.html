@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+  <style>
+    body { margin: 0; font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+    a { color: #A65D3F; } a:hover { color: #7F4530; }
+    .mono { font-family: "JetBrains Mono", "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+    .serif { font-family: "Noto Serif TC", "Songti TC", serif; }
+  </style>
+</helmet>
+<!-- 定稿：陶土 · 極簡（方向 C）。命名對照：發想／拉鋸／決定＝發散期／呻吟區／收斂期；即時規則＝快路；AI 判斷＝慢路 -->
+<div style="width: 1440px; height: 900px; background: #F4EFE7; color: #2B2622; display: grid; grid-template-columns: 1fr 380px; gap: 0; box-sizing: border-box;">
+
+  <!-- 主體：會議紀錄 -->
+  <div style="display: flex; flex-direction: column; gap: 28px; padding: 48px 64px 40px 72px; min-height: 0;">
+    <div style="display: flex; align-items: flex-end; gap: 24px; padding-bottom: 22px; border-bottom: 1px solid #DCD3C5;">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 11px; letter-spacing: 0.24em; color: #857C72;">會議紀錄 · 主席主持</div>
+        <div class="serif" style="font-size: 40px; font-weight: 700; line-height: 1.05; color: #2B2622; letter-spacing: 0.01em;">黑客松籌備</div>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+        <div style="display: flex; align-items: baseline; gap: 8px;"><div class="mono" style="font-size: 36px; font-weight: 600; color: #2B2622;">14:52</div><div class="mono" style="font-size: 13px; color: #857C72;">/ 30:00</div></div>
+        <div style="font-size: 12px; color: #857C72;">決定階段 · 主席聆聽中</div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 22px; overflow: hidden;">
+      <div style="display: grid; grid-template-columns: 64px 1fr; gap: 20px;"><div class="mono" style="font-size: 12px; color: #A89F93; padding-top: 5px;">10:41</div><div style="font-size: 16px; line-height: 1.75; color: #3E3833;">嗨，就是……</div></div>
+
+      <div style="display: grid; grid-template-columns: 64px 1fr; gap: 20px;">
+        <div class="mono" style="font-size: 12px; color: #A65D3F; padding-top: 5px;">10:57</div>
+        <div style="display: flex; flex-direction: column; gap: 8px; padding-left: 18px; border-left: 2px solid #A65D3F;">
+          <div style="font-size: 11px; letter-spacing: 0.18em; color: #A65D3F;">主席 · 僵局</div>
+          <div class="serif" style="font-size: 17px; line-height: 1.7; color: #2B2622;">請直接提出一個你想採用的黑客松主題候選，並說明選它的理由；接著我們用一分鐘決定是否採用或列出下一個候選。</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 64px 1fr; gap: 20px;"><div class="mono" style="font-size: 12px; color: #A89F93; padding-top: 5px;">11:09</div><div style="font-size: 16px; line-height: 1.75; color: #3E3833;">我覺得我想要使用一個作為 AI 會議主持人的 agent，它可以負責……場控，控制整個會議進度，然後適時地提出意見，就像你一樣。你覺得這個方案好嗎？</div></div>
+      <div style="display: grid; grid-template-columns: 64px 1fr; gap: 20px;"><div class="mono" style="font-size: 12px; color: #A89F93; padding-top: 5px;">12:21</div><div style="font-size: 16px; line-height: 1.75; color: #3E3833;">不會提供這樣的意見，但是你也不會突然跟我說不提供。只會沉默，是嗎？</div></div>
+
+      <div style="display: grid; grid-template-columns: 64px 1fr; gap: 20px;">
+        <div class="mono" style="font-size: 12px; color: #A65D3F; padding-top: 5px;">12:40</div>
+        <div style="display: flex; flex-direction: column; gap: 8px; padding-left: 18px; border-left: 2px solid #A65D3F;">
+          <div style="font-size: 11px; letter-spacing: 0.18em; color: #A65D3F;">主席 · 僵局</div>
+          <div class="serif" style="font-size: 17px; line-height: 1.7; color: #2B2622;">我可以直接提供判斷，但需要先確認你的期待：你是要我現在評估這個方案，還是要我只做會議流程管理？</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 64px 1fr; gap: 20px;"><div class="mono" style="font-size: 12px; color: #A89F93; padding-top: 5px;">12:50</div><div style="font-size: 16px; line-height: 1.75; color: #3E3833;">我想要你直接評估這個方案。</div></div>
+      <div style="display: grid; grid-template-columns: 64px 1fr; gap: 20px;"><div class="mono" style="font-size: 12px; color: #A89F93; padding-top: 5px;">14:31</div><div style="font-size: 16px; line-height: 1.75; color: #3E3833;">好，我覺得今天就回答這邊吧，先結束，下次再討論，因為沒有結論。</div></div>
+      <div style="display: grid; grid-template-columns: 64px 1fr; gap: 20px; align-items: center;"><div class="mono" style="font-size: 12px; color: #A89F93;">14:52</div><div style="font-size: 13px; color: #A89F93;">Alex 正在說話…</div></div>
+    </div>
+  </div>
+
+  <!-- 右側資料欄 -->
+  <div style="display: flex; flex-direction: column; gap: 26px; padding: 48px 40px 40px 36px; background: #FBF8F3; border-left: 1px solid #E4DCCF; min-height: 0;">
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 18px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div style="font-size: 12px; color: #857C72;">主席介入</div><div class="mono" style="font-size: 28px; font-weight: 600; color: #2B2622;">7</div><div style="font-size: 12px; color: #857C72;">僵局 6 · 離題 1</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div style="font-size: 12px; color: #857C72;">實際發言</div><div class="mono" style="font-size: 28px; font-weight: 600; color: #2B2622;">4.0<span style="font-size: 14px; font-weight: 400; color: #857C72;"> 分</span></div><div style="font-size: 12px; color: #857C72;">佔已進行 27%</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div style="font-size: 12px; color: #857C72;">最長沉默</div><div class="mono" style="font-size: 28px; font-weight: 600; color: #2B2622;">3′35″</div><div style="font-size: 12px; color: #857C72;">未觸發超時</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div style="font-size: 12px; color: #857C72;">AI 想過要不要開口</div><div class="mono" style="font-size: 28px; font-weight: 600; color: #2B2622;">21<span style="font-size: 14px; font-weight: 400; color: #857C72;"> 次</span></div><div style="font-size: 12px; color: #857C72;">開口 8 · 忍住 13</div></div>
+    </div>
+
+    <div style="height: 1px; background: #E4DCCF;"></div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: baseline; gap: 10px;"><div style="font-size: 13px; font-weight: 700; color: #2B2622;">時間軸</div><div style="font-size: 11px; color: #857C72;">發言 · 主席開口 · AI 忍住 · 階段</div></div>
+      <svg width="304" height="86" viewBox="0 0 304 86" style="display: block;">
+        <rect x="0" y="10" width="304" height="10" rx="2" fill="#EBE4D8"></rect>
+        <g fill="#B8AE9F">
+          <rect x="4" y="10" width="9" height="10" rx="2"></rect><rect x="19" y="10" width="23" height="10" rx="2"></rect>
+          <rect x="115" y="10" width="6" height="10" rx="2"></rect><rect x="129" y="10" width="18" height="10" rx="2"></rect>
+          <rect x="161" y="10" width="24" height="10" rx="2"></rect><rect x="204" y="10" width="5" height="10" rx="2"></rect>
+          <rect x="224" y="10" width="4" height="10" rx="2"></rect><rect x="231" y="10" width="3" height="10" rx="2"></rect>
+          <rect x="244" y="10" width="3" height="10" rx="2"></rect><rect x="249" y="10" width="8" height="10" rx="2"></rect>
+          <rect x="294" y="10" width="4" height="10" rx="2"></rect>
+        </g>
+        <!-- AI 想過但忍住：淺色短刻度（13 次） -->
+        <g stroke="#C9C0B2" stroke-width="1.5">
+          <line x1="8" y1="26" x2="8" y2="34"></line><line x1="30" y1="26" x2="30" y2="34"></line><line x1="118" y1="26" x2="118" y2="34"></line><line x1="140" y1="26" x2="140" y2="34"></line><line x1="150" y1="26" x2="150" y2="34"></line><line x1="172" y1="26" x2="172" y2="34"></line><line x1="186" y1="26" x2="186" y2="34"></line><line x1="226" y1="26" x2="226" y2="34"></line><line x1="238" y1="26" x2="238" y2="34"></line><line x1="244" y1="26" x2="244" y2="34"></line><line x1="270" y1="26" x2="270" y2="34"></line><line x1="278" y1="26" x2="278" y2="34"></line><line x1="296" y1="26" x2="296" y2="34"></line>
+        </g>
+        <!-- 主席開口（7 次） -->
+        <g fill="#A65D3F">
+          <circle cx="20" cy="30" r="3"></circle><circle cx="124" cy="30" r="3"></circle><circle cx="136" cy="30" r="3"></circle><circle cx="166" cy="30" r="3"></circle><circle cx="222" cy="30" r="3"></circle><circle cx="257" cy="30" r="3"></circle><circle cx="270" cy="30" r="3"></circle>
+        </g>
+        <line x1="107" y1="4" x2="107" y2="38" stroke="#2B2622" stroke-width="1"></line>
+        <g font-family="JetBrains Mono" font-size="10" fill="#A89F93"><text x="0" y="56">00:00</text><text x="304" y="56" text-anchor="end">15:00</text><text x="107" y="56" text-anchor="middle">05:16 決定</text></g>
+        <g font-family="Noto Sans TC" font-size="10" fill="#857C72">
+          <rect x="0" y="72" width="10" height="6" rx="1" fill="#B8AE9F"></rect><text x="14" y="78">發言</text>
+          <circle cx="52" cy="75" r="3" fill="#A65D3F"></circle><text x="59" y="78">主席開口</text>
+          <line x1="112" y1="71" x2="112" y2="79" stroke="#C9C0B2" stroke-width="1.5"></line><text x="118" y="78">AI 想過但忍住</text>
+        </g>
+      </svg>
+    </div>
+
+    <div style="height: 1px; background: #E4DCCF;"></div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: baseline; gap: 10px;"><div style="font-size: 13px; font-weight: 700; color: #2B2622;">AI 判斷</div><div style="font-size: 11px; color: #857C72;">每 5 秒想一次要不要開口 · 最近三次</div></div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: grid; grid-template-columns: 40px 1fr; gap: 10px; font-size: 12px; line-height: 1.55;"><div class="mono" style="color: #A65D3F;">13:20</div><div style="color: #2B2622;"><b>開口</b> · 僵局 — 要求直接列出方案要點</div></div>
+        <div style="display: grid; grid-template-columns: 40px 1fr; gap: 10px; font-size: 12px; line-height: 1.55;"><div class="mono" style="color: #A89F93;">13:05</div><div style="color: #857C72;"><b>忍住</b> · 想說但沒理由</div></div>
+        <div style="display: grid; grid-template-columns: 40px 1fr; gap: 10px; font-size: 12px; line-height: 1.55;"><div class="mono" style="color: #A89F93;">12:55</div><div style="color: #857C72;"><b>忍住</b> · 剛開口過，30 秒內不再插話</div></div>
+      </div>
+    </div>
+
+    <div style="height: 1px; background: #E4DCCF;"></div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 13px; font-weight: 700; color: #2B2622;">發言分佈</div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: grid; grid-template-columns: 44px 1fr 48px; gap: 10px; align-items: center; font-size: 13px;"><div>Alex</div><div style="height: 8px; background: #EBE4D8; border-radius: 2px;"><div style="width: 91%; height: 8px; background: #8F8578; border-radius: 2px;"></div></div><div class="mono" style="text-align: right; color: #857C72;">91%</div></div>
+        <div style="display: grid; grid-template-columns: 44px 1fr 48px; gap: 10px; align-items: center; font-size: 13px;"><div>主席</div><div style="height: 8px; background: #EBE4D8; border-radius: 2px;"><div style="width: 9%; height: 8px; background: #A65D3F; border-radius: 2px;"></div></div><div class="mono" style="text-align: right; color: #857C72;">9%</div></div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="display: flex; gap: 10px;">
+      <div style="flex-grow: 1; padding: 11px 0; text-align: center; font-size: 13px; border: 1px solid #DCD3C5; border-radius: 6px; color: #2B2622;">匯出紀錄</div>
+      <div style="flex-grow: 1; padding: 11px 0; text-align: center; font-size: 13px; background: #2B2622; border-radius: 6px; color: #F4EFE7;">結束會議</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

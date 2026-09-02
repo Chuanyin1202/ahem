@@ -1,0 +1,14 @@
+=== 輸入面：input_audio_transcription 轉錄品質 ===
+原始文本: 我們今天開會討論這個軟體專案的進度，需要用滑鼠點擊網路上的連結，讓團隊學習新的溝通方式。
+轉錄結果: '我 们 今 天 开 会 讨 论 这 个 软 件 专 案 的 进 度 , 需 要 用 滑 鼠 点 击 网 路 上 的 连 结 , 让 团 队 学 习 新 的 沟 通 方 式 。'
+是否含常見簡體字判定字元: 是
+
+=== 輸出面 #1：叫模型講「今天的會議討論了下一季的產品規劃，讓大家更清楚接下來的方向。」===
+輸出音訊: /Volumes/MAC-SSD/Development/Personal/ai-projects/meeting-host-agent/.claude/worktrees/s1-gemini-live/experiments/gemini_live/out/q3_output_1.wav（6.23s）［主觀音質需要人耳確認］
+output_audio_transcription 回讀: '今天的會議討論了下一季的產品規劃，讓大家更清楚接下來的方向。'
+與預期文字是否逐字相符: 是
+
+=== 輸出面 #2：叫模型講「請問軟體專案的網路連線測試結果如何？滑鼠點擊的反應速度是否正常？」===
+輸出音訊: /Volumes/MAC-SSD/Development/Personal/ai-projects/meeting-host-agent/.claude/worktrees/s1-gemini-live/experiments/gemini_live/out/q3_output_2.wav（6.92s）［主觀音質需要人耳確認］
+output_audio_transcription 回讀: '請問軟體專案的網路連線測試結果如何？滑鼠點擊的反應速度是否正常？'
+與預期文字是否逐字相符: 是

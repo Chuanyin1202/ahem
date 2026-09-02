@@ -1,0 +1,285 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+  <style>
+    body { margin: 0; font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+    a { color: #d9a441; } a:hover { color: #b8862e; }
+    .mono { font-family: "JetBrains Mono", "SF Mono", Menlo, monospace; }
+    .serif { font-family: "Noto Serif TC", "Songti TC", serif; }
+  </style>
+</helmet>
+
+<!-- ───────── 工程視角：控制室 ───────── -->
+<sc-if value="{{isEngineer}}" hint-placeholder-val="{{ true }}">
+<div style="width: 1440px; height: 900px; background: {{t.bg}}; color: {{t.text}}; display: flex; flex-direction: column; box-sizing: border-box; padding: 20px 24px; gap: 16px;">
+
+  <div style="display: flex; align-items: center; gap: 24px; height: 64px;">
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 12px; letter-spacing: 0.12em; color: {{t.muted}};">MEETING HOST · 工程視角</div>
+      <div style="font-size: 22px; font-weight: 700; color: {{t.text}};">黑客松籌備</div>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center; margin-left: 8px;">
+      <div style="display: flex; border: 1px solid {{t.border}}; border-radius: 6px; overflow: hidden;">
+        <div style="padding: 6px 14px; font-size: 13px; background: {{t.accent}}; color: {{t.onAccent}}; font-weight: 700;">發散期</div>
+        <div style="padding: 6px 14px; font-size: 13px; color: {{t.dim}};">呻吟區</div>
+        <div style="padding: 6px 14px; font-size: 13px; color: {{t.dim}};">收斂期</div>
+      </div>
+      <div style="font-size: 11px; color: {{t.dim}};">階段：手動設定</div>
+    </div>
+    <div style="flex-grow: 1;"></div>
+    <div style="display: flex; align-items: baseline; gap: 10px;">
+      <div class="mono" style="font-size: 34px; font-weight: 600; color: {{t.text}};">12:41</div>
+      <div style="font-size: 13px; color: {{t.muted}};">/ 30:00</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 8px; background: {{t.liveBg}}; border: 1px solid {{t.liveBorder}};">
+      <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="{{t.live}}"></circle></svg>
+      <div style="font-size: 15px; font-weight: 500; color: {{t.liveText}};">主席：聆聽中</div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; flex-grow: 1; min-height: 0;">
+
+    <div style="display: flex; flex-direction: column; gap: 10px; background: {{t.panel}}; border: 1px solid {{t.border}}; border-radius: 10px; padding: 16px; min-height: 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 13px; letter-spacing: 0.1em; color: {{t.muted}};">逐字稿</div>
+        <div class="mono" style="font-size: 11px; color: {{t.live}};">● LIVE</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+        <div style="display: flex; gap: 10px;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 44px; flex-shrink: 0;">12:03</div><div style="font-size: 14px; line-height: 1.5; color: {{t.body}};"><span style="color: {{t.alex}}; font-weight: 500;">Alex</span>　今天的天氣這麼好，應該是可以出門看比賽。</div></div>
+        <div style="display: flex; gap: 10px;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 44px; flex-shrink: 0;">12:11</div><div style="font-size: 14px; line-height: 1.5; color: {{t.body}};"><span style="color: {{t.alex}}; font-weight: 500;">Alex</span>　然後接下來就是六日放假了。</div></div>
+        <div style="display: flex; gap: 10px;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 44px; flex-shrink: 0;">12:16</div><div style="font-size: 14px; line-height: 1.5; color: {{t.body}};"><span style="color: {{t.ting}}; font-weight: 500;">小婷</span>　等一下，我們是不是該回到分工？</div></div>
+        <div style="display: flex; gap: 10px;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 44px; flex-shrink: 0;">12:20</div><div style="font-size: 14px; line-height: 1.5; color: {{t.body}};"><span style="color: {{t.alex}}; font-weight: 500;">Alex</span>　六日我要休息，不然手會痛。明天我老婆要去染髮加洗頭。</div></div>
+        <div style="display: flex; gap: 10px; padding: 12px; margin: 4px -4px; border-radius: 8px; background: {{t.accentBg}}; border: 1px solid {{t.accentBorder}};">
+          <div class="mono" style="font-size: 12px; color: {{t.accent}}; width: 44px; flex-shrink: 0;">12:36</div>
+          <div style="font-size: 14px; line-height: 1.5; color: {{t.accentText}};"><span style="color: {{t.accent}}; font-weight: 700;">主席</span>　先記下「六日休息、不寫 code」這項限制；請接著回到黑客松籌備，補充你對活動安排的其他想法。</div>
+        </div>
+        <div style="display: flex; gap: 10px;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 44px; flex-shrink: 0;">12:39</div><div style="font-size: 14px; line-height: 1.5; color: {{t.body}};"><span style="color: {{t.alex}}; font-weight: 500;">Alex</span>　好，那分工的部分——</div></div>
+        <div style="display: flex; gap: 10px; align-items: center;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 44px; flex-shrink: 0;">12:41</div><div style="font-size: 14px; color: {{t.dim}}; font-style: italic;">Alex 正在說話…</div></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+      <div style="display: flex; flex-direction: column; gap: 10px; background: {{t.panel}}; border: 1px solid {{t.border}}; border-radius: 10px; padding: 16px;">
+        <div style="font-size: 13px; letter-spacing: 0.1em; color: {{t.muted}};">快路 · 規則計時</div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px;"><span style="color: {{t.body}};">Alex 連續發言</span><span class="mono" style="color: {{t.text}};">2:14 / 3:00</span></div>
+            <div style="height: 6px; background: {{t.track}}; border-radius: 3px;"><div style="width: 74%; height: 6px; background: {{t.accent}}; border-radius: 3px;"></div></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px;"><span style="color: {{t.body}};">Ray 沒發言</span><span class="mono" style="color: {{t.text}};">4:20 / 5:00</span></div>
+            <div style="height: 6px; background: {{t.track}}; border-radius: 3px;"><div style="width: 87%; height: 6px; background: {{t.warn}}; border-radius: 3px;"></div></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px;"><span style="color: {{t.body}};">小婷 沒發言</span><span class="mono" style="color: {{t.text}};">0:25 / 5:00</span></div>
+            <div style="height: 6px; background: {{t.track}}; border-radius: 3px;"><div style="width: 8%; height: 6px; background: {{t.dim}}; border-radius: 3px;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; background: {{t.panel}}; border: 1px solid {{t.border}}; border-radius: 10px; padding: 16px; flex-grow: 1; min-height: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 13px; letter-spacing: 0.1em; color: {{t.muted}};">慢路 · 每 5 秒評分</div>
+          <div class="mono" style="font-size: 11px; color: {{t.dim}};">gpt-5.6</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 8px; background: {{t.card}}; border: 1px solid {{t.border}};">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="mono" style="font-size: 12px; color: {{t.dim}};">12:40</div>
+              <div style="display: flex; gap: 6px;"><span class="mono" style="font-size: 12px; padding: 2px 7px; border-radius: 4px; background: {{t.chip}}; color: {{t.pos}};">P2</span><span class="mono" style="font-size: 12px; padding: 2px 7px; border-radius: 4px; background: {{t.chip}}; color: {{t.neg}};">N2</span><span class="mono" style="font-size: 12px; padding: 2px 7px; border-radius: 4px; background: {{t.chip}}; color: {{t.body}};">None 4</span></div>
+              <div style="flex-grow: 1;"></div>
+              <div style="font-size: 12px; color: {{t.dim}};">不介入</div>
+            </div>
+            <div style="font-size: 13px; color: {{t.muted}}; line-height: 1.5;">已回到分工討論，剛介入過，此刻不需要再說話。</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 8px; background: {{t.accentBg}}; border: 1px solid {{t.accentBorder}};">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="mono" style="font-size: 12px; color: {{t.accent}};">12:35</div>
+              <div style="display: flex; gap: 6px;"><span class="mono" style="font-size: 12px; padding: 2px 7px; border-radius: 4px; background: {{t.accentChip}}; color: {{t.pos}};">P2</span><span class="mono" style="font-size: 12px; padding: 2px 7px; border-radius: 4px; background: {{t.accentChip}}; color: {{t.neg}};">N3</span><span class="mono" style="font-size: 12px; padding: 2px 7px; border-radius: 4px; background: {{t.accentChip}}; color: {{t.body}};">None 2</span></div>
+              <div style="flex-grow: 1;"></div>
+              <div style="font-size: 12px; font-weight: 700; color: {{t.accent}};">離題 → 排入</div>
+            </div>
+            <div style="font-size: 13px; color: {{t.accentText}}; line-height: 1.5;">三輪發言與黑客松無關（天氣、假期、家人行程）；小婷已試圖拉回但沒被接住。</div>
+            <div style="font-size: 12px; color: {{t.muted}};">等停頓 1.0s → 12:36 開口</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 8px; border: 1px dashed {{t.border}}; opacity: 0.6;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="mono" style="font-size: 12px; color: {{t.dim}};">12:30</div>
+              <div style="display: flex; gap: 6px;"><span class="mono" style="font-size: 12px; padding: 2px 7px; border-radius: 4px; background: {{t.chip}}; color: {{t.pos}};">P3</span><span class="mono" style="font-size: 12px; padding: 2px 7px; border-radius: 4px; background: {{t.chip}}; color: {{t.neg}};">N2</span><span class="mono" style="font-size: 12px; padding: 2px 7px; border-radius: 4px; background: {{t.chip}}; color: {{t.body}};">None 2</span></div>
+              <div style="flex-grow: 1;"></div>
+              <div style="font-size: 12px; color: {{t.muted}};">類型「無」· 壓掉</div>
+            </div>
+            <div style="font-size: 13px; color: {{t.muted}}; line-height: 1.5;">「先讓 Alex 把想法說完」——想說但沒有理由，不算數。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+      <div style="display: flex; flex-direction: column; gap: 10px; background: {{t.panel}}; border: 1px solid {{t.border}}; border-radius: 10px; padding: 16px;">
+        <div style="font-size: 13px; letter-spacing: 0.1em; color: {{t.muted}};">發言分佈</div>
+        <div style="display: flex; height: 14px; border-radius: 4px; overflow: hidden; gap: 2px;">
+          <div style="width: 58%; background: {{t.alex}};"></div>
+          <div style="width: 24%; background: {{t.ting}};"></div>
+          <div style="width: 11%; background: {{t.ray}};"></div>
+          <div style="width: 7%; background: {{t.accent}};"></div>
+        </div>
+        <div style="display: flex; gap: 16px; font-size: 12px; color: {{t.muted}};">
+          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: {{t.alex}};"></span>Alex 58%</div>
+          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: {{t.ting}};"></span>小婷 24%</div>
+          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: {{t.ray}};"></span>Ray 11%</div>
+          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: {{t.accent}};"></span>主席 7%</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; background: {{t.panel}}; border: 1px solid {{t.border}}; border-radius: 10px; padding: 16px; flex-grow: 1; min-height: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 13px; letter-spacing: 0.1em; color: {{t.muted}};">介入紀錄</div>
+          <div class="mono" style="font-size: 11px; color: {{t.dim}};">3 次 · 冷卻 30s</div>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid {{t.border}};">
+            <div class="mono" style="font-size: 12px; color: {{t.accent}}; width: 44px; flex-shrink: 0;">12:36</div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; gap: 8px; align-items: center;"><span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: {{t.chip}}; color: {{t.body}};">軟插入</span><span style="font-size: 13px; font-weight: 500; color: {{t.text}};">離題</span></div>
+              <div style="font-size: 12px; color: {{t.muted}}; line-height: 1.5;">理由：三輪發言偏離議題；小婷拉回未被接住</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid {{t.border}};">
+            <div class="mono" style="font-size: 12px; color: {{t.accent}}; width: 44px; flex-shrink: 0;">07:02</div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; gap: 8px; align-items: center;"><span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: {{t.warnBg}}; color: {{t.neg}};">硬打斷</span><span style="font-size: 13px; font-weight: 500; color: {{t.text}};">發言超時 · Alex</span></div>
+              <div style="font-size: 12px; color: {{t.muted}}; line-height: 1.5;">理由：連續發言 3:00 · 提示音 → 「先讓其他人接一下」</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid {{t.border}};">
+            <div class="mono" style="font-size: 12px; color: {{t.accent}}; width: 44px; flex-shrink: 0;">00:04</div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; gap: 8px; align-items: center;"><span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: {{t.chip}}; color: {{t.body}};">開場</span><span style="font-size: 13px; font-weight: 500; color: {{t.text}};">問候</span></div>
+              <div style="font-size: 12px; color: {{t.muted}}; line-height: 1.5;">「大家好，我是今天的主席，會議開始。」</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; padding: 10px 0; opacity: 0.55;">
+            <div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 44px; flex-shrink: 0;">09:48</div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; gap: 8px; align-items: center;"><span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid {{t.border}}; color: {{t.muted}};">作廢</span><span style="font-size: 13px; color: {{t.muted}};">有人被冷落 · 小婷</span></div>
+              <div style="font-size: 12px; color: {{t.dim}}; line-height: 1.5;">小婷在主席開口前自己講了話，取消點名</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ───────── 應用視角：紀錄稿 ───────── -->
+<sc-if value="{{isUser}}" hint-placeholder-val="{{ false }}">
+<div style="width: 1440px; height: 900px; background: {{t.bg}}; color: {{t.text}}; display: flex; box-sizing: border-box; padding: 40px 48px; gap: 40px;">
+
+  <div style="display: flex; flex-direction: column; gap: 20px; width: 820px; flex-shrink: 0;">
+    <div style="display: flex; align-items: baseline; gap: 16px; border-bottom: 2px solid {{t.text}}; padding-bottom: 12px;">
+      <div class="serif" style="font-size: 30px; font-weight: 700; color: {{t.text}};">黑客松籌備</div>
+      <div style="font-size: 13px; color: {{t.muted}};">發散期 · 第 12 分鐘 / 30</div>
+      <div style="flex-grow: 1;"></div>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: {{t.muted}};"><svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="{{t.live}}"></circle></svg>主席 聆聽中</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; gap: 16px;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 48px; flex-shrink: 0; padding-top: 3px;">12:03</div><div style="font-size: 15px; line-height: 1.6; color: {{t.text}};"><span style="font-weight: 500;">Alex</span>　今天的天氣這麼好，應該是可以出門看比賽。</div></div>
+      <div style="display: flex; gap: 16px;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 48px; flex-shrink: 0; padding-top: 3px;">12:11</div><div style="font-size: 15px; line-height: 1.6; color: {{t.text}};"><span style="font-weight: 500;">Alex</span>　然後接下來就是六日放假了。</div></div>
+      <div style="display: flex; gap: 16px;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 48px; flex-shrink: 0; padding-top: 3px;">12:16</div><div style="font-size: 15px; line-height: 1.6; color: {{t.text}};"><span style="font-weight: 500;">小婷</span>　等一下，我們是不是該回到分工？</div></div>
+      <div style="display: flex; gap: 16px;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 48px; flex-shrink: 0; padding-top: 3px;">12:20</div><div style="font-size: 15px; line-height: 1.6; color: {{t.text}};"><span style="font-weight: 500;">Alex</span>　六日我要休息，不然手會痛。明天我老婆要去染髮加洗頭。</div></div>
+
+      <div style="display: flex; gap: 16px; margin: 6px 0;">
+        <div class="mono" style="font-size: 12px; color: {{t.accent}}; width: 48px; flex-shrink: 0; padding-top: 3px;">12:35</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; background: {{t.accentBg}}; border: 1px solid {{t.accentBorder}}; border-radius: 4px; flex-grow: 1;">
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <div class="serif" style="font-size: 14px; font-weight: 700; color: {{t.accent}};">主席判斷：離題</div>
+            <div class="mono" style="font-size: 12px; color: {{t.muted}};">鼓勵 2 · 抑制 3 · 不介入 2</div>
+          </div>
+          <div style="font-size: 14px; line-height: 1.6; color: {{t.accentText}};">三輪發言與黑客松無關；小婷已試圖拉回但沒被接住。等停頓後開口。</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 16px;">
+        <div class="mono" style="font-size: 12px; color: {{t.accent}}; width: 48px; flex-shrink: 0; padding-top: 3px;">12:36</div>
+        <div class="serif" style="font-size: 17px; line-height: 1.6; color: {{t.text}}; border-left: 3px solid {{t.accent}}; padding-left: 14px;"><span style="font-weight: 700;">主席</span>　先記下「六日休息、不寫 code」這項限制；請接著回到黑客松籌備，補充你對活動安排的其他想法。</div>
+      </div>
+
+      <div style="display: flex; gap: 16px;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 48px; flex-shrink: 0; padding-top: 3px;">12:39</div><div style="font-size: 15px; line-height: 1.6; color: {{t.text}};"><span style="font-weight: 500;">Alex</span>　好，那分工的部分——</div></div>
+      <div style="display: flex; gap: 16px;"><div class="mono" style="font-size: 12px; color: {{t.dim}}; width: 48px; flex-shrink: 0; padding-top: 3px;">12:40</div><div style="font-size: 13px; color: {{t.dim}}; font-style: italic;">主席：已回到分工討論，剛介入過，不需要再說話。</div></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 28px; flex-grow: 1; padding-top: 58px;">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 12px; letter-spacing: 0.14em; color: {{t.dim}};">規則計時</div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; font-size: 14px; border-bottom: 1px solid {{t.border}}; padding-bottom: 6px; color: {{t.text}};"><span>Alex 連續發言</span><span class="mono">2:14 / 3:00</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; border-bottom: 1px solid {{t.border}}; padding-bottom: 6px; color: {{t.warn}};"><span>Ray 沒發言</span><span class="mono">4:20 / 5:00</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; border-bottom: 1px solid {{t.border}}; padding-bottom: 6px; color: {{t.text}};"><span>小婷 沒發言</span><span class="mono">0:25 / 5:00</span></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 12px; letter-spacing: 0.14em; color: {{t.dim}};">發言分佈</div>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: {{t.text}};">
+        <div style="display: flex; align-items: center; gap: 10px;"><span style="width: 64px;">Alex</span><div style="height: 10px; width: 58%; background: {{t.bar}};"></div><span class="mono" style="font-size: 12px; color: {{t.muted}};">58%</span></div>
+        <div style="display: flex; align-items: center; gap: 10px;"><span style="width: 64px;">小婷</span><div style="height: 10px; width: 24%; background: {{t.bar}};"></div><span class="mono" style="font-size: 12px; color: {{t.muted}};">24%</span></div>
+        <div style="display: flex; align-items: center; gap: 10px;"><span style="width: 64px;">Ray</span><div style="height: 10px; width: 11%; background: {{t.bar}};"></div><span class="mono" style="font-size: 12px; color: {{t.muted}};">11%</span></div>
+        <div style="display: flex; align-items: center; gap: 10px;"><span style="width: 64px;">主席</span><div style="height: 10px; width: 7%; background: {{t.accent}};"></div><span class="mono" style="font-size: 12px; color: {{t.muted}};">7%</span></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 12px; letter-spacing: 0.14em; color: {{t.dim}};">介入紀錄</div>
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: {{t.text}};">
+        <div style="display: flex; gap: 12px;"><span class="mono" style="font-size: 12px; color: {{t.dim}}; width: 44px;">12:36</span><span>離題（軟插入）</span></div>
+        <div style="display: flex; gap: 12px;"><span class="mono" style="font-size: 12px; color: {{t.dim}}; width: 44px;">07:02</span><span>發言超時 · Alex（硬打斷）</span></div>
+        <div style="display: flex; gap: 12px;"><span class="mono" style="font-size: 12px; color: {{t.dim}}; width: 44px;">00:04</span><span>開場問候</span></div>
+        <div style="display: flex; gap: 12px; color: {{t.dim}};"><span class="mono" style="font-size: 12px; width: 44px;">09:48</span><span>有人被冷落 · 小婷 — 作廢（她自己開口了）</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+</x-dc>
+<script data-dc-script data-props='{"mode":{"editor":"enum","options":["工程視角","應用視角"],"default":"工程視角","section":"模式"},"theme":{"editor":"enum","options":["深色","淺色"],"default":"深色","section":"模式"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mode = this.props.mode ?? '工程視角';
+    const theme = this.props.theme ?? '深色';
+    const dark = {
+      bg: '#0f1214', panel: '#14181b', card: '#1c2126', border: '#22282c', chip: '#22282c', track: '#22282c',
+      text: '#f2efe8', body: '#c9c6be', muted: '#8a8f94', dim: '#6f757b', bar: '#e6e3dc',
+      accent: '#d9a441', onAccent: '#0f1214', accentBg: '#2a2418', accentBorder: '#5a4a22', accentChip: '#3a3220', accentText: '#f2e9d2',
+      live: '#5fd39a', liveBg: '#1a2a22', liveBorder: '#2f5a44', liveText: '#bfeed4',
+      warn: '#e0704a', warnBg: '#4a2a22', pos: '#9fd3b3', neg: '#f0a48c',
+      alex: '#7fb3ff', ting: '#f2a3b3', ray: '#9fd3b3'
+    };
+    const light = {
+      bg: '#f4f1ea', panel: '#fffdf8', card: '#f8f5ee', border: '#e3d9c2', chip: '#ece6d8', track: '#e8e2d4',
+      text: '#23221f', body: '#4a463f', muted: '#6d685e', dim: '#9a948a', bar: '#23221f',
+      accent: '#8a5a12', onAccent: '#fffdf8', accentBg: '#fbf7ee', accentBorder: '#e3d9c2', accentChip: '#efe4cc', accentText: '#4a3a1a',
+      live: '#2e8b57', liveBg: '#e8f3ec', liveBorder: '#bfe0cc', liveText: '#1f5c3a',
+      warn: '#a63d1e', warnBg: '#f6e3dc', pos: '#2e8b57', neg: '#a63d1e',
+      alex: '#2f6fd6', ting: '#c2506a', ray: '#2e8b57'
+    };
+    return {
+      isEngineer: mode === '工程視角',
+      isUser: mode !== '工程視角',
+      t: theme === '深色' ? dark : light
+    };
+  }
+}
+</script>
+</body>
+</html>

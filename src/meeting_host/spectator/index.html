@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ahem 觀戰畫面</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* ── 版面與色票逐值抄自 docs/design/spectator-v2/Main.dc.html（定稿「陶土 · 極簡」）──
+     這份實作的驗收標準是「與設計稿逐項數值一致」，不是「看起來像」。改任何一個
+     數字前先回設計稿確認，設計稿沒有的值不要自己發明。
+
+     設計原則：主席是版面上唯一的強調色（--accent #A65D3F），其餘一律沙系中性色；
+     髮線分隔、無卡片邊框、無陰影堆疊。單一淺色主題，無深色模式。 */
+  :root {
+    --bg: #F4EFE7;            /* 版面底 */
+    --panel: #FBF8F3;         /* 右側資料欄底 */
+    --border: #E4DCCF;        /* 髮線分隔（右欄內、右欄左邊界） */
+    --border-strong: #DCD3C5; /* 標題底線與次要按鈕邊框（較深的那一條） */
+    --track: #EBE4D8;         /* 時間軸底軌／發言分佈底軌 */
+    --text: #2B2622;          /* ink：標題、主席發言、實心按鈕底 */
+    --body: #3E3833;          /* 逐字稿內文 */
+    --muted: #857C72;         /* 次要文字 */
+    --dim: #A89F93;           /* 更弱的文字：時間欄、正在說話、忍住的時間 */
+    --bar: #B8AE9F;           /* 時間軸的發言段 */
+    --share-bar: #8F8578;     /* 發言分佈的參與者填充（比 --bar 深，設計稿分開兩個值） */
+    --tick: #C9C0B2;          /* 時間軸「想過但忍住」的淺色刻度 */
+    --accent: #A65D3F;        /* 主席唯一強調色 */
+    --accentHover: #7F4530;
+    --onAccent: #F4EFE7;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    min-width: 1200px; overflow-x: auto;
+  }
+  a { color: var(--accent); }
+  a:hover { color: var(--accentHover); }
+  .mono { font-family: "JetBrains Mono", "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .serif { font-family: "Noto Serif TC", "Songti TC", serif; }
+  .spacer { flex-grow: 1; }
+
+  /* 設計稿是 1440×900 的固定畫布、grid 1fr + 380px；瀏覽器版改成填滿視窗，
+     右欄寬度與所有內距照抄，左欄吃剩餘寬度（＝設計稿的 1fr）。 */
+  #view { width: 100%; height: 100vh; overflow: hidden; display: flex; flex-direction: row; background: var(--bg); }
+
+  /* ── 左：會議紀錄 ── */
+  .left {
+    display: flex; flex-direction: column; gap: 28px;
+    flex-grow: 1; min-width: 0; min-height: 0;
+    padding: 48px 64px 40px 72px;
+  }
+  .head {
+    display: flex; align-items: flex-end; gap: 24px;
+    padding-bottom: 22px; border-bottom: 1px solid var(--border-strong);
+  }
+  .head-id { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.24em; color: var(--muted); }
+  .title { font-size: 40px; font-weight: 700; line-height: 1.05; color: var(--text); letter-spacing: 0.01em; }
+  .head-clock { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; position: relative; flex-shrink: 0; }
+  .clock-row { display: flex; align-items: baseline; gap: 8px; }
+  .clock { font-size: 36px; font-weight: 600; color: var(--text); }
+  .clock-total { font-size: 13px; color: var(--muted); }
+  .status { font-size: 12px; color: var(--muted); }
+
+  /* 階段切換：設計稿沒有這個控制項（它是單一「決定階段」的靜態畫面），但現場
+     demo 需要手動切階段。做法是讓設計稿本來就有的狀態列文字可點，點開一個用
+     同一套色票的小選單。
+     T16：實測沒人看得出這行字可以點，加一個極小的視覺暗示（游標右側一個小箭頭）
+     ——不重新設計，色票／字級沿用既有 token，箭頭顏色直接繼承 .status 當下的
+     顏色（含 hover 變色），不新增色碼。 */
+  .status.switchable { cursor: pointer; }
+  .status.switchable:hover { color: var(--text); }
+  .status.switchable::after { content: " ▾"; font-size: 9px; }
+  .phase-menu {
+    position: absolute; top: 100%; right: 0; margin-top: 6px; z-index: 10;
+    display: flex; flex-direction: column;
+    background: var(--panel); border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden;
+  }
+  .phase-menu[hidden] { display: none; }
+  .phase-item { padding: 7px 16px; font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; white-space: nowrap; }
+  .phase-item:hover { background: var(--track); color: var(--text); }
+  .phase-item.active { color: var(--accent); }
+
+  /* ── 主席故障告示 ──
+     設計稿沒有這個元件（它是一切正常的靜態畫面）。加它的理由是 2026-08-31 那場
+     真實會議：主席 TTS 因額度耗盡連續四次講不出話，但會議進行中畫面上沒有任何
+     地方顯示，現場只會覺得它「變安靜了」，分不出是判斷不介入還是壞了。
+     這一條要回答的就是那個問題：**主席現在是不想講，還是講不出來／聽不到。**
+
+     版面語言沿用既有的，不重新設計：左側 2px 強調色細線＋內縮（`.u-chair` 的
+     idiom）、`--panel` 底、髮線邊框，字級 12/13px 比照 `.section-*`。色碼一個都
+     沒新增——用 `--accent`（主席唯一的強調色）是刻意的：這裡講的正是主席本身
+     的狀態，不是別人的事。
+
+     放在 `.head` 與 `#transcript` 之間、`.left` 欄裡：那是不用捲就一定看得到的
+     位置，而且**不會擠到右欄的兩顆按鈕**（那次事故的修法是給 `.right` 加
+     `overflow-y`，這裡從一開始就不碰右欄）。`flex-shrink: 0` ＋ `#transcript`
+     本來就有的 `flex-grow: 1; min-height: 0`，多出來的高度一律由逐字稿讓出。 */
+  .alerts { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+  .alerts[hidden] { display: none; }   /* 沒有故障時完全不佔位（含 .left 的 gap） */
+  .alert {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 10px 14px 10px 12px;
+    background: var(--panel); border: 1px solid var(--border-strong);
+    border-left: 2px solid var(--accent); border-radius: 4px;
+  }
+  .alert .a-title { font-size: 13px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+  .alert .a-detail { font-size: 12px; line-height: 1.55; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+
+  /* 設計稿的逐字稿容器是 overflow:hidden（固定 900px 畫布放得下）；線上版必須
+     能捲，改 overflow-y:auto，其餘（flex column、gap 22px）照抄。 */
+  #transcript {
+    display: flex; flex-direction: column; gap: 22px;
+    flex-grow: 1; min-height: 0; overflow-x: hidden; overflow-y: auto;
+  }
+  .u-line { display: grid; grid-template-columns: 64px 1fr; gap: 20px; }
+  .u-time { font-size: 12px; color: var(--dim); padding-top: 5px; }
+  .u-text { font-size: 16px; line-height: 1.75; color: var(--body); min-width: 0; overflow-wrap: anywhere; }
+  /* 設計稿的逐字稿沒有講者名（那場只有一個人）。多人會議不寫名字會讀不懂，
+     所以保留講者名——這是刻意偏離，用 --muted／500 讓它退在內文後面。 */
+  .u-speaker { font-weight: 500; color: var(--muted); }
+  .u-line.now { align-items: center; }
+  .u-line.now .u-time { padding-top: 0; }
+  .u-line.now .u-text { font-size: 13px; color: var(--dim); }
+  .u-line.chair .u-time { color: var(--accent); }
+  .u-chair { display: flex; flex-direction: column; gap: 8px; padding-left: 18px; border-left: 2px solid var(--accent); min-width: 0; }
+  .u-chair .who { font-size: 11px; letter-spacing: 0.18em; color: var(--accent); }
+  .u-chair .say { font-size: 17px; line-height: 1.7; color: var(--text); overflow-wrap: anywhere; }
+
+  /* ── 右：資料欄 ── */
+  .right {
+    display: flex; flex-direction: column; gap: 26px;
+    width: 380px; flex-shrink: 0; min-height: 0;
+    padding: 48px 40px 40px 36px;
+    background: var(--panel); border-left: 1px solid var(--border);
+    /* 設計稿是 1440×900 的固定畫布，右欄內容剛好填滿、不需要捲。加了「提示卡」
+       之後在 900px 高的視窗會超出——原本超出的部分是直接被切掉的（實測：兩顆
+       按鈕整個按不到），那不是刻意的設計，只是從來沒超出過。這裡讓它在超出時
+       可以捲；內容放得下時捲軸不出現，版面與設計稿完全一致。 */
+    overflow-y: auto; overflow-x: hidden;
+    scrollbar-width: thin; scrollbar-color: var(--dim) var(--track);
+  }
+  .right::-webkit-scrollbar { width: 6px; }
+  .right::-webkit-scrollbar-track { background: var(--track); }
+  .right::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 3px; }
+  .right::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  .rule { height: 1px; background: var(--border); flex-shrink: 0; }
+  .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 18px; flex-shrink: 0; }
+  .stat { display: flex; flex-direction: column; gap: 4px; }
+  .stat-label { font-size: 12px; color: var(--muted); }
+  .stat-value { font-size: 28px; font-weight: 600; color: var(--text); }
+  .stat-unit { font-size: 14px; font-weight: 400; color: var(--muted); }
+  .stat-sub { font-size: 12px; color: var(--muted); }
+
+  .section { display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+  .section-head { display: flex; align-items: baseline; gap: 10px; }
+  .section-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .section-hint { font-size: 11px; color: var(--muted); }
+
+  .judge-list { display: flex; flex-direction: column; gap: 10px; }
+  .judge { display: grid; grid-template-columns: 40px 1fr; gap: 10px; font-size: 12px; line-height: 1.55; }
+  .judge .jt { color: var(--accent); }
+  /* 設計稿的理由是一句短話（「要求直接列出方案要點」）；慢路實際回傳的 pros 是
+     完整句子，不夾在兩行內會把整個面板撐開。截兩行，不改寫內容。 */
+  .judge .jx {
+    color: var(--text);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .judge.withheld .jt { color: var(--dim); }
+  .judge.withheld .jx { color: var(--muted); }
+  /* 第三態（受阻／評估中）：時間戳調到 --muted，比忍住的 --dim 淺、比開口的
+     --accent 深——三格一眼就能分出「沒發生」「不確定／被擋下」「發生了」的層次。
+     內文不調暗，維持跟開口一樣的可讀度：受阻是這張單最想被看見的狀態。 */
+  .judge.blocked .jt { color: var(--muted); }
+
+  /* 提示卡：術語／專有名詞的靜默補充。沿用「主席的思考」那一區的版面語言
+     （左細線＋兩行截斷），不新增色碼。刻意**不用** --accent——那是主席開口的
+     唯一強調色，提示卡不是主席發言，借用會讓兩件事在畫面上混成一件。
+     來源連結因此用內文色＋髮線底線表示可點。 */
+  .gcard { display: flex; flex-direction: column; gap: 5px; font-size: 12px; line-height: 1.55; padding-left: 12px; border-left: 2px solid var(--track); }
+  /* 逐字稿流裡的提示卡：借用 .u-line 的 64px 時間槽對齊，卡片本體沿用 .gcard
+     的語言（左細線、無邊框、不用 --accent——那是主席開口的唯一強調色，提示卡
+     不是主席發言）。字級 13px：比逐字稿的 16px 小一階，讀得清楚但不搶戲。
+     max-width 讓它不隨左欄寬度無限拉長，維持「旁註」而不是「另一段發言」。 */
+  .u-line.gloss .gcard { font-size: 13px; max-width: 560px; }
+  .u-line.gloss .gc-term { font-size: 14px; }
+  .u-line.gloss .gc-tag { font-size: 11px; color: var(--dim); letter-spacing: .04em; }
+  .gc-head { display: flex; align-items: baseline; gap: 8px; }
+  .gc-term { font-size: 13px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+  .gc-count { font-size: 11px; color: var(--muted); flex-shrink: 0; margin-left: auto; }
+  .gc-gloss { color: var(--body); }
+  .gc-src { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .gc-src a { font-size: 11px; color: var(--muted); text-decoration: underline; text-decoration-color: var(--border-strong); overflow-wrap: anywhere; }
+  .gc-src a:hover { color: var(--text); text-decoration-color: var(--muted); }
+  .gc-quote { color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .gc-quote .qt { color: var(--dim); }
+  .gc-empty { font-size: 12px; color: var(--muted); }
+
+  .share-list { display: flex; flex-direction: column; gap: 10px; }
+  /* 名字欄設計稿是 44px（那場的名字是「Alex」）。真實 display_name 是「Alex Huang」，
+     44px 只放得下「Alex …」，所以加寬到 72px、軌道相應縮短——這是與設計稿唯一
+     一處刻意不同的幾何值。更長的名字仍然截字，完整名字放 title。 */
+  .share { display: grid; grid-template-columns: 72px 1fr 48px; gap: 10px; align-items: center; font-size: 13px; }
+  .share .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .share .track { height: 8px; background: var(--track); border-radius: 2px; }
+  .share .fill { height: 8px; background: var(--share-bar); border-radius: 2px; }
+  .share .fill.chair { background: var(--accent); }
+  .share .pct { text-align: right; color: var(--muted); }
+
+  .actions { display: flex; gap: 10px; flex-shrink: 0; }
+  .btn { flex-grow: 1; padding: 11px 0; text-align: center; font-size: 13px; border-radius: 6px; cursor: pointer; user-select: none; }
+  .btn-ghost { border: 1px solid var(--border-strong); color: var(--text); }
+  .btn-solid { background: var(--text); color: var(--onAccent); border: 0; }
+
+  /* 捲軸配色沿用既有 token，不新增色碼 */
+  #transcript { scrollbar-width: thin; scrollbar-color: var(--dim) var(--track); }
+  #transcript::-webkit-scrollbar { width: 8px; }
+  #transcript::-webkit-scrollbar-track { background: var(--track); border-radius: 4px; }
+  #transcript::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 4px; }
+  #transcript::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+</style>
+</head>
+<body>
+<div id="view">
+  <div class="left">
+    <div class="head">
+      <div class="head-id">
+        <div class="eyebrow">會議紀錄 · 主席主持</div>
+        <div class="title serif" id="topic">等待會議開始…</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="head-clock">
+        <div class="clock-row">
+          <div class="clock mono" id="clock">00:00</div>
+          <div class="clock-total mono" id="clock-total">/ --:--</div>
+        </div>
+        <div class="status" id="status">等待會議開始</div>
+        <!-- 階段切換選單，預設收起；顯示文字＝發想／拉鋸／決定，data-phase 是內部值 -->
+        <div class="phase-menu" id="phase-menu" hidden>
+          <div class="phase-item" data-phase="發散期">發想</div>
+          <div class="phase-item" data-phase="呻吟區">拉鋸</div>
+          <div class="phase-item" data-phase="收斂期">決定</div>
+        </div>
+      </div>
+    </div>
+    <!-- 主席故障告示（聽不到／講不出話）。預設收起，由 renderAlerts() 控制。 -->
+    <div class="alerts" id="alerts" hidden></div>
+    <div id="transcript"></div>
+  </div>
+
+  <div class="right">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">主席開口</div>
+        <div class="stat-value mono" id="s-iv">0</div>
+        <div class="stat-sub" id="s-iv-sub">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">實際發言</div>
+        <div class="stat-value mono" id="s-talk">0.0<span class="stat-unit"> 分</span></div>
+        <div class="stat-sub" id="s-talk-sub">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">最長沉默</div>
+        <div class="stat-value mono" id="s-silence">0″</div>
+        <div class="stat-sub" id="s-silence-sub">未觸發超時</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">主席思考</div>
+        <div class="stat-value mono" id="s-slow">0<span class="stat-unit"> 次</span></div>
+        <div class="stat-sub" id="s-slow-sub">—</div>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">時間軸</div>
+        <div class="section-hint">發言 · 主席開口 · 忍住 · 階段</div>
+      </div>
+      <svg id="timeline" width="304" height="86" viewBox="0 0 304 86" style="display: block;"></svg>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">主席的思考</div>
+        <div class="section-hint">每 5 秒想一次要不要開口 · 最近三次</div>
+      </div>
+      <div class="judge-list" id="judge-list"></div>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="section">
+      <div class="section-title">發言分佈</div>
+      <div class="share-list" id="share-list"></div>
+    </div>
+
+
+    <div class="spacer"></div>
+
+    <div class="actions">
+      <div class="btn btn-ghost" id="btn-export">匯出紀錄</div>
+      <div class="btn btn-solid" id="btn-end">結束會議</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // 顯示層命名對照（內部值不動，見 docs/design/spectator-v2/canvas.json 的便籤）
+  var PHASE_LABEL = { "發散期": "發想", "呻吟區": "拉鋸", "收斂期": "決定" };
+  // 慢路沒開口的原因 → 畫面措辭。空字串＝LLM 自己判不需要介入（不是被規則壓掉）。
+  var WITHHELD_REASON = {
+    "": "判斷不需要開口",
+    "type=無": "想說但沒理由",
+    "冷卻": "剛開口過，30 秒內不再插話",
+    "無話術": "有判斷但沒話術",
+    "收尾": "會議正在道別，不再開口",
+    "失聰": "主席聽不到，暫不開口",
+  };
+  // 慢路是兩次 LLM 呼叫：先判斷、決定要講之後才產話術（見 live.py _run_slow_score）。
+  // 下面這些 reason 全部發生在「已經決定要開口」之後，是話術生成或那幾秒內變動的
+  // 世界把它擋掉的——不是主席選擇忍住。所以它們算「受阻」而不是「忍住」，
+  // 顯示成忍住會把失敗說成克制，那是假的（須與 live.SLOW_BLOCKED_AFTER_DECISION 一致）。
+  // 守恆不變式不受影響：每筆 slow_score 仍然只計一次，只是落到另一格。
+  var BLOCKED_AFTER_DECISION_REASON = {
+    "話術失敗": "決定開口但話術生成失敗",
+    "話術過長": "話術太長，播出來會變獨白",
+    "冷卻(話術後)": "想好話時已在冷卻期內",
+    "收尾(話術後)": "想好話時會議已在道別",
+    "失聰(話術後)": "想好話時主席已經聽不到",
+  };
+  // 連續幾次 TTS 失敗才在畫面上喊「主席講不出話」。
+  // 2 而不是 1：一次逾時跟額度耗盡是兩件不一樣的事——單次失敗每場都可能發生
+  // （網路抖一下、播放佇列滿），喊出來就是誤報。連續兩次以上代表**同一段時間內
+  // 主席想開口而開不了口**，那才是現場需要立刻知道的事。
+  // 「連續」的歸零條件只有一個：真的 spoken 一次（見 handleEvent 的 "spoken"）。
+  // `dropped` 不歸零也不累加——那是介入被作廢，跟發聲能力無關。
+  var TTS_FAIL_ALERT = 2;
+  var SILENCE_LIMIT = 300;  // 快路「有人被冷落」的門檻，用來判斷最長沉默有沒有觸發超時
+  // 快路規則型 kind，須與 fast_path.FAST_KINDS 一致（見該檔案）。「主席開口」那格
+  // 拆成「規則 N（這裡列的快路 kind）· 判斷 M（其餘 kind，來自慢路 LLM 評分）」——
+  // 前端沒有共用模組可以 import，兩邊改動要一起改。
+  var FAST_KINDS = ["發言超時", "有人被冷落", "議程超時", "全場沉默"];
+
+  function el(id) { return document.getElementById(id); }
+
+  function esc(s) {
+    var d = document.createElement("div");
+    d.textContent = s == null ? "" : String(s);
+    return d.innerHTML;
+  }
+
+  function fmtClock(seconds) {
+    if (seconds == null || !isFinite(seconds)) return "--:--";
+    var s = Math.max(0, Math.floor(seconds));
+    var m = Math.floor(s / 60), r = s % 60;
+    return (m < 10 ? "0" + m : "" + m) + ":" + (r < 10 ? "0" + r : "" + r);
+  }
+
+  // 設計稿的最長沉默寫成 3′35″（分秒用 prime／double prime，不是冒號）
+  function fmtSpan(seconds) {
+    var s = Math.max(0, Math.floor(seconds || 0));
+    var m = Math.floor(s / 60), r = s % 60;
+    if (m === 0) return r + "″";
+    return m + "′" + (r < 10 ? "0" + r : "" + r) + "″";
+  }
+
+  function nodeFromHtml(html) {
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html.trim();
+    return tmp.firstElementChild;
+  }
+
+  // 真實時鐘時間，固定 UTC+8——不用瀏覽器本地時區，因為觀戰畫面可能開在別台機器上。
+  // epochSeconds 是 unix epoch（UTC）秒；用「加 8 小時再讀 UTC 欄位」手動套固定偏移，
+  // 不靠 Date 物件的本地時區轉換。印成 HH:MM（不含秒），跟 fmtClock 一樣是 5 個字元，
+  // 逐字稿的時間欄只有 64px、主席的思考欄更窄（40px），沒有多的空間放秒數。
+  function fmtWallClock(epochSeconds) {
+    var d = new Date((epochSeconds + 8 * 3600) * 1000);
+    var hh = d.getUTCHours(), mm = d.getUTCMinutes();
+    return (hh < 10 ? "0" + hh : "" + hh) + ":" + (mm < 10 ? "0" + mm : "" + mm);
+  }
+
+  // 逐字稿／主席的思考每一列的時間：有 meeting 事件帶回 start_epoch 就顯示真實時鐘
+  // 時間，否則（還沒收到 meeting 事件，或回放模式讀到 T16 之前錄的舊 events.jsonl
+  // 沒有這個欄位）退回顯示會議相對時間，不顯示錯誤值或空白。
+  function fmtEventTime(t) {
+    var epoch = state.meeting && isFinite(state.meeting.start_epoch) ? state.meeting.start_epoch : null;
+    return epoch == null ? fmtClock(t) : fmtWallClock(epoch + t);
+  }
+
+  // 「實際發言」用區間聯集算，不是各人加總——多人會議講話會重疊，加總會把重疊的
+  // 那幾秒算進兩個人頭上，佔已進行的百分比因此可能衝出 100%（單人會議不會重疊，
+  // 聯集跟加總結果相同，既有行為不變）。segments 依事件到達順序塞入，不保證按
+  // start 排序，這裡自己排序後合併。
+  function unionSeconds(segments) {
+    if (!segments.length) return 0;
+    var sorted = segments.slice().sort(function (a, b) { return a.start - b.start; });
+    var total = 0, curStart = sorted[0].start, curEnd = sorted[0].end;
+    for (var i = 1; i < sorted.length; i++) {
+      var seg = sorted[i];
+      if (seg.start <= curEnd) {
+        if (seg.end > curEnd) curEnd = seg.end;
+      } else {
+        total += curEnd - curStart;
+        curStart = seg.start;
+        curEnd = seg.end;
+      }
+    }
+    total += curEnd - curStart;
+    return total;
+  }
+
+  // ── 狀態 ──
+  // 右欄四格數字、時間軸、主席的思考都是「跟著事件累積」出來的衍生值，全部集中在
+  // 這裡，snapshot 重播時由 resetForSnapshot() 一次清乾淨（見該函式說明）。
+  var state = {
+    meeting: null,
+    transcript: [],
+    transcriptDirty: false,
+    speaking: {},
+    pendingQueued: [],
+    lastSpokenAt: null,
+    share: {},
+    serverNow: 0,
+    connectionLost: false,
+    ended: false,
+    minutes: null,          // minutes 事件的 payload（兩份 md 全文＋四路徑）
+
+    spokenKinds: {},        // 介入類型 -> 次數（含問候；「主席開口」那格顯示時排除問候）
+    segments: [],           // 每個人的發言區間 {start, end}；「實際發言」用區間聯集算，
+                             // 不能直接加總——多人會議講話會重疊（同一秒兩人都在講，
+                             // 加總會把那一秒算兩次，佔比因此衝出 100%，見 renderStats）
+    chairMarks: [],         // 時間軸的主席開口 t
+    withheldMarks: [],      // 時間軸的忍住 t
+    phaseMarks: [],         // 時間軸的階段切換 {t, phase}
+    maxSilence: 0,          // 全場最長沉默（各參與者沉默秒數取最小值的歷史最大）
+    // 慢路判斷是三態，不是兩態：admissible 只代表「排進佇列」，真正有沒有開口
+    // 要等後續事件才定案——可能真的 spoken；也可能連佇列都沒排進去（Chair.request()
+    // 忙碌／退避中回 False，下一筆事件不是它的 queued，見 handleEvent 開頭那段）；
+    // 或排進去了才被 dropped（revision 過期作廢）／failed（播放失敗）。三者都算
+    // 「受阻」，在對應那個「定案的事件」到達時才計數，不是在 slow_score 當下。
+    // 第四種「受阻」是 admissible=false 但 reason 落在 BLOCKED_AFTER_DECISION_REASON
+    // 裡的那幾筆——慢路的第二次呼叫（話術）失敗或那幾秒內世界變了。它在 slow_score
+    // 當下就定案（沒有後續事件會來），所以直接計數，不進 awaitingQueuedJudgment。
+    // slowWithheld 例外：admissible=false 當下就確定是「忍住」，不用等。
+    // 只要每筆 admissible 判斷後面確實有再收到事件（正常結束會有 minutes 收尾），
+    // slowSpoke+slowBlocked+slowWithheld 就會等於 slowTotal；唯一會讓加總小於
+    // slowTotal 的情況是連線在某筆 admissible 判斷之後真的斷了、沒有任何後續事件
+    // 可以判斷結果——那是誠實的「不知道」，見 handleEvent 開頭那段的說明。
+    slowTotal: 0, slowSpoke: 0, slowBlocked: 0, slowWithheld: 0,
+    judgments: [],          // 主席的思考最近三次（新→舊）
+    // 提示卡（新→舊）。這是唯一一種不代表主席行為的事件——不經過 Chair、不佔
+    // 冷卻期、不發 TTS，所以它不進逐字稿欄、不上時間軸、也不計入任何一格數字，
+    // 只在自己的區塊裡列出來（見 glossary.py 與 events.py 的 kind 說明）。
+    // 排進佇列後還在等 spoken／dropped／failed 定案的慢路 judgment 物件；一次只會
+    // 有一筆，靠「緊接在 admissible 慢路後面的下一筆事件一定是它的 queued」配對
+    // （見 live.py _run_slow_score 與 minutes.py _pair_interventions 的說明），
+    // 所以每次 handleEvent 呼叫都無條件清空，只有那唯一一次 queued 用得到。
+    awaitingQueuedJudgment: null,
+
+    // ── 主席故障告示（見 renderAlerts）────────────────────────────────
+    // 最後一筆 hearing 事件的 data。它是**邊緣事件**（只在狀態改變時送，見
+    // events.py 的 kind 說明），所以這裡存的是「目前的狀態」，不是「剛剛發生的事」。
+    hearing: null,
+    ttsFailStreak: 0,       // 距上一次成功 spoken 以來，連續幾次 TTS 失敗
+    lastTtsFail: null,      // 最後一次失敗的 {t, reason, kind}，給告示顯示細節
+  };
+
+  // ── 頂列 ──
+  function currentChairStatus() {
+    if (state.pendingQueued.length > 0) return "等停頓";
+    if (state.lastSpokenAt != null && state.serverNow - state.lastSpokenAt < 6) return "發言中";
+    return "聆聽中";
+  }
+
+  // 主席故障告示：回答現場最急的那個問題——**主席現在是「不想講」還是壞了**。
+  // 兩種故障各自獨立，可以同時出現（2026-08-31 那場就是：STT 與 TTS 共用同一把
+  // key，額度耗盡時兩邊一起死）。
+  //
+  // 兩者的資料來源不一樣，是刻意的：
+  // - 聽不到：後端的 `hearing` 事件（判定邏輯在 hearing.py，前端不重算）。
+  // - 講不出話：從既有的 `failed`／`spoken` 事件自己數，後端不必多發一種事件。
+  //   這樣舊的 events.jsonl 回放也照樣顯示得出來。
+  function renderAlerts() {
+    var rows = [];
+    if (state.hearing && state.hearing.ok === false) {
+      rows.push({
+        title: "主席聽不到",
+        detail: (state.hearing.reason || "逐字稿停止更新")
+          + " · 已暫停「發言超時／有人被冷落／全場沉默」，"
+          + "逐字稿一恢復就自動解除（議程提醒不受影響）",
+      });
+    }
+    if (state.ttsFailStreak >= TTS_FAIL_ALERT) {
+      var f = state.lastTtsFail || {};
+      rows.push({
+        title: "主席講不出話",
+        detail: "連續 " + state.ttsFailStreak + " 次開口失敗，一次都沒出聲"
+          + (f.reason ? "。最後一次：" + String(f.reason).slice(0, 120) : ""),
+      });
+    }
+    var box = el("alerts");
+    box.hidden = rows.length === 0;
+    box.innerHTML = rows.map(function (r) {
+      return '<div class="alert"><div class="a-title">' + esc(r.title) + '</div>'
+        + '<div class="a-detail">' + esc(r.detail) + '</div></div>';
+    }).join("");
+  }
+
+  function renderTop() {
+    var m = state.meeting;
+    el("topic").textContent = m ? m.topic : "等待會議開始…";
+    el("clock").textContent = fmtClock(state.serverNow);
+    el("clock-total").textContent = m ? "/ " + fmtClock(m.duration_min * 60) : "/ --:--";
+
+    var statusEl = el("status");
+    statusEl.classList.toggle("switchable", !!m && !state.ended);
+    if (state.ended) {
+      statusEl.textContent = "會議已結束";
+    } else if (state.connectionLost) {
+      statusEl.textContent = "連線中斷";
+    } else if (!m) {
+      statusEl.textContent = "等待會議開始";
+    } else {
+      var phase = PHASE_LABEL[m.phase] || m.phase;
+      statusEl.textContent = phase + "階段 · 主席" + currentChairStatus();
+    }
+
+    document.querySelectorAll("#phase-menu .phase-item").forEach(function (item) {
+      item.classList.toggle("active", !!m && item.dataset.phase === m.phase);
+    });
+  }
+
+  // 階段切換：點狀態列開選單。POST /phase 後伺服器會重送 meeting 事件，
+  // 這裡不做本地樂觀高亮，等事件回來再 renderTop()（單一事實來源）。
+  el("status").addEventListener("click", function (e) {
+    if (!state.meeting || state.ended) return;
+    e.stopPropagation();
+    el("phase-menu").hidden = !el("phase-menu").hidden;
+  });
+  document.addEventListener("click", function () { el("phase-menu").hidden = true; });
+  document.querySelectorAll("#phase-menu .phase-item").forEach(function (item) {
+    item.addEventListener("click", function (e) {
+      e.stopPropagation();
+      el("phase-menu").hidden = true;
+      fetch("/phase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phase: item.dataset.phase }),
+      }).catch(function (err) { console.error("切換階段失敗", err); });
+    });
+  });
+
+  function setConnectionLost(lost) {
+    if (state.ended) return;
+    state.connectionLost = lost;
+    renderTop();
+  }
+
+  function setEnded() {
+    state.ended = true;
+    state.connectionLost = false;
+    el("phase-menu").hidden = true;
+    // 結束鈕要跟著進終態：不管當下卡在「再按一次結束」的確認倒數，還是
+    // fetch 還沒回來的「結束中…」，會議真的結束了就蓋成「已結束」，並清掉
+    // 還沒到期的確認倒數計時器，避免它事後把文字改回「結束會議」。
+    if (endTimer) { clearTimeout(endTimer); endTimer = null; }
+    endArmed = false;
+    endBtn.textContent = "已結束";
+    renderTop();
+  }
+
+  window.__spectator = window.__spectator || {};
+  window.__spectator.setEnded = setEnded;
+
+  // ── 逐字稿（append-only；使用者位於底部時才自動捲到最新） ──
+  var renderedCount = 0;
+  var nodes = [];
+
+  function isNearBottom(e, threshold) {
+    return e.scrollTop + e.clientHeight >= e.scrollHeight - (threshold || 24);
+  }
+
+  function buildLine(item) {
+    // 提示卡：靜默補充，不是主席行為。接在逐字稿當下位置而不是術語出現的位置——
+    // 抽取是批次的（glossary.BATCH_MIN_UTTERANCES 12 則／BATCH_MAX_WAIT_SECONDS
+    // 120s），卡片比術語晚一分鐘以上才產生，錨回原位等於插進已經捲過去的地方，
+    // 投影時沒有人看得到。卡片自己的引言帶著首次提到的時間戳，指得回那一刻。
+    if (item.kind === "gloss") {
+      return nodeFromHtml(
+        '<div class="u-line gloss">' +
+        '<div class="u-time mono"></div>' +
+        '<div>' + glossCard(item.card, true) + "</div></div>");
+    }
+    if (item.kind === "chair") {
+      var label = item.speaker + (item.type ? " · " + item.type : "");
+      return nodeFromHtml(
+        '<div class="u-line chair">' +
+        '<div class="u-time mono">' + esc(fmtEventTime(item.t)) + '</div>' +
+        '<div class="u-chair">' +
+        '<div class="who">' + esc(label) + '</div>' +
+        '<div class="say serif">' + esc(item.text) + '</div>' +
+        '</div></div>');
+    }
+    return nodeFromHtml(
+      '<div class="u-line">' +
+      '<div class="u-time mono">' + esc(fmtEventTime(item.t)) + '</div>' +
+      '<div class="u-text"><span class="u-speaker">' + esc(item.speaker) + '</span>　' + esc(item.text) + '</div>' +
+      '</div>');
+  }
+
+  function renderTranscript() {
+    var box = el("transcript");
+    var atBottom = isNearBottom(box);
+
+    if (state.transcriptDirty) {
+      box.innerHTML = "";
+      renderedCount = 0;
+      nodes = [];
+      state.transcriptDirty = false;
+    } else {
+      box.querySelectorAll(".u-line.now").forEach(function (n) { n.remove(); });
+    }
+
+    for (; renderedCount < state.transcript.length; renderedCount++) {
+      var node = buildLine(state.transcript[renderedCount]);
+      box.appendChild(node);
+      nodes[renderedCount] = node;
+    }
+
+    // 「正在說話…」是 ephemeral 提示，不進 state.transcript，每次 render 都重貼到底部
+    var active = Object.keys(state.speaking).filter(function (s) { return state.speaking[s]; });
+    if (active.length > 0 && !state.ended) {
+      box.appendChild(nodeFromHtml(
+        '<div class="u-line now">' +
+        '<div class="u-time mono">' + esc(fmtEventTime(state.serverNow)) + '</div>' +
+        '<div class="u-text">' + esc(active[0]) + ' 正在說話…</div></div>'));
+    }
+
+    if (atBottom) box.scrollTop = box.scrollHeight;
+  }
+
+  // ── 右欄：四格數字 ──
+  function renderStats() {
+    // 「主席開口」拆成快路（規則）跟慢路（判斷）兩路來源，兩個數字互不重疊、
+    // 加起來就是總數——不然「介入 11」跟「想過 34 次 · 開口 0」看起來會互相矛盾
+    // （11 次全部來自快路規則，跟慢路的 34 次思考完全無關）。
+    var kinds = Object.keys(state.spokenKinds).filter(function (k) { return k !== "問候"; });
+    var ivTotal = kinds.reduce(function (n, k) { return n + state.spokenKinds[k]; }, 0);
+    var ruleTotal = kinds
+      .filter(function (k) { return FAST_KINDS.indexOf(k) !== -1; })
+      .reduce(function (n, k) { return n + state.spokenKinds[k]; }, 0);
+    var judgeTotal = ivTotal - ruleTotal;
+    el("s-iv").textContent = String(ivTotal);
+    el("s-iv-sub").textContent = "規則 " + ruleTotal + " · 判斷 " + judgeTotal;
+
+    // 「實際發言」＝有人在講話的區間聯集，不是各人發言秒數加總（見 unionSeconds）。
+    var talkSeconds = unionSeconds(state.segments);
+    el("s-talk").innerHTML = (talkSeconds / 60).toFixed(1) + '<span class="stat-unit"> 分</span>';
+    el("s-talk-sub").textContent = state.serverNow > 0
+      ? "佔已進行 " + Math.min(100, Math.round(talkSeconds / state.serverNow * 100)) + "%"
+      : "—";
+
+    el("s-silence").textContent = fmtSpan(state.maxSilence);
+    el("s-silence-sub").textContent = state.maxSilence >= SILENCE_LIMIT ? "曾觸發超時" : "未觸發超時";
+
+    el("s-slow").innerHTML = state.slowTotal + '<span class="stat-unit"> 次</span>';
+    // 三態：開口（真的講了）· 受阻（決定要講，卻連佇列都排不進去，或排進去後被
+    // dropped／failed 擋下）· 忍住（自己判斷不需要開口）。還在 pending（結果沒到、
+    // 通常是短暫過渡態）的不算進任何一格；一場正常播完的會議三格加總會等於
+    // s-slow 的總次數，見 handleEvent 開頭關於 claimedSlowJudgment 的說明。
+    el("s-slow-sub").textContent = state.slowTotal
+      ? "開口 " + state.slowSpoke + " · 受阻 " + state.slowBlocked + " · 忍住 " + state.slowWithheld
+      : "尚未評分";
+  }
+
+  // ── 右欄：時間軸 ──
+  // 橫軸 0 → 已進行時間進位到整分（設計稿在 14:52 時右端標 15:00）。四層由下而上：
+  // 底軌、發言段、忍住刻度與主席開口點（同一條 y=26~34 帶）、階段切換直線。
+  function renderTimeline() {
+    var W = 304;
+    var axisEnd = Math.max(60, Math.ceil(Math.max(state.serverNow, 1) / 60) * 60);
+    function x(t) { return Math.max(0, Math.min(W, t / axisEnd * W)); }
+
+    var parts = ['<rect x="0" y="10" width="304" height="10" rx="2" fill="#EBE4D8"></rect>'];
+
+    parts.push('<g fill="#B8AE9F">');
+    state.segments.forEach(function (seg) {
+      var x0 = x(seg.start), w = Math.max(2, x(seg.end) - x0);
+      if (x0 + w > W) x0 = W - w;
+      parts.push('<rect x="' + x0.toFixed(1) + '" y="10" width="' + w.toFixed(1) + '" height="10" rx="2"></rect>');
+    });
+    parts.push('</g>');
+
+    parts.push('<g stroke="#C9C0B2" stroke-width="1.5">');
+    state.withheldMarks.forEach(function (t) {
+      var px = x(t).toFixed(1);
+      parts.push('<line x1="' + px + '" y1="26" x2="' + px + '" y2="34"></line>');
+    });
+    parts.push('</g>');
+
+    parts.push('<g fill="#A65D3F">');
+    state.chairMarks.forEach(function (t) {
+      parts.push('<circle cx="' + x(t).toFixed(1) + '" cy="30" r="3"></circle>');
+    });
+    parts.push('</g>');
+
+    state.phaseMarks.forEach(function (mk) {
+      var px = x(mk.t).toFixed(1);
+      parts.push('<line x1="' + px + '" y1="4" x2="' + px + '" y2="38" stroke="#2B2622" stroke-width="1"></line>');
+    });
+
+    // 軸標。階段標籤只標最近一次切換，避免多次切換時文字疊在一起。
+    parts.push('<g font-family="JetBrains Mono" font-size="10" fill="#A89F93">');
+    parts.push('<text x="0" y="56">00:00</text>');
+    parts.push('<text x="304" y="56" text-anchor="end">' + esc(fmtClock(axisEnd)) + '</text>');
+    // 階段標籤靠近軸端（00:00／右端）時會疊到軸標，這種情況只留直線不標字。
+    if (state.phaseMarks.length) {
+      var last = state.phaseMarks[state.phaseMarks.length - 1];
+      var lx = x(last.t);
+      if (lx > 46 && lx < W - 46) {
+        parts.push('<text x="' + lx.toFixed(1) + '" y="56" text-anchor="middle">' +
+          esc(fmtClock(last.t) + " " + (PHASE_LABEL[last.phase] || last.phase)) + '</text>');
+      }
+    }
+    parts.push('</g>');
+
+    parts.push(
+      '<g font-family="Noto Sans TC" font-size="10" fill="#857C72">' +
+      '<rect x="0" y="72" width="10" height="6" rx="1" fill="#B8AE9F"></rect><text x="14" y="78">發言</text>' +
+      '<circle cx="52" cy="75" r="3" fill="#A65D3F"></circle><text x="59" y="78">主席開口</text>' +
+      '<line x1="112" y1="71" x2="112" y2="79" stroke="#C9C0B2" stroke-width="1.5"></line><text x="118" y="78">想過但忍住</text>' +
+      '</g>');
+
+    el("timeline").innerHTML = parts.join("");
+  }
+
+  // ── 右欄：主席的思考最近三次 ──
+  // 三態措辭：忍住＝自己判斷不需要開口；開口＝決定要講而且真的講了；受阻＝決定要
+  // 講、卻被 Chair 判 dropped／failed 擋下（沒講成）。pending＝結果還沒到，用
+  // 「評估中」跟三個定案態區分，避免在結果未定時就先誤標成開口或受阻。
+  function judgeBody(j) {
+    if (j.status === "withheld") return '<b>忍住</b> · ' + esc(j.detail);
+    if (j.status === "pending") return '<b>評估中</b> · ' + esc(j.type) + (j.detail ? ' — ' + esc(j.detail) : '');
+    if (j.status === "blocked") {
+      return '<b>受阻</b> · ' + esc(j.type) +
+        (j.blockedReason ? '（' + esc(j.blockedReason) + '）' : '') +
+        (j.detail ? ' — ' + esc(j.detail) : '');
+    }
+    return '<b>開口</b> · ' + esc(j.type) + (j.detail ? ' — ' + esc(j.detail) : '');
+  }
+  // pending 借用 blocked 的樣式（時間戳調暗）：兩者都是「還沒 / 沒能定案為開口」，
+  // 用同一組既有 CSS 變數表達即可，不需要為 pending 另開一個 class。
+  function judgeClass(j) {
+    if (j.status === "withheld") return " withheld";
+    if (j.status === "blocked" || j.status === "pending") return " blocked";
+    return "";
+  }
+  function renderJudgments() {
+    el("judge-list").innerHTML = state.judgments.slice(0, 3).map(function (j) {
+      return '<div class="judge' + judgeClass(j) + '">' +
+        '<div class="jt mono">' + esc(fmtEventTime(j.t)) + '</div>' +
+        '<div class="jx">' + judgeBody(j) + '</div></div>';
+    }).join("") || '<div class="judge withheld"><div class="jt mono">--:--</div><div class="jx">尚未評分</div></div>';
+  }
+
+  // ── 提示卡 ──
+  // 卡片本體在左欄逐字稿流裡（見 buildLine 的 gloss 分支），右欄只留累積清單。
+  // 每張卡的每一行都指得到出處——引言是逐字稿原話（時間戳＋原話），來源是真實網址。
+
+  // 連結只顯示網域，標題放 title：右欄只有 380px，完整標題會把版面撐開。
+  function hostOf(url) {
+    var m = /^https?:\/\/([^/?#]+)/i.exec(String(url || ""));
+    return m ? m[1].replace(/^www\./i, "") : String(url || "");
+  }
+
+  function quoteLine(label, m) {
+    if (!m) return "";
+    return '<div class="gc-quote"><span class="qt mono">' + esc(fmtEventTime(m.t)) + '</span> ' +
+      esc(m.speaker) + " " + label + '：「' + esc(m.text) + '」</div>';
+  }
+
+  function glossCard(c, inline) {
+    var parts = ['<div class="gc-head"><div class="gc-term">' + esc(c.term) + "</div>"];
+    // 內嵌在逐字稿裡時要明講這不是主席開口，否則讀者會把它當成第三個發言者。
+    if (inline) parts.push('<div class="gc-tag">術語補充</div>');
+    // 只有提到一次就不標次數——「第 1 次提到」是廢話，佔掉右欄本來就很擠的一行。
+    if (c.mentions > 1) parts.push('<div class="gc-count">提到 ' + esc(c.mentions) + " 次</div>");
+    parts.push("</div>");
+    // gloss 非 null 時 sources 必定非空（後端保證，見 glossary.build_card）；
+    // 這裡仍然各自判斷，讀到舊的／手工造的 events.jsonl 也不會壞掉。
+    if (c.gloss) parts.push('<div class="gc-gloss">' + esc(c.gloss) + "</div>");
+    var sources = c.sources || [];
+    if (sources.length) {
+      parts.push('<div class="gc-src">' + sources.map(function (s) {
+        return '<a href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer" title="' +
+          esc(s.title || s.url) + '">' + esc(hostOf(s.url)) + "</a>";
+      }).join("") + "</div>");
+    }
+    parts.push(quoteLine("首次提到", c.first));
+    // 解釋跟首次提到是同一則發言時不重印一次一模一樣的引言。
+    if (c.explained && (!c.first || c.explained.t !== c.first.t)) {
+      parts.push(quoteLine("說明過", c.explained));
+    }
+    return '<div class="gcard">' + parts.join("") + "</div>";
+  }
+
+  // ── 右欄：發言分佈 ──
+  function renderShare() {
+    var names = Object.keys(state.share).filter(function (n) { return n !== "主席"; });
+    names.sort(function (a, b) { return state.share[b] - state.share[a]; });
+    if ("主席" in state.share) names.push("主席");  // 主席固定排最後
+
+    el("share-list").innerHTML = names.map(function (name) {
+      var pct = state.share[name] || 0;
+      var isChair = name === "主席";
+      return '<div class="share">' +
+        '<div class="who" title="' + esc(name) + '">' + esc(name) + '</div>' +
+        '<div class="track"><div class="fill' + (isChair ? " chair" : "") +
+        '" style="width:' + Math.max(0, Math.min(100, pct * 100)).toFixed(1) + '%"></div></div>' +
+        '<div class="pct mono">' + Math.round(pct * 100) + '%</div>' +
+        '</div>';
+    }).join("");
+  }
+
+  // ── 兩顆按鈕 ──
+  // 匯出＝下載 minutes 事件帶回來的 LLM 會議記錄（決議／待辦／未解決／每人立場）。
+  // minutes 只在會議收尾時產生，還沒有的時候按下去用按鈕自己的文字提示，不改版面。
+  var exportBtn = el("btn-export");
+  var exportBusy = false;
+
+  function flashButton(btn, text, ms) {
+    if (exportBusy) return;
+    exportBusy = true;
+    var original = btn.textContent;
+    btn.textContent = text;
+    setTimeout(function () { btn.textContent = original; exportBusy = false; }, ms || 2000);
+  }
+
+  exportBtn.addEventListener("click", function () {
+    var md = state.minutes && state.minutes.minutes_md;
+    if (!md) { flashButton(exportBtn, "會議結束後才有紀錄", 2000); return; }
+    var path = state.minutes.minutes_path || "minutes.md";
+    var name = path.split("/").pop() || "minutes.md";
+    var url = URL.createObjectURL(new Blob([md], { type: "text/markdown;charset=utf-8" }));
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  });
+
+  // 結束會議走 POST /end（＝與 kill -TERM 同一個開關）。現場 demo 誤觸的代價是
+  // 整場會議收掉，所以要按兩次：第一次把按鈕文字換成確認提示，5 秒內沒有第二次
+  // 就自己還原。設計稿沒有確認彈窗，這裡不新增元素，只改按鈕自己的文字。
+  var endBtn = el("btn-end");
+  var endArmed = false;
+  var endTimer = null;
+
+  endBtn.addEventListener("click", function () {
+    if (state.ended) return;
+    if (!endArmed) {
+      endArmed = true;
+      endBtn.textContent = "再按一次結束";
+      endTimer = setTimeout(function () {
+        endArmed = false;
+        endBtn.textContent = "結束會議";
+      }, 5000);
+      return;
+    }
+    clearTimeout(endTimer);
+    endArmed = false;
+    endBtn.textContent = "結束中…";
+    fetch("/end", { method: "POST" }).then(function (r) {
+      if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || "結束失敗"); });
+    }).catch(function (err) {
+      console.error("結束會議失敗", err);
+      endBtn.textContent = "結束失敗";
+      setTimeout(function () { endBtn.textContent = "結束會議"; }, 3000);
+    });
+  });
+
+  // ── 事件處理 ──
+  function pushTranscript(item) {
+    state.transcript.push(item);
+    state.transcript.sort(function (a, b) { return a.t - b.t; });
+    // 逐字稿依 start 排序，但事件到達順序可能因語音重疊而與 start 順序不同。
+    // 排序後新項沒落在尾端＝被插到中間，render 端無法只 append，需整段重建一次。
+    if (state.transcript[state.transcript.length - 1] !== item) state.transcriptDirty = true;
+  }
+
+  // 回傳被清掉的那筆 pendingQueued 項目（找不到就回傳 null）——呼叫端要用它身上
+  // 可能掛著的 _judgment（見 handleEvent 的 "queued" 分支）把慢路判斷跟結果對回去。
+  function resolveQueued(data) {
+    var idx = state.pendingQueued.findIndex(function (q) {
+      return q.kind === data.kind && q.target === data.target && q.text === data.text;
+    });
+    if (idx === -1) idx = state.pendingQueued.length ? 0 : -1;
+    if (idx === -1) return null;
+    return state.pendingQueued.splice(idx, 1)[0];
+  }
+
+  function handleEvent(ev) {
+    state.serverNow = ev.t;
+    var data = ev.data;
+    // 見 state.awaitingQueuedJudgment 的說明：每次呼叫都先取出、清空，只有這次
+    // 事件剛好是 "queued" 才會用到（掛回 data._judgment），其餘事件類型讓它作廢。
+    var claimedSlowJudgment = state.awaitingQueuedJudgment;
+    state.awaitingQueuedJudgment = null;
+    // 上一筆是 admissible 的慢路判斷，這一筆卻不是它的 queued——代表 Chair.request()
+    // 當下回了 False，根本沒有排進佇列（見 speaker.py Chair.request 的忙碌／退避／
+    // 已有 pending 三個 False 分支；live.py `_run_slow_score` 的 TOCTOU 註解也寫明：
+    // should_score 的 busy 只擋「評分前」忙，擋不到「評分中」快路搶先出聲的情況）。
+    // 決定要講、卻連佇列都排不進去，一樣是「受阻」，不能讓它卡在 pending／「評估中」
+    // 一路等到會議結束——正常結束一定有 minutes 事件收尾，這條規則同樣適用，所以
+    // 完整播完的一場會議，開口+受阻+忍住 的加總必定等於總評分次數。
+    // 唯一例外：連線在這筆判斷之後、下一筆事件送達之前就整個斷了（不是正常的
+    // minutes 收尾，是串流真的中斷）——那種情況下沒有任何後續事件可以判斷
+    // Chair.request() 到底成不成功，畫面停在「評估中」是誠實的「不知道」，不是
+    // bug，也不該在斷線當下瞎猜成受阻；此時加總會小於總次數，這是資訊不足，
+    // 不是配對邏輯錯誤。
+    if (claimedSlowJudgment && ev.kind !== "queued") {
+      claimedSlowJudgment.status = "blocked";
+      claimedSlowJudgment.blockedReason = "主席忙碌中";
+      state.slowBlocked += 1;
+      renderStats();
+      renderJudgments();
+    }
+    switch (ev.kind) {
+      case "meeting":
+        // 階段真的變了才記一筆時間軸標記；第一筆 meeting 是初始階段，不算切換。
+        if (state.meeting && state.meeting.phase !== data.phase) {
+          state.phaseMarks.push({ t: ev.t, phase: data.phase });
+          renderTimeline();
+        }
+        state.meeting = data;
+        renderTop();
+        break;
+      case "utterance":
+        pushTranscript({ kind: "utterance", t: data.start, speaker: data.speaker, text: data.text });
+        state.segments.push({ start: data.start, end: data.end });
+        renderTranscript();
+        renderStats();
+        renderTimeline();
+        break;
+      case "speaking":
+        state.speaking[data.speaker] = !!data.active;
+        renderTranscript();
+        break;
+      case "fast_timer":
+        // 全場沉默＝所有人「距離上次發言」的最小值；取歷史最大就是最長沉默。
+        var silent = data.silent || {};
+        var names = Object.keys(silent);
+        if (names.length) {
+          var global = Math.min.apply(null, names.map(function (n) { return silent[n]; }));
+          if (global > state.maxSilence) state.maxSilence = global;
+        }
+        renderStats();
+        renderTop();
+        break;
+      case "slow_score":
+        state.slowTotal += 1;
+        var detail;
+        if (data.admissible) {
+          // 還不知道結果——admissible 只代表「這次評分通過閘門、排進佇列」，不代表
+          // 真的講出來了：接下來可能被 Chair 判 dropped（例如 revision 過期作廢）
+          // 或 failed（合成/播放失敗），也可能真的 spoken。三者之一到達前先標成
+          // pending；status 之後由 "spoken"／"dropped"／"failed" 分支原地改寫
+          // 這個物件（同一個參照，不是新建一筆），所以就算此刻被 slice(0,3) 擠出
+          // 畫面外，之後改寫仍然有效，只是不一定還顯示得到。
+          var judgment = {
+            t: ev.t, status: "pending", type: data.type,
+            // 設計稿的理由是一句短話；pros 常有兩三條，全串起來一定被截斷，取第一條。
+            detail: (data.pros || [])[0] || data.utterance || "",
+          };
+          state.judgments.unshift(judgment);
+          state.awaitingQueuedJudgment = judgment;
+        } else if (BLOCKED_AFTER_DECISION_REASON[data.reason]) {
+          // 已經決定要開口、話術那一步才失手——定案就是「受阻」，不用等後續事件
+          // （這筆判斷根本沒送進 Chair，不會有 queued／spoken／dropped 跟著來）。
+          state.slowBlocked += 1;
+          state.judgments.unshift({
+            t: ev.t, status: "blocked", type: data.type,
+            blockedReason: BLOCKED_AFTER_DECISION_REASON[data.reason],
+            detail: (data.pros || [])[0] || "",
+          });
+        } else {
+          state.slowWithheld += 1;
+          state.withheldMarks.push(ev.t);
+          detail = WITHHELD_REASON[data.reason || ""];
+          if (detail == null) detail = data.reason;
+          state.judgments.unshift({ t: ev.t, status: "withheld", type: data.type, detail: detail });
+        }
+        state.judgments = state.judgments.slice(0, 3);
+        renderStats();
+        renderJudgments();
+        renderTimeline();
+        break;
+      case "queued":
+        // 只有真的緊接在 admissible 慢路後面的那一筆 queued 才會拿到 claimedSlowJudgment
+        // （快路的 queued 前一筆事件是 fast_timer，不是 slow_score，claimedSlowJudgment
+        // 一定是 null）；掛在 data 上帶著走，等 spoken／dropped／failed 來時再取出來用。
+        if (claimedSlowJudgment) data._judgment = claimedSlowJudgment;
+        state.pendingQueued.push(data);
+        renderTop();
+        break;
+      case "spoken": {
+        var resolvedSpoken = resolveQueued(data);
+        state.lastSpokenAt = data.at != null ? data.at : ev.t;
+        pushTranscript({ kind: "chair", t: state.lastSpokenAt, speaker: "主席", text: data.text, type: data.kind });
+        state.spokenKinds[data.kind] = (state.spokenKinds[data.kind] || 0) + 1;
+        state.chairMarks.push(state.lastSpokenAt);
+        if (resolvedSpoken && resolvedSpoken._judgment) {
+          // 這筆 spoken 是某個慢路 pending 判斷的結果——定案為「開口」。
+          resolvedSpoken._judgment.status = "spoken";
+          state.slowSpoke += 1;
+        }
+        // 真的出聲了＝發聲路徑是通的，連續失敗歸零（見 TTS_FAIL_ALERT）
+        state.ttsFailStreak = 0;
+        renderAlerts();
+        renderTranscript();
+        renderStats();
+        renderJudgments();
+        renderTimeline();
+        renderTop();
+        break;
+      }
+      case "failed":
+      case "dropped": {
+        // 沒真的出聲的候選不計入「主席介入」，也不上時間軸；只是把 pending 清掉，
+        // 讓頂列狀態從「等停頓」回到「聆聽中」。
+        // `failed` 才是「想開口卻發不出聲」（TTS／播放失敗，見 speaker.py 的
+        // on_failed 呼叫點）；`dropped` 是介入被作廢（revision 過期、被取代、
+        // shutdown），跟發聲能力無關，所以只有 failed 累加連續失敗計數。
+        if (ev.kind === "failed") {
+          state.ttsFailStreak += 1;
+          state.lastTtsFail = { t: ev.t, reason: data.reason, kind: data.kind };
+          renderAlerts();
+        }
+        var resolvedVoid = resolveQueued(data);
+        if (resolvedVoid && resolvedVoid._judgment) {
+          // 這筆 dropped／failed 是某個慢路 pending 判斷的結果——它決定要講，
+          // 但沒講成，定案為第三態「受阻」，不能算「開口」。
+          resolvedVoid._judgment.status = "blocked";
+          resolvedVoid._judgment.blockedReason = data.reason;
+          state.slowBlocked += 1;
+          renderStats();
+          renderJudgments();
+        }
+        renderTop();
+        break;
+      }
+      case "hearing":
+        // 主席聽不聽得見。**邊緣事件**：只在狀態改變時送（見 events.py 的 kind
+        // 說明），所以直接覆蓋當前狀態即可，不必比對時間。
+        // 刻意只碰告示列：它跟 glossary 一樣不代表主席的介入行為——不經過 Chair、
+        // 不佔冷卻期、不發 TTS，所以任何一格「主席」的數字都不該因為它而動。
+        state.hearing = data;
+        renderAlerts();
+        break;
+      case "glossary":
+        // 靜默事件：只進逐字稿流。刻意不碰 renderStats／renderTimeline／
+        // renderTop——提示卡不是主席開口，不該讓任何一格「主席」的數字動。
+        // ev.t 是卡片產生的時刻，不是術語出現的時刻，所以它會落在逐字稿尾端
+        // （append，不觸發 transcriptDirty 重建）。
+        pushTranscript({ kind: "gloss", t: ev.t, card: data });
+        renderTranscript();
+        break;
+      case "share":
+        state.share = data;
+        renderShare();
+        break;
+      case "minutes":
+        // T3a 在收尾時發的最後一筆事件，帶兩份 md 全文與四個路徑。
+        state.minutes = data;
+        setEnded();
+        renderTranscript();
+        break;
+    }
+  }
+
+  // snapshot 是伺服器端「權威全量」——每次新連線／重連都重送一次從頭到現在的
+  // 全部事件。重播前先把所有「跟著事件累積」的 state／DOM／游標清空，讓 snapshot
+  // 重播出全新的一份，不做「比 t 大才收」的增量策略（事件到達順序本來就可能跟
+  // t 不一致，增量比對無法正確判斷是否已收過）。
+  // state.ended／state.connectionLost 是連線狀態本身、不是事件累積出來的資料，
+  // 不在清空範圍——但 state.minutes 是，因為它會隨 snapshot 一起重播回來。
+  function resetForSnapshot() {
+    state.transcript = [];
+    state.transcriptDirty = false;
+    state.speaking = {};
+    state.pendingQueued = [];
+    state.lastSpokenAt = null;
+    state.share = {};
+    state.minutes = null;
+    state.spokenKinds = {};
+    state.segments = [];
+    state.chairMarks = [];
+    state.withheldMarks = [];
+    state.phaseMarks = [];
+    state.maxSilence = 0;
+    state.slowTotal = 0;
+    state.slowSpoke = 0;
+    state.slowBlocked = 0;
+    state.slowWithheld = 0;
+    state.judgments = [];
+    state.awaitingQueuedJudgment = null;
+    // 這三個一樣是「跟著事件累積」出來的（hearing／failed／spoken），snapshot 會
+    // 重播回來，不清的話重連之後連續失敗次數會被重複累加成兩倍
+    state.hearing = null;
+    state.ttsFailStreak = 0;
+    state.lastTtsFail = null;
+    renderedCount = 0;
+    nodes = [];
+    el("transcript").innerHTML = "";
+  }
+
+  // ── SSE ──
+  var KINDS = ["meeting", "utterance", "speaking", "fast_timer", "slow_score",
+    "queued", "spoken", "failed", "dropped", "share", "minutes", "glossary", "hearing"];
+
+  var source = new EventSource("/events");
+  source.addEventListener("snapshot", function (e) {
+    var events = JSON.parse(e.data);
+    resetForSnapshot();
+    events.forEach(handleEvent);
+    renderStats();
+    renderJudgments();
+    renderShare();
+    renderTimeline();
+    renderTop();
+    renderAlerts();
+  });
+  KINDS.forEach(function (kind) {
+    source.addEventListener(kind, function (e) { handleEvent(JSON.parse(e.data)); });
+  });
+  source.onerror = function () { setConnectionLost(true); };
+  source.onopen = function () { setConnectionLost(false); };
+
+  renderTop();
+  renderStats();
+  renderJudgments();
+  renderShare();
+  renderTimeline();
+  renderAlerts();
+})();
+</script>
+</body>
+</html>

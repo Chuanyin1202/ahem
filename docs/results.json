@@ -1,0 +1,191 @@
+{
+  "schema": "ahem-validation-results/1",
+  "as_of": "2026-09-02",
+  "stt": {
+    "tail_latency_s": 0.34,
+    "first_token_s": 2.78,
+    "partial_update_interval_s": 1.0
+  },
+  "tts": {
+    "ttfb_median_s_range": [
+      0.15,
+      0.23
+    ],
+    "historical_2_44s_reproducible": false
+  },
+  "slow_path": {
+    "model": "gpt-5.6-luna",
+    "judge_effort": "none",
+    "phrase_effort": "none",
+    "judge_roundtrip_median_s": 3.42,
+    "score_to_queue_median_s": 4.9,
+    "phrase_roundtrip_median_s": 1.55,
+    "phrase_effort_sweep": {
+      "none": {
+        "median_s": 1.55,
+        "max_s": 1.78
+      },
+      "low": {
+        "median_s": 3.47,
+        "max_s": 5.49
+      },
+      "medium": {
+        "median_s": 4.3,
+        "max_s": 11.44
+      }
+    },
+    "verbatim_quote_rate": {
+      "before_split": [
+        2,
+        34
+      ],
+      "after_split": [
+        32,
+        34
+      ]
+    }
+  },
+  "synthetic_scenarios": {
+    "scenarios": 8,
+    "runs_each": 5,
+    "system_hits": [
+      40,
+      40
+    ],
+    "false_positives": 0,
+    "latency_median_s": 3.77
+  },
+  "stability": {
+    "holdout_1": {
+      "points": 34,
+      "pre_split_is_intervention": [
+        6,
+        12,
+        8,
+        7,
+        12
+      ],
+      "post_split_is_intervention": [
+        9,
+        3,
+        5,
+        7,
+        6
+      ],
+      "post_split_admissible": [
+        5,
+        1,
+        2,
+        4,
+        5
+      ],
+      "swing_points": 13,
+      "points_with_margin_0_or_1": 22,
+      "after_housekeeping_guard_admissible": [
+        3,
+        2,
+        5,
+        4,
+        4
+      ],
+      "chitchat_windows_hit_rounds": [
+        5,
+        5
+      ]
+    },
+    "holdout_2": {
+      "points": 109,
+      "is_intervention": [
+        5,
+        4,
+        8,
+        4,
+        7
+      ],
+      "admissible": [
+        4,
+        4,
+        8,
+        4,
+        6
+      ],
+      "slow_hits_on_labelled_opportunities": [
+        0,
+        0,
+        1,
+        0,
+        2
+      ],
+      "housekeeping_point_admitted_rounds": [
+        5,
+        5
+      ],
+      "after_housekeeping_guard": {
+        "admissible": [
+          2,
+          4,
+          6,
+          3,
+          4
+        ],
+        "housekeeping_point_admitted_rounds": [
+          0,
+          5
+        ],
+        "S1_false_positives_per_round": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "slow_hits_on_labelled_opportunities": [
+          0,
+          0,
+          1,
+          0,
+          1
+        ],
+        "O1_hit_rounds": [
+          0,
+          5
+        ]
+      }
+    },
+    "majority_vote_projection": {
+      "k1_sd": 1.62,
+      "k3_sd": 1.47,
+      "k5_sd": 1.36
+    }
+  },
+  "holdout_2_recorded_scoring": {
+    "tp": 3,
+    "fp_in_window": 1,
+    "fp_outside": 1,
+    "excluded": 3,
+    "opportunity_recall": 0.75
+  },
+  "rescore_tool_defects_fixed": {
+    "joined_at_silent_mismatch": [
+      153,
+      0
+    ],
+    "counterfactual_stacked_slow": {
+      "reported": 14,
+      "recorded": 5,
+      "rescored": 9
+    }
+  },
+  "tests": {
+    "with_local_data": {
+      "passed": 511,
+      "skipped": 6,
+      "xfailed": 2
+    },
+    "public_clone": {
+      "passed": 494,
+      "skipped": 23,
+      "xfailed": 2
+    }
+  }
+}

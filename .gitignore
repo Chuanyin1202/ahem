@@ -1,0 +1,51 @@
+# 金鑰與環境
+.env
+.env.*
+!.env.example
+
+# Python
+.venv
+.venv-gemini
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 實驗產物
+experiments/output/
+experiments/audio/*.wav
+experiments/audio/*.mp3
+!experiments/audio/.gitkeep
+
+# gemini_live spike：測試音檔可由 gen_audio.py 重新生成，不入庫
+experiments/gemini_live/audio/
+
+# rescore_slow_path.py 的反事實事件檔：整份是原始 holdout 事件檔的複本，
+# 可由 rescored.json ＋ 原始事件檔重新產生（--report-only，不呼叫 LLM），不入庫。
+experiments/out/**/counterfactual.*.events.jsonl
+
+# --rounds N 的逐輪計分中間產物（每輪一份反事實事件檔＋三份 score.*.json）：
+# 同樣是原始事件檔的複本，且整個目錄都能由 rescored.rounds.json 重新產生
+# （--rounds N --report-only，不呼叫 LLM）。入庫的是 rescored.rounds.json
+# （每一輪的原始模型輸出）與 stability.json（穩定度報表），那兩份才是結論的依據。
+experiments/out/**/rounds/
+
+# macOS
+.DS_Store
+
+# 工具工作區（禁止入庫）
+.claude/
+.superpowers/
+
+# 真實會議逐字稿（含姓名與內容），只留磁碟不入庫
+src/meetings/*.log
+src/meetings/*.jsonl
+# 根目錄的 meetings/：live.py 的產物，以及 test_live_shutdown 會真的 spawn
+# 子進程留下的殘留。先前只蓋 src/meetings/*，每次跑測試都在 worktree 留下
+# 未追蹤目錄，每個工單的實作者都撞到一次。
+meetings/
+
+# 真實會議資料與量測產物：只留本地，不進公開 repo（含第三方對話）。
+# 格式與標註流程見 experiments/holdout/README.md，自備資料放同樣的目錄結構即可。
+experiments/holdout/*
+!experiments/holdout/README.md
+experiments/out/

@@ -1,0 +1,8 @@
+{"kind": "meeting", "t": 0.0, "data": {"topic": "合成測試會議", "duration_min": 10, "phase": "發散期", "participants": ["A"], "start_epoch": 1000000000.0}}
+{"kind": "slow_score", "t": 10.0, "data": {"positive": 3, "negative": 0, "none": 0, "type": "離題", "verdict": "介入", "utterance": "剛剛「便當」那段先放著。", "pros": ["理由A"], "cons": [], "admissible": true, "reason": "", "utterance_seconds": 1.4}}
+{"kind": "queued", "t": 10.01, "data": {"kind": "離題", "target": null, "text": "剛剛「便當」那段先放著。", "hard": false}}
+{"kind": "spoken", "t": 11.0, "data": {"kind": "離題", "target": null, "text": "剛剛「便當」那段先放著。", "hard": false, "at": 11.0}}
+{"kind": "slow_score", "t": 20.0, "data": {"positive": 3, "negative": 0, "none": 0, "type": "僵局", "verdict": "介入", "utterance": "", "pros": ["理由B"], "cons": [], "admissible": false, "reason": "話術失敗", "utterance_seconds": 60.0}}
+{"kind": "slow_score", "t": 30.0, "data": {"positive": 3, "negative": 0, "none": 0, "type": "重複", "verdict": "介入", "utterance": "剛剛「八方雲集」那句先擱著。", "pros": ["理由C"], "cons": [], "admissible": false, "reason": "冷卻(話術後)", "utterance_seconds": 1.6}}
+{"kind": "slow_score", "t": 40.0, "data": {"positive": 0, "negative": 3, "none": 4, "type": "無", "verdict": "不介入", "utterance": "", "pros": [], "cons": [], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "minutes", "t": 50.0, "data": {"host_md": "# 主持記錄", "participant_md": "# 個人紀錄", "host_path": "/tmp/host.md", "participant_path": "/tmp/participant.md"}}

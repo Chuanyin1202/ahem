@@ -1,0 +1,96 @@
+########## Q2 latency ##########
+=== models/gemini-2.5-flash-native-audio-preview-09-2025 (v1alpha, 從 audio 送完到第一個輸出音訊 byte) ===
+  run 1/10: total=6.662s  post_input=0.115s
+  run 2/10: total=7.830s  post_input=1.285s
+  run 3/10: total=7.097s  post_input=0.550s
+  run 4/10: total=7.905s  post_input=1.370s
+  run 5/10: total=7.207s  post_input=0.660s
+  run 6/10: total=7.399s  post_input=0.851s
+  run 7/10: total=7.180s  post_input=0.627s
+  run 8/10: total=7.045s  post_input=0.491s
+  run 9/10: total=7.025s  post_input=0.464s
+  run 10/10: total=7.422s  post_input=0.866s
+models/gemini-2.5-flash-native-audio-preview-09-2025 [post_input（跟 TTS 2.44s 同基準）]: n=10/10  min=0.115s  median=0.643s  max=1.370s  mean=0.728s
+models/gemini-2.5-flash-native-audio-preview-09-2025 [total（含真實語速輸入時間）]: n=10/10  min=6.662s  median=7.193s  max=7.905s  mean=7.277s
+
+=== models/gemini-3.1-flash-live-preview (v1beta) ===
+  run 1/10: total=5.836s  post_input=-0.714s
+  run 2/10: total=5.836s  post_input=-0.713s
+  run 3/10: total=5.823s  post_input=-0.723s
+  run 4/10: total=5.824s  post_input=-0.733s
+  run 5/10: total=5.801s  post_input=-0.739s
+  run 6/10: total=5.814s  post_input=-0.723s
+  run 7/10: total=5.818s  post_input=-0.724s
+  run 8/10: total=5.805s  post_input=-0.746s
+  run 9/10: total=5.860s  post_input=-0.694s
+  run 10/10: total=5.812s  post_input=-0.734s
+models/gemini-3.1-flash-live-preview [post_input（跟 TTS 2.44s 同基準）]: n=10/10  min=-0.746s  median=-0.724s  max=-0.694s  mean=-0.724s
+models/gemini-3.1-flash-live-preview [total（含真實語速輸入時間）]: n=10/10  min=5.801s  median=5.821s  max=5.860s  mean=5.823s
+
+########## Q1 full ##########
+model=models/gemini-2.5-flash-native-audio-preview-09-2025 proactive_audio=True repeats=3
+
+--- quiet_1 run 1/3 ---
+  spoke=False n_turns=1 output_text=''
+--- quiet_1 run 2/3 ---
+  spoke=False n_turns=1 output_text=''
+--- quiet_1 run 3/3 ---
+  spoke=False n_turns=1 output_text=''
+--- quiet_2 run 1/3 ---
+  spoke=False n_turns=1 output_text=''
+--- quiet_2 run 2/3 ---
+  spoke=False n_turns=1 output_text=''
+--- quiet_2 run 3/3 ---
+  spoke=False n_turns=1 output_text=''
+--- speak_deadlock_1 run 1/3 ---
+  spoke=True n_turns=0 output_text='大家似乎對方案 A 和 B 有 各 自 的 考 量, 能 否 收 集 一 下 各 方 面 的 真 正 點, 並 集 中 討 論 如 何 取 捨? 這樣 或 許 可 以 更 快 達 成 共 識。'
+--- speak_deadlock_1 run 2/3 ---
+  spoke=True n_turns=1 output_text='大家似乎都有各自的論點,我們是否可以將方案A和B的優點結合起來, 或者針對風險和成本再做進一步的討論?'
+--- speak_deadlock_1 run 3/3 ---
+  spoke=True n_turns=0 output_text='大家似乎都有各自的論點,我們是否可以將方案A和B的優點結合起來, 或者針對風險和成本再做進一步的討論?'
+--- speak_offtopic_1 run 1/3 ---
+  spoke=True n_turns=2 output_text='大家先暫停一下, 我們今天的討論 是關於 下一季的產品 規劃。 請 各 位 提 出 相關 的 意 見 和 計 畫。'
+--- speak_offtopic_1 run 2/3 ---
+  spoke=True n_turns=1 output_text='請大家回到我們今天會議的主題, 討論 下 一季 的產 品規 劃。'
+--- speak_offtopic_1 run 3/3 ---
+  spoke=True n_turns=1 output_text='請大家回到我們今天會議的主題, 討論 下 一季 的產 品規 劃。'
+
+=== 統計 ===
+quiet_1 (不該開口): 開口 0/3 次，錯誤 0 次
+quiet_2 (不該開口): 開口 0/3 次，錯誤 0 次
+speak_deadlock_1 (該開口): 開口 3/3 次，錯誤 0 次
+speak_offtopic_1 (該開口): 開口 3/3 次，錯誤 0 次
+
+########## Q1 baseline ##########
+model=models/gemini-3.1-flash-live-preview proactive_audio=False repeats=3
+
+--- quiet_1 run 1/3 ---
+  spoke=False n_turns=0 output_text=''
+--- quiet_1 run 2/3 ---
+  spoke=True n_turns=1 output_text='（保持沉默）'
+--- quiet_1 run 3/3 ---
+  spoke=True n_turns=0 output_text=''
+--- quiet_2 run 1/3 ---
+  spoke=True n_turns=0 output_text=''
+--- quiet_2 run 2/3 ---
+  spoke=False n_turns=0 output_text=''
+--- quiet_2 run 3/3 ---
+  spoke=True n_turns=0 output_text=''
+--- speak_deadlock_1 run 1/3 ---
+  spoke=True n_turns=1 output_text='兩個方案各有優缺點，請大家針對風險和成本做更進一步的討論，盡快做出決定。'
+--- speak_deadlock_1 run 2/3 ---
+  spoke=True n_turns=1 output_text='兩位對於方案A、B的觀點都重複了很多次，我們是否能討論折衷方案，或考慮第三種可能？'
+--- speak_deadlock_1 run 3/3 ---
+  spoke=True n_turns=1 output_text='兩位對於 A、B 方案的堅持我們都聽到了，為了會議進度，是否能提出更具體的數據或評估，來協助大家做決策？'
+--- speak_offtopic_1 run 1/3 ---
+  spoke=True n_turns=1 output_text='提醒各位，我們今天的話題是產品規劃，請大家回到正題。'
+--- speak_offtopic_1 run 2/3 ---
+  spoke=True n_turns=1 output_text='各位，我們還是先回到話題，討論第一季的產品規劃吧。'
+--- speak_offtopic_1 run 3/3 ---
+  spoke=True n_turns=1 output_text='我們回到正題，先把下季產品規劃討論完吧。'
+
+=== 統計 ===
+quiet_1 (不該開口): 開口 2/3 次，錯誤 0 次
+quiet_2 (不該開口): 開口 2/3 次，錯誤 0 次
+speak_deadlock_1 (該開口): 開口 3/3 次，錯誤 0 次
+speak_offtopic_1 (該開口): 開口 3/3 次，錯誤 0 次

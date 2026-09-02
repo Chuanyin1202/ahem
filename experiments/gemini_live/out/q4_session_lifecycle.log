@@ -1,0 +1,16 @@
+=== 測試 1：session resumption ===
+session A 連線+setup 花費: 0.22s
+session A 回覆: '好的，我 已經 記住 了。'
+拿到 resumption handle: 有  resumable=True
+
+關閉 session A，準備用 handle 重新連線...
+session B（resumption）連線+setup 花費: 0.51s（距離關閉 session A 共 0.51s）
+session B 回覆: '您是陳大文，最喜歡的顏色是深藍色。 我記住了。'
+是否記得先前事實: 是
+
+=== 測試 2：context_window_compression（低 trigger_tokens，觀察 session 是否仍正常）===
+  第 1 輪回覆: '好的，測試訊息收到。'
+  第 2 輪回覆: '確認收到。'
+  第 3 輪回覆: '已收到。'
+  第 4 輪回覆: '接收成功。'
+結論：session 在設定低 trigger_tokens 的 context_window_compression 下跑完 4 輪，沒有連線錯誤或被拒絕連線。UNVERIFIED：這 4 輪對話量是否真的觸發了 compression（沒有伺服器端明確信號可以確認），只能證明設定本身合法、且不會讓 session 壞掉。

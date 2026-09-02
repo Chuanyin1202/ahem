@@ -49,3 +49,6 @@ meetings/
 experiments/holdout/*
 !experiments/holdout/README.md
 experiments/out/
+
+# local design-context file for an editor skill; not part of the public repo
+.impeccable.md

@@ -39,6 +39,8 @@ Discord voice (one track per participant)
    → live spectator view → two records after the meeting
 ```
 
+**Live transcript.** While someone speaks, the spectator view shows the sentence so far (Scribe partials, about once a second); the committed text replaces it at the next pause. Judgement only ever uses committed text, never the draft.
+
 **The slow path is two calls.** The first only judges (three-axis scores and a type); only after the gates pass does the second write what the chair will say, and that line **must quote, verbatim, something actually said in the transcript**. If no acceptable phrasing comes back, the intervention is dropped; there is no canned fallback.
 
 **The spectator view** is for judges and operators: every "spoke / blocked / held back" decision with its reason, a timeline, speaking share, and silent term cards: the quotes are assembled by code from the transcript, character for character; the external gloss comes from an LLM with web search, must carry a source link, and is discarded whole without one.

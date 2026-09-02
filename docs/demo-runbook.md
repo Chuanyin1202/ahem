@@ -24,7 +24,7 @@ cd ~/meeting-host-agent
 PYTHONPATH=src nohup .venv/bin/python -u -m meeting_host.live \
     --topic "<題目>" --duration <分鐘> --say-hello --spectator-port 8765 \
     --channel 1542595146527412357 --auto-phase suggest \
-    > live-$(date +%m%d-%H%M).out 2>&1 &
+    > live-$(date +%m%d-%H%M).out 2>&1 < /dev/null &
 tail -f live-*.out        # 看到「已登入」「加入語音頻道」「觀戰 UI：http://…」才算起來
 ```
 
@@ -48,11 +48,14 @@ tail -f live-*.out        # 看到「已登入」「加入語音頻道」「觀�
 | 主席重複打斷同一人 | 觀戰畫面連續同型介入 | 手動把階段切到「拉鋸」（該階段主席最克制）；或 `kill -TERM` 重啟並加 `--style gentle` |
 | 觀戰畫面不更新 | 頁面「連線中斷」 | 重新整理；bot 還活著就會重送全量 snapshot |
 | 整個掛掉 | 行程不在 | 重啟同一指令；不要在現場改程式 |
+| 從 ssh 起 bot 後 ssh 不回來 | 指令卡住 | 啟動指令要有 `< /dev/null`（stdin 沒關會把 ssh 通道抓住）；bot 其實已經起了，另開 ssh 查即可 |
 
 ## 結束
 
 ```bash
-kill -TERM <pid>            # 或畫面右下「結束會議」；兩者走同一條 shutdown
+# 一定要送給 python 本體，不是外層的 bash（它的參數字串也含 meeting_host.live，粗糙的 pgrep 會先抓到它）
+kill -TERM $(pgrep -f '^\.venv/bin/python -u -m meeting_host\.live')
+# 或畫面右下「結束會議」；兩者走同一條 shutdown。約 10 秒內結束並寫記錄
 ls -t meetings/ | head -4   # meeting-<秒>.events.jsonl / .host.md / .minutes.md / .log
 ```
 

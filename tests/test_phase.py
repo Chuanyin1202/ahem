@@ -71,3 +71,12 @@ def test_not_judgeable_with_one_speaker_or_too_few_turns():
     st2.add(Utterance("甲", "三", 510.0, 511.0))
     assert ph.judgeable(st2, 600.0) is None
     assert ph.judgeable(st2, 900.0) == "窗口內只有 0 次發言"   # 全部落在窗口外
+
+
+def test_prompt_counts_chair_interventions_in_window_and_states_the_exclusion():
+    st = MeetingState(topic="t", duration_min=30, participants=["甲", "乙"])
+    st.add(Utterance("甲", "一", 500.0, 501.0)); st.add(Utterance("乙", "二", 505.0, 506.0))
+    st.interventions = [100.0, 520.0, 590.0]     # 只有後兩次落在 600-150=450 之後
+    p = ph.build_prompt(st, 600.0, "發散期", [])
+    assert "主席在這段窗口介入了 2 次" in p
+    assert "衝突的對象必須是議題本身才算呻吟區" in p

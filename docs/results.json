@@ -198,9 +198,9 @@
       "holdout_2": {
         "readings": 24,
         "by_phase": {
-          "發散期": 24,
+          "發散期": 23,
           "呻吟區": 0,
-          "收斂期": 0
+          "收斂期": 1
         },
         "switches": 0,
         "declined_ticks": 19
@@ -208,13 +208,18 @@
       "holdout_1": {
         "readings": 12,
         "by_phase": {
-          "發散期": 3,
-          "呻吟區": 9,
+          "發散期": 12,
+          "呻吟區": 0,
           "收斂期": 0
         },
-        "switches": 1,
-        "note": "呻吟區讀數集中在標註窗口 B 的衝突段，是否為設定錯誤待在場者判定"
+        "switches": 0,
+        "declined_ticks": 2
       }
-    }
+    },
+    "criteria_revisions": [
+      "single-speaker or empty window is not judged",
+      "conflict aimed at the chair, tools or process is not a groan zone",
+      "chair interventions in window are given as a structural signal"
+    ]
   }
 }

@@ -49,7 +49,11 @@ CRITERIA = """三個階段的判準（Kaner Diamond）：
   刪選項、定時程、分派工作；大家在收，不在開。
 
 不要因為出現一句結論就判收斂——要看最近幾分鐘的主要走向。
-不要因為有人反對就判呻吟區——發散期本來就允許不同意見，呻吟區是「同一個衝突走不出去」。"""
+不要因為有人反對就判呻吟區——發散期本來就允許不同意見，呻吟區是「同一個衝突走不出去」。
+**衝突的對象必須是議題本身才算呻吟區。** 針對主席、AI、工具或會議流程的不滿——抱怨被打斷、
+爭論主席判得對不對、討論這個系統怎麼運作、互相叫對方閉嘴——是「對會議本身的評論」，
+不是群體在議題上卡住。這種段落不算呻吟區，也不算收斂；議題內容沒有推進就仍是原本的階段。
+下方的「主席介入次數」是線索：主席剛頻繁介入時，張力常來自主席，不是議題。"""
 
 TEMPLATE = """## 會議
 議題：{topic}
@@ -62,6 +66,7 @@ TEMPLATE = """## 會議
 ## 結構訊號（程式算的，不是主觀）
 - 這段有 {n_turns} 次發言，{n_speakers} 人參與，平均每次 {avg_len:.0f} 字
 - 說話者交替 {alternations} 次
+- 主席在這段窗口介入了 {chair_interventions} 次
 - 慢路最近 {n_types} 次判斷的介入類型分佈：{types}
 
 {criteria}
@@ -78,13 +83,15 @@ def build_prompt(st: MeetingState, now: float, current: str,
         f"[{int(u.start) // 60:02d}:{int(u.start) % 60:02d}] {u.speaker}：{u.text}"
         for u in utts) or "（這段沒有人說話）"
     alternations = sum(1 for a, b in zip(utts, utts[1:]) if a.speaker != b.speaker)
+    chair_interventions = sum(1 for t in st.interventions if since <= t <= now)
     avg_len = (sum(len(u.text) for u in utts) / len(utts)) if utts else 0.0
     types = Counter(t for t in recent_types[-TYPES_WINDOW:] if t)
     return TEMPLATE.format(
         topic=st.topic, duration=st.duration_min, elapsed=now / 60, current=current,
         window=WINDOW_SECONDS, transcript=transcript, n_turns=len(utts),
         n_speakers=len({u.speaker for u in utts}), avg_len=avg_len,
-        alternations=alternations, n_types=sum(types.values()),
+        alternations=alternations, chair_interventions=chair_interventions,
+        n_types=sum(types.values()),
         types=dict(types) or "（無）", criteria=CRITERIA)
 
 

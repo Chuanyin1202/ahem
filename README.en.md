@@ -92,7 +92,7 @@ Ahem has chaired and been measured on two real Discord meetings (14 and 43 minut
 | Housekeeping misfires | Fixed. Adjusting audio or locating a file was read as off-topic in 5 of 5 rounds; now 0 of 5, with no loss on genuine off-topic detection |
 | Intervention coverage | Of the six types, "false consensus" and "factual error" have never fired in a real meeting |
 | STT failure detection | Implemented; verified offline only |
-| Phase detection | First version, suggest mode; on the 43-minute recording, 24 readings, 0 spurious switches, 19 ticks declined by rule |
+| Phase detection | First version, suggest mode; 0 spurious switches across 36 readings on two recordings that stay divergent; criteria exclude conflict aimed at the chair |
 
 **Not done:**
 

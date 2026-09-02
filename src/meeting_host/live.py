@@ -399,9 +399,14 @@ def resurrect_room_level(iv: Intervention, reason: str, now: float, revision: in
 class Session:
     def __init__(self, st: MeetingState, phase: str = "發散期",
                  cancel: Callable[[], object] | None = None,
-                 phrase_bank: PhraseBank | None = None):
+                 phrase_bank: PhraseBank | None = None,
+                 auto_phase: str | None = None):
         self.st = st
         self.phase = phase
+        # 階段自動判斷：None＝關（預設，行為與從前完全相同）、"suggest"＝只建議、
+        # "apply"＝自動套用。偵測器與慢路近期 type 的緩衝見 phase.py。
+        self.auto_phase = auto_phase
+        self._recent_slow_types: list[str] = []
         # 觀戰 UI 的「結束會議」開關（POST /end）走的取消動作。main_async 注入
         # main_task.cancel，讓 UI 結束與 kill -TERM 落到完全同一條 shutdown()。
         self._cancel = cancel
@@ -773,6 +778,7 @@ class Session:
             print(f"    ⚠️ 慢路失敗：{type(e).__name__}")
             return last_n  # last_n 不推進，下一 tick 用同一批 utterance 重試
 
+        self._recent_slow_types.append(str(r.get("type") or ""))
         admissible, reason = slow_gate(self.st, self.now, r, deaf=bool(self.deaf_reason()))
         phrase_seconds = None
         if admissible:
@@ -831,6 +837,39 @@ class Session:
             if self.chair is None:
                 continue
             last_n = await self._run_slow_score(last_n)
+
+    def set_phase(self, phase: str, source: str) -> None:
+        """改階段的唯一入口（觀戰畫面 POST /phase 與偵測器都走這裡），改了才 emit。"""
+        if phase == self.phase:
+            return
+        self.phase = phase
+        self.emit("phase", {"phase": phase, "source": source})
+
+    async def watch_phase(self) -> None:
+        """階段自動判斷：每 PHASE_TICK_SECONDS 問一次，遲滯後才建議或套用。
+        沒開 --auto-phase 不會被排進 gather，行為與從前完全相同。"""
+        from . import phase as ph
+        det = ph.PhaseDetector(current=self.phase)
+        while True:
+            await asyncio.sleep(ph.PHASE_TICK_SECONDS)
+            if self.chair is None or ph.judgeable(self.st, self.now) is not None:
+                continue
+            if det.current != self.phase:      # 人手動切了，偵測器跟著對齊
+                det.current, det.pending, det.streak = self.phase, None, 0
+            try:
+                reading = await asyncio.to_thread(
+                    ph.judge, self.st, self.now, self.phase, list(self._recent_slow_types))
+            except Exception as e:  # noqa: BLE001
+                print(f"    ⚠️ 階段判斷失敗：{type(e).__name__}")
+                continue
+            switched = det.observe(reading, self.now)
+            applied = bool(switched) and self.auto_phase == "apply"
+            self.emit("phase_suggestion", {**reading, "current": self.phase, "applied": applied})
+            if switched:
+                self.log.append(f"    (階段判斷：{switched}，信心 {reading['confidence']:.2f}"
+                                f"{'，已套用' if applied else '，待確認'}) {reading['reason']}")
+                if applied:
+                    self.set_phase(switched, "auto")
 
     async def watch_phrasing(self) -> None:
         """T14：背景幫每個 kind 預先生成句型變體，純背景工作，跟任何介入
@@ -961,7 +1000,8 @@ async def main_async(args) -> None:
     # take() 永遠回 None，快路與問候的措辭行為與沒有這個功能之前完全一致。
     phrase_bank = PhraseBank(generator=None if args.no_llm else generate_patterns,
                               topic=args.topic)
-    session = Session(st, args.phase, cancel=main_task.cancel, phrase_bank=phrase_bank)
+    session = Session(st, args.phase, cancel=main_task.cancel, phrase_bank=phrase_bank,
+                      auto_phase=(None if args.no_llm else args.auto_phase))
     # 議題與人名餵給 STT 當專有名詞提示，中英夾雜的辨識率差很多
     pool = STTPool(os.environ["ELEVENLABS_API_KEY"], keyterms=args.keyterms)
     # 失聰偵測的臂 (A)：連線層自己的健康狀態（見 hearing.py 與 STTPool.offline）。
@@ -1035,6 +1075,8 @@ async def main_async(args) -> None:
     if not args.no_llm:
         tasks.append(asyncio.create_task(session.watch_slow()))
         tasks.append(asyncio.create_task(session.watch_phrasing()))
+        if session.auto_phase:
+            tasks.append(asyncio.create_task(session.watch_phase()))
         # 提示卡：靜默、不經過 Chair、不影響冷卻期（見 Session.watch_glossary）。
         # 跟慢路一樣掛在 --no-llm 底下——它也是靠 LLM 抽詞的。
         tasks.append(asyncio.create_task(session.watch_glossary()))
@@ -1262,6 +1304,8 @@ def main() -> None:
     ap.add_argument("--topic", default="會議")
     ap.add_argument("--duration", type=int, default=30)
     ap.add_argument("--phase", default="發散期", choices=["發散期", "呻吟區", "收斂期"])
+    ap.add_argument("--auto-phase", default=None, choices=["suggest", "apply"],
+                    help="階段自動判斷：suggest 只在觀戰畫面建議，apply 自動套用（--no-llm 時無效）")
     ap.add_argument("--channel", type=int, default=None, help="語音頻道 ID")
     ap.add_argument("--keyterms", nargs="*", default=None, help="專有名詞提示")
     ap.add_argument("--no-llm", action="store_true", help="只跑快路")

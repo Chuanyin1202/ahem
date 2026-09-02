@@ -60,7 +60,7 @@ Chair a meeting (have participants join the voice channel first, or pass the cha
 ```bash
 PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
     --topic "Hackathon planning" --duration 30 --say-hello --spectator-port 8765 \
-    [--channel <id>] [--keyterms term1 term2] [--phase 發散期|呻吟區|收斂期] [--no-llm]
+    [--channel <id>] [--keyterms term1 term2] [--phase 發散期|呻吟區|收斂期] [--auto-phase suggest|apply] [--no-llm]
 ```
 
 The spectator view is at `http://localhost:8765`. `Ctrl-C` ends the meeting and writes the records to `meetings/`.
@@ -92,10 +92,11 @@ Ahem has chaired and been measured on two real Discord meetings (14 and 43 minut
 | Housekeeping misfires | Fixed. Adjusting audio or locating a file was read as off-topic in 5 of 5 rounds; now 0 of 5, with no loss on genuine off-topic detection |
 | Intervention coverage | Of the six types, "false consensus" and "factual error" have never fired in a real meeting |
 | STT failure detection | Implemented; verified offline only |
+| Phase detection | First version, suggest mode; on the 43-minute recording, 24 readings, 0 spurious switches, 19 ticks declined by rule |
 
 **Not done:**
 
-- **Automatic detection of the group-process phase** (divergent / groan zone / convergent, after Sam Kaner's Diamond model). This is the basis of the positioning and is currently switched by hand. Blocked on material: every recording so far stays in the divergent phase throughout.
+- **Automatic detection of the group-process phase** (divergent / groan zone / convergent, after Sam Kaner's Diamond model), the basis of the positioning. A first detector exists (`--auto-phase suggest`: one reading a minute, two agreeing readings before a suggestion, no judgement when only one person is speaking or nobody is). It suggests by default and a person confirms in the spectator view; `apply` switches automatically. **Only negatively validated** so far (no spurious switches on recordings that stay divergent); positive validation needs a meeting that actually crosses phases.
 - Chairing style presets (strict / gentle / efficient, as combinations of existing parameters).
 
 **Settled design decisions**: one chair; Mandarin only; no persona; no avatar; no local fallback (cloud services are assumed available). Reasoning in [docs/product-definition.md](docs/product-definition.md) and [docs/development-plan.md](docs/development-plan.md) (Chinese).
@@ -123,6 +124,7 @@ src/meeting_host/
   discord_source.py   one audio track per participant (the only wired source)   stt.py   ElevenLabs Scribe stream pool
   fast_path.py        the four fast rules                  slow_path.py  slow path: judge and phrase calls
   phrasing.py         fast-path phrase bank                hearing.py    STT failure detection
+  phase.py            phase detection (LLM readings with hysteresis; suggests by default)
   speaker.py          chime, TTS, Chair state machine      glossary.py   silent term cards
   events.py           event schema (the seam between modules)   minutes.py    the two records
   spectator.py        spectator view and replay server     state.py      meeting state

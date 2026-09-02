@@ -150,7 +150,10 @@ async def _phase_handler(request: web.Request) -> web.Response:
     if phase not in VALID_PHASES:
         return web.json_response(
             {"ok": False, "error": f"phase 必須是 {VALID_PHASES} 之一"}, status=400)
-    session.phase = phase
+    if hasattr(session, "set_phase"):
+        session.set_phase(phase, "manual")
+    else:
+        session.phase = phase
     session.emit_meeting()
     return web.json_response({"ok": True, "phase": phase})
 

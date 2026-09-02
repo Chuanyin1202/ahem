@@ -60,7 +60,7 @@ cp .env.example .env        # 填入 ELEVENLABS_API_KEY、OPENAI_API_KEY、DISCO
 ```bash
 PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
     --topic "黑客松籌備" --duration 30 --say-hello --spectator-port 8765 \
-    [--channel <頻道 ID>] [--keyterms 詞1 詞2] [--phase 發散期|呻吟區|收斂期] [--no-llm]
+    [--channel <頻道 ID>] [--keyterms 詞1 詞2] [--phase 發散期|呻吟區|收斂期] [--auto-phase suggest|apply] [--no-llm]
 ```
 
 觀戰畫面在 `http://localhost:8765`。`Ctrl-C` 結束會議並寫出記錄到 `meetings/`。
@@ -92,10 +92,11 @@ Ahem 已在兩場真實 Discord 會議（14 分鐘與 43 分鐘，皆有人工�
 | 雜務誤判 | 已修。調設備、找檔案曾被判為離題（5/5 輪），修正後 0/5，且未削弱對真正離題的偵測 |
 | 介入類型覆蓋 | 六型中「假共識」「事實錯誤」從未在真實會議觸發 |
 | STT 失效偵測 | 已實作，僅離線驗證 |
+| 階段自動判斷 | 第一版，建議模式；43 分鐘錄音上 24 筆讀數 0 次誤切，19 個時點依規則拒判 |
 
 **尚未完成**：
 
-- **群體過程階段的自動判斷**（發散／呻吟區／收斂，依 Sam Kaner 的 Diamond 模型）——這是產品定位的基礎，目前只能手動切換。受限於素材：現有錄音全程停在發散期。
+- **群體過程階段的自動判斷**（發散／呻吟區／收斂，依 Sam Kaner 的 Diamond 模型）——這是產品定位的基礎。已有第一版偵測器（`--auto-phase suggest`：每 60 秒判一次、連續兩次一致才建議、單人或無人說話時不判），預設只建議、由人在觀戰畫面確認；`apply` 才自動套用。**只做過反面驗證**（全程發散的錄音上不亂切），正面驗證要等一場真的走完三階段的會議。
 - 主持風格檔位（嚴格／溫和／效率優先，既有參數的組合）。
 
 **已定的設計決定**：一個主席、只做中文、不做人格設定、不做 avatar、不做本地備援（預設雲端服務可用）。理由見 [docs/product-definition.md](docs/product-definition.md) 與 [docs/development-plan.md](docs/development-plan.md)。
@@ -123,6 +124,7 @@ src/meeting_host/
   discord_source.py   Discord 每人一軌收音（唯一接入的音源）   stt.py   ElevenLabs Scribe 串流池
   fast_path.py        快路四規則                    slow_path.py  慢路：判斷與話術兩次呼叫
   phrasing.py         快路話術庫                    hearing.py    STT 失效偵測
+  phase.py            階段自動判斷（LLM 讀數＋遲滯，預設只建議）
   speaker.py          提示音、TTS、Chair 狀態機      glossary.py   術語補充卡
   events.py           事件 schema（各模組的接縫）    minutes.py    會後兩份記錄
   spectator.py        觀戰畫面與回放伺服器           state.py      會議狀態

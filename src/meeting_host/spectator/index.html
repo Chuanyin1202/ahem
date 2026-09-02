@@ -445,6 +445,7 @@
     chairMarks: [],         // 時間軸的主席開口 t
     withheldMarks: [],      // 時間軸的忍住 t
     phaseMarks: [],         // 時間軸的階段切換 {t, phase}
+    phaseHint: null,        // 偵測器最近一次建議（與現況不同才顯示）
     maxSilence: 0,          // 全場最長沉默（各參與者沉默秒數取最小值的歷史最大）
     // 慢路判斷是三態，不是兩態：admissible 只代表「排進佇列」，真正有沒有開口
     // 要等後續事件才定案——可能真的 spoken；也可能連佇列都沒排進去（Chair.request()
@@ -535,7 +536,9 @@
       statusEl.textContent = "等待會議開始";
     } else {
       var phase = PHASE_LABEL[m.phase] || m.phase;
-      statusEl.textContent = phase + "階段 · 主席" + currentChairStatus();
+      var hint = state.phaseHint && state.phaseHint.phase !== m.phase
+        ? "　（建議：" + (PHASE_LABEL[state.phaseHint.phase] || state.phaseHint.phase) + "）" : "";
+      statusEl.textContent = phase + "階段 · 主席" + currentChairStatus() + hint;
     }
 
     document.querySelectorAll("#phase-menu .phase-item").forEach(function (item) {
@@ -1072,6 +1075,18 @@
         state.hearing = data;
         renderAlerts();
         break;
+      case "phase":
+        // 階段真的改了（人或偵測器）：更新現況、時間軸標記、清掉建議提示
+        if (state.meeting) state.meeting.phase = data.phase;
+        state.phaseMarks.push({ t: ev.t, phase: data.phase });
+        state.phaseHint = null;
+        renderTop(); renderTimeline();
+        break;
+      case "phase_suggestion":
+        // 偵測器的一次讀數。不代表主席行為，只在狀態列加一個括號提示。
+        state.phaseHint = data.applied ? null : data;
+        renderTop();
+        break;
       case "glossary":
         // 靜默事件：只進逐字稿流。刻意不碰 renderStats／renderTimeline／
         // renderTop——提示卡不是主席開口，不該讓任何一格「主席」的數字動。
@@ -1131,7 +1146,8 @@
 
   // ── SSE ──
   var KINDS = ["meeting", "utterance", "speaking", "fast_timer", "slow_score",
-    "queued", "spoken", "failed", "dropped", "share", "minutes", "glossary", "hearing"];
+    "queued", "spoken", "failed", "dropped", "share", "minutes", "glossary", "hearing",
+    "phase", "phase_suggestion"];
 
   var source = new EventSource("/events");
   source.addEventListener("snapshot", function (e) {

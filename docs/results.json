@@ -187,5 +187,34 @@
       "skipped": 23,
       "xfailed": 2
     }
+  },
+  "phase_detection": {
+    "tick_s": 60,
+    "window_s": 150,
+    "confirm_readings": 2,
+    "min_confidence": 0.6,
+    "min_dwell_s": 120,
+    "negative_control": {
+      "holdout_2": {
+        "readings": 24,
+        "by_phase": {
+          "發散期": 24,
+          "呻吟區": 0,
+          "收斂期": 0
+        },
+        "switches": 0,
+        "declined_ticks": 19
+      },
+      "holdout_1": {
+        "readings": 12,
+        "by_phase": {
+          "發散期": 3,
+          "呻吟區": 9,
+          "收斂期": 0
+        },
+        "switches": 1,
+        "note": "呻吟區讀數集中在標註窗口 B 的衝突段，是否為設定錯誤待在場者判定"
+      }
+    }
   }
 }

@@ -51,6 +51,14 @@ class Event:
     #     （固定 UTC+8，不用瀏覽器本地時區）。回放模式讀到 T16 之前錄的舊
     #     events.jsonl 時這個欄位不存在，前端要能容錯退回顯示相對時間。
 
+    # ── kind="phase" / "phase_suggestion" 補充說明（階段自動判斷）─────────────
+    # "phase"：階段**真的改變了**。data {"phase": str, "source": "manual"|"auto"}。
+    #   manual＝觀戰畫面 POST /phase；auto＝--auto-phase apply 由偵測器套用。
+    #   只在改變時 emit；開場階段仍在 "meeting" 事件裡。
+    # "phase_suggestion"：偵測器的一次讀數。data {"phase", "confidence", "reason",
+    #   "current": str, "applied": bool}。`applied` 為 True 代表同一刻已 emit "phase"。
+    #   兩者都**不代表主席行為**：不經過 Chair、不佔冷卻、不發 TTS。判準與遲滯見 phase.py。
+
     # ── kind="glossary" 補充說明（提示卡，不在原始 spec 事件表裡）──────────
     # data 形如：
     #   {"term": str,                       # 術語本身，逐字照抄逐字稿裡的寫法

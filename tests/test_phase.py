@@ -117,10 +117,12 @@ def _run_watch_phase(session, monkeypatch, readings, ticks):
 
     async def go():
         task = asyncio.create_task(session.watch_phase())
-        for _ in range(200):
-            await asyncio.sleep(0.002)
-            if sum(1 for e in got if e.kind == "phase_suggestion") >= ticks:
+        # 以時間為準等到收齊，不用固定次數：機器負載高時固定次數會等不到（曾間歇失敗）。
+        deadline = asyncio.get_running_loop().time() + 5.0
+        while sum(1 for e in got if e.kind == "phase_suggestion") < ticks:
+            if asyncio.get_running_loop().time() > deadline:
                 break
+            await asyncio.sleep(0.002)
         task.cancel()
         try:
             await task

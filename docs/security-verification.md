@@ -1,7 +1,7 @@
 # FUTURE 黑客松資安驗收紀錄
 
 驗收日期：2026-09-03
-基準 commit：`4a8a72fdc557379a7fc5b395027903518f6270c0`
+基準 commit：`0b65f3fa75906c9bd4d991399428fee7b845477e`
 實作分支：`codex/future-hackathon-security`
 
 ## 自動化結果
@@ -12,7 +12,8 @@
 - pip-audit：No known vulnerabilities found。
 - Bandit（High gate）：0 High。
 - CycloneDX SBOM：`sbom.cdx.json`。
-- SBOM SHA-256：`428dabd22a34571bc657e7dd9f474d0011269575ce464f00391f18146a95ef50`。
+- SBOM SHA-256：`34907be2a73376bdf4b9af1cfacb0cffea57cb3c3fbcc4a63352919a87ce485b`。
+- GitHub Actions：[`Security gates` run 33735470259](https://github.com/billiswen-png/ahem/actions/runs/33735470259) 已成功完成並上傳 SBOM artifact。
 
 Skipped 項目需要私人 real-holdout 資料或真實 Discord／API 環境；Playwright／Chromium UI 與權限測試已實際執行。本次未使用真實 Token，
 也不把這些結果描述為現場整合測試。兩個 xfail 為上游既有的預期失敗。

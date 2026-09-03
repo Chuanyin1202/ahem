@@ -8,7 +8,10 @@
 """
 import asyncio
 import dataclasses
+import fcntl
 import html
+import json
+import logging
 import os
 import queue
 import re
@@ -47,6 +50,10 @@ TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream?output_
 
 AZURE_TTS_VOICE = "zh-TW-HsiaoChenNeural"
 AZURE_TTS_RATE = "+12%"
+AZURE_TTS_MONTHLY_LIMIT = 500_000
+AZURE_TTS_HARD_STOP_PERCENT = 95
+AZURE_TTS_WARNING_PERCENTS = (80, 90, 95)
+AZURE_TTS_USAGE_FILE = Path("meetings/azure_tts_usage.json")
 _AZURE_REGION_RE = re.compile(r"^[a-z0-9-]+$")
 _AZURE_VOICE_RE = re.compile(r"^[A-Za-z0-9:-]+$")
 _AZURE_RATE_RE = re.compile(r"^[+-]\d{1,3}%$")
@@ -54,6 +61,68 @@ _AZURE_RATE_RE = re.compile(r"^[+-]\d{1,3}%$")
 
 class VoiceError(RuntimeError):
     """開口失敗（TTS 逾時／HTTP 錯誤／播放佇列滿）。Chair 只處理這一種例外。"""
+
+
+class AzureUsageBudget:
+    """本機保守配額閘門：在送出 Azure 請求前先記帳，跨程序以 flock 同步。"""
+
+    def __init__(self, path: Path = AZURE_TTS_USAGE_FILE, *,
+                 monthly_limit: int = AZURE_TTS_MONTHLY_LIMIT,
+                 hard_stop_percent: int = AZURE_TTS_HARD_STOP_PERCENT,
+                 warning_percents: tuple[int, ...] = AZURE_TTS_WARNING_PERCENTS):
+        if monthly_limit <= 0:
+            raise ValueError("AZURE_TTS_MONTHLY_LIMIT 必須大於 0")
+        if not 1 <= hard_stop_percent <= 100:
+            raise ValueError("AZURE_TTS_HARD_STOP_PERCENT 必須介於 1 到 100")
+        if any(not 1 <= value <= hard_stop_percent for value in warning_percents):
+            raise ValueError("AZURE_TTS_WARNING_PERCENTS 必須介於 1 到硬停百分比")
+        self.path = path
+        self.monthly_limit = monthly_limit
+        self.hard_stop_percent = hard_stop_percent
+        self.warning_percents = tuple(sorted(set(warning_percents)))
+
+    @property
+    def hard_limit(self) -> int:
+        return self.monthly_limit * self.hard_stop_percent // 100
+
+    def reserve(self, text: str) -> int:
+        """預留本次字元；失敗也不回補，以免低估 Azure 實際計量。"""
+        month = time.strftime("%Y-%m", time.gmtime())
+        amount = len(text)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        lock_path = self.path.with_suffix(self.path.suffix + ".lock")
+        with lock_path.open("a+", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                try:
+                    state = json.loads(self.path.read_text(encoding="utf-8"))
+                except (FileNotFoundError, json.JSONDecodeError, OSError):
+                    state = {}
+                if state.get("month") != month:
+                    state = {"month": month, "characters": 0, "warned": []}
+                used = int(state.get("characters", 0))
+                projected = used + amount
+                if projected > self.hard_limit:
+                    raise VoiceError(
+                        "Azure TTS 已達本機免費額度安全上限 "
+                        f"({used:,}/{self.hard_limit:,} 字元，本月上限的 "
+                        f"{self.hard_stop_percent}%)；已阻止本次請求")
+                warned = {int(value) for value in state.get("warned", [])}
+                percent = projected * 100 / self.monthly_limit
+                for threshold in self.warning_percents:
+                    if percent >= threshold and threshold not in warned:
+                        logging.warning(
+                            "Azure TTS 免費額度提醒：本月已使用約 %s/%s 字元 (%.1f%%)",
+                            f"{projected:,}", f"{self.monthly_limit:,}", percent)
+                        warned.add(threshold)
+                state.update(characters=projected, warned=sorted(warned))
+                temp = self.path.with_suffix(self.path.suffix + ".tmp")
+                temp.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n",
+                                encoding="utf-8")
+                temp.replace(self.path)
+                return projected
+            finally:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
 
 class Output(discord.AudioSource):
@@ -194,6 +263,7 @@ class AzureVoice(Voice):
 
     def __init__(self, api_key: str, *, region: str,
                  voice_id: str = AZURE_TTS_VOICE, rate: str = AZURE_TTS_RATE,
+                 usage_budget: AzureUsageBudget | None = None,
                  first_byte_timeout: float = 3.0, total_timeout: float = 15.0):
         if not _AZURE_REGION_RE.fullmatch(region):
             raise ValueError("AZURE_SPEECH_REGION 格式不正確")
@@ -205,10 +275,13 @@ class AzureVoice(Voice):
                          total_timeout=total_timeout)
         self.region = region
         self.rate = rate
+        self.usage_budget = usage_budget or AzureUsageBudget()
 
     async def _raw_stream(self, text: str) -> AsyncIterator[bytes]:
         url = f"https://{self.region}.tts.speech.microsoft.com/cognitiveservices/v1"
-        spoken = html.escape(azure_spoken_text(text), quote=False)
+        spoken_text = azure_spoken_text(text)
+        self.usage_budget.reserve(spoken_text)
+        spoken = html.escape(spoken_text, quote=False)
         ssml = (
             "<speak version='1.0' xml:lang='zh-TW'>"
             f"<voice name='{self.voice_id}'><prosody rate='{self.rate}'>"
@@ -236,11 +309,24 @@ def build_voice(environ: Mapping[str, str] | None = None) -> Voice:
     if provider == "elevenlabs":
         return Voice(env["ELEVENLABS_API_KEY"])
     if provider == "azure":
+        warning_percents = tuple(
+            int(value.strip())
+            for value in env.get("AZURE_TTS_WARNING_PERCENTS", "80,90,95").split(",")
+            if value.strip()
+        )
+        usage_budget = AzureUsageBudget(
+            Path(env.get("AZURE_TTS_USAGE_FILE", str(AZURE_TTS_USAGE_FILE))),
+            monthly_limit=int(env.get("AZURE_TTS_MONTHLY_LIMIT", AZURE_TTS_MONTHLY_LIMIT)),
+            hard_stop_percent=int(env.get(
+                "AZURE_TTS_HARD_STOP_PERCENT", AZURE_TTS_HARD_STOP_PERCENT)),
+            warning_percents=warning_percents,
+        )
         return AzureVoice(
             env["AZURE_SPEECH_KEY"],
             region=env["AZURE_SPEECH_REGION"],
             voice_id=env.get("AZURE_TTS_VOICE", AZURE_TTS_VOICE),
             rate=env.get("AZURE_TTS_RATE", AZURE_TTS_RATE),
+            usage_budget=usage_budget,
         )
     raise ValueError("AHEM_TTS_PROVIDER 只支援 elevenlabs 或 azure")
 

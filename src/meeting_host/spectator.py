@@ -428,6 +428,10 @@ class ReplaySession:
         self.subscribers: list[Callable[[Event], None]] = []
         self.phase = VALID_PHASES[0]
         self._all_events = events
+        first_meeting = next((event for event in events if event.kind == "meeting"), None)
+        self._meeting_data = dict(first_meeting.data) if first_meeting else {
+            "topic": "回放", "duration_min": 0, "participants": []
+        }
 
     def request_end(self) -> bool:
         """回放模式沒有進行中的會議可以結束——回 False，讓 `POST /end` 回 409 而不是
@@ -435,10 +439,12 @@ class ReplaySession:
         return False
 
     def emit_meeting(self) -> None:
-        """no-op：回放沒有真正的 MeetingState 可以重建 meeting 事件的其他欄位
-        （topic/duration_min/participants），POST /phase 在回放模式下只更新
-        `self.phase` 供之後讀取，不會讓已連線的頁面立即看到新階段高亮——
-        這是回放模式的已知限制，不是要修的 bug（見 T-H 工單）。"""
+        """沿用事件檔中的會議資料重送狀態，讓手動切換在回放 UI 立即生效。"""
+        data = {**self._meeting_data, "phase": self.phase}
+        event = Event("meeting", self.events[-1].t if self.events else 0.0, data)
+        self.events.append(event)
+        for subscriber in list(self.subscribers):
+            subscriber(event)
 
     async def replay(self, speed: float = 1.0) -> None:
         loop = asyncio.get_event_loop()
@@ -449,6 +455,12 @@ class ReplaySession:
             if target > elapsed:
                 await asyncio.sleep(target - elapsed)
             self.events.append(event)
+            if event.kind == "meeting":
+                self._meeting_data = dict(event.data)
+                if event.data.get("phase") in VALID_PHASES:
+                    self.phase = event.data["phase"]
+            elif event.kind == "phase" and event.data.get("phase") in VALID_PHASES:
+                self.phase = event.data["phase"]
             for sub in list(self.subscribers):
                 try:
                     sub(event)

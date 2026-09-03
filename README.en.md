@@ -65,9 +65,11 @@ PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
     [--channel <id>] [--keyterms term1 term2] [--phase 發散期|呻吟區|收斂期] [--auto-phase suggest|apply] [--style strict|gentle|efficient] [--no-llm]
 ```
 
-The spectator view is at `http://localhost:8765`. `Ctrl-C` ends the meeting and writes the records to `meetings/`.
+The spectator view is at `http://localhost:8765/#token=<short-lived viewer or operator token>`. `Ctrl-C` ends the meeting and writes encrypted records to `meetings/`.
 
-> **Network exposure**: the spectator server binds `0.0.0.0`. Anyone on the same network can open the view and read the full transcript, and `POST /phase` (switch phase) and `POST /end` (end the meeting) are unauthenticated. Use it on a trusted network only, or firewall the port.
+> **Secure default**: the spectator server binds only to `127.0.0.1`; `/events` requires a Viewer token, while `POST /phase` and `POST /end` require an Operator token. The URL fragment is exchanged once for a signed, short-lived HttpOnly cookie and is removed immediately. Query-string tokens are rejected.
+
+Remote display requires the HTTPS reverse proxy, trusted-origin allowlist, and firewall boundary documented in [`docs/security-architecture.md`](docs/security-architecture.md). This includes the upstream `237e945` fix for unauthorised `/phase` and `/end` calls and additionally protects read access.
 
 The view also works without Discord, replaying any event log:
 
@@ -81,7 +83,7 @@ Tests:
 .venv/bin/python -m pytest tests/ -q
 ```
 
-Without real meeting data this is 494 passed, 23 skipped, 2 xfailed: 17 skips are regressions that replay a real recording and enable themselves once data is placed under `experiments/holdout/` (see [Data policy](#data-policy)); the other 6 need `playwright`.
+Install `requirements-dev.txt` and Playwright Chromium to run the browser integration suite. Tests that need private holdout data or explicitly authorised real Discord/API access remain skipped; current counts and scan evidence are recorded in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
 ## Where it stands
 

@@ -111,11 +111,24 @@ def _api_key() -> str:
     raise RuntimeError("找不到 OPENAI_API_KEY")
 
 
+NONE_VETO = True
+"""「不介入」軸有否決權——這是它跟論文原始門檻規則的差別，實測把真實會議的
+誤報從 60%/80% 降到 0%（validation-results.md #3b）。**這是唯一有驗證數據支持
+的模式，真實會議一律保持開啟**；只有 `--style demo` 會關掉它（見 style.py）。
+
+2026-09-03 三人真實會議實測：一段持續 46 秒、內容明確離題（刻意測試用）的發言，
+`type=離題` 連續判了 5 次，三軸分數每次都停在 positive=2／none=2~3，被這條否決權
+擋下每一次，全場一句話沒開口。否決權本身沒有判斷錯——它正確算出「贊成介入的
+證據沒有壓過保留意見」——但這代表 demo 現場只要對話密度不夠高、離題不夠長，
+評審很可能整場看不到主席開口。這正是它被設計出來要付的代價：用「常態不誤報」
+換「邊界情況會忍住」，demo 要看到效果就得接受反過來的代價（見 style.py 的
+demo 檔位）。"""
+
+
 def decide(r: dict) -> str:
-    """三軸相對比較。「不介入」軸有否決權——這是它跟論文原始門檻規則的差別，
-    實測把誤報從 60%/80% 降到 0%（validation-results.md #3b）。"""
+    """三軸相對比較。"""
     p, n, none = r.get("positive", 0), r.get("negative", 0), r.get("none", 0)
-    if max(p, n) <= none:
+    if NONE_VETO and max(p, n) <= none:
         return "不介入"
     if p == n:
         return "兩者皆有"

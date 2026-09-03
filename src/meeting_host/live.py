@@ -20,6 +20,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from . import fast_path, glossary
+from . import style as _style
 from .discord_source import MeetingBot
 from .events import Event
 from .hearing import HearingMonitor
@@ -1115,7 +1116,6 @@ async def main_async(args) -> None:
             tasks.append(asyncio.create_task(
                 serve(session, args.spectator_port, args.spectator_token or None)))
 
-    from . import style as _style
     _applied = _style.apply(args.style)
     print(f"議題：{args.topic}（預計 {args.duration} 分鐘，階段：{args.phase}）")
     if _applied:
@@ -1336,8 +1336,9 @@ def main() -> None:
     ap.add_argument("--topic", default="會議")
     ap.add_argument("--duration", type=int, default=30)
     ap.add_argument("--phase", default="發散期", choices=["發散期", "呻吟區", "收斂期"])
-    ap.add_argument("--style", default=None, choices=["strict", "gentle", "efficient"],
-                    help="主持風格檔位（既有快路門檻的組合，未調校；不給就用預設值）")
+    ap.add_argument("--style", default=None, choices=sorted(_style.STYLES),
+                    help="主持風格檔位（快路門檻＋demo 檔位另外關掉慢路否決權，"
+                         "見 style.py；不給就用預設值）")
     ap.add_argument("--auto-phase", default=None, choices=["suggest", "apply"],
                     help="階段自動判斷：suggest 只在觀戰畫面建議，apply 自動套用（--no-llm 時無效）")
     ap.add_argument("--channel", type=int, default=None, help="語音頻道 ID")

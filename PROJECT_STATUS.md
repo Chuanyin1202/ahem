@@ -55,21 +55,21 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 ## 最新自動化證據
 
 <!-- AUTO-SECURITY-RESULTS:START -->
-- 執行時間：`2026-09-03 16:52:03 CST`。
-- Git commit：`0b65f3f`。
-- `pytest`：560 passed、21 skipped、2 xfailed。
+- 執行時間：`2026-09-03 16:58:41 CST`。
+- Git commit：`b746e92`。
+- `pytest`：561 passed、21 skipped、2 xfailed。
 - 秘密掃描：0 個高可信秘密命中。
 - `pip check`：No broken requirements found。
 - `pip-audit --local`：No known vulnerabilities found。
 - `bandit -lll -r src`：0 個 High severity finding。
-- `sbom.cdx.json` SHA-256：`34907be2a73376bdf4b9af1cfacb0cffea57cb3c3fbcc4a63352919a87ce485b`。
+- `sbom.cdx.json` SHA-256：`39b63990af22ffbbffe05e3948c0dad77b0f9d6c3d16e6e9209b5b0a3fdbdfd9`。
 <!-- AUTO-SECURITY-RESULTS:END -->
 
 ## 最新遠端 CI 證據
 
-- GitHub Actions `Security gates` run [`33735470259`](https://github.com/billiswen-png/ahem/actions/runs/33735470259) 已在 fork 的 `codex/future-hackathon-security` 分支完成，結論為 `success`。
-- 該 run 以 commit `795938b` 執行同一份 `scripts/security-check.sh`，秘密掃描、完整 pytest、`pip check`、`pip-audit`、Bandit High gate 與 CycloneDX SBOM 上傳均通過。
-- 前兩次 run 揭露 Linux 的 Python 模組入口與 PATH 命令解析差異；已修正為 `python -m pytest` 的統一入口，且安全腳本同時接受絕對 Python 路徑與 PATH 中的命令名稱。
+- GitHub Actions `Security gates` run [`33736080874`](https://github.com/billiswen-png/ahem/actions/runs/33736080874) 已在 fork 的 `codex/future-hackathon-security` 分支完成，結論為 `success`。
+- 該 run 以 commit `1c1e046` 執行同一份 `scripts/security-check.sh`，秘密掃描、561 項通過測試、`pip check`、`pip-audit`、Bandit High gate 與 CycloneDX SBOM 上傳均通過。
+- 遠端 runner 曾揭露 Python 入口、PATH 命令解析及 `perf_counter` 浮點抵銷差異；三項均已補強並由最終 run 驗證。純 Markdown／SBOM 證據更新已排除於 push CI，避免每次寫回證據又產生無限驗證鏈。
 
 ## 最新簡報交付
 

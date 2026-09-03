@@ -65,9 +65,15 @@ AZURE_SPEECH_KEY=<Azure Speech key>
 AZURE_SPEECH_REGION=eastasia
 AZURE_TTS_VOICE=zh-TW-HsiaoChenNeural
 AZURE_TTS_RATE=+12%
+AZURE_TTS_MONTHLY_LIMIT=500000
+AZURE_TTS_HARD_STOP_PERCENT=95
+AZURE_TTS_WARNING_PERCENTS=80,90,95
+AZURE_TTS_USAGE_FILE=meetings/azure_tts_usage.json
 ```
 
 這只替換主席的 TTS；即時逐字稿仍由 ElevenLabs Scribe 處理，所以 `ELEVENLABS_API_KEY` 仍須保留。Azure 口說層會把獨立的 `API` 念成已確認的「誒批哀」，並把「收斂」固定成台灣華語 `ㄕㄡ ㄌㄧㄢˋ`；觀戰畫面、事件檔與會後記錄保留原始文字，不會出現發音用的同音字。
+
+Azure `Free F0` 每月額度由 Azure 端強制；Ahem 另在本機保守記帳。預設於 80%、90%、95% 寫出警告，並在 475,000 字元（免費額度的 95%）硬停，保留 5% 緩衝避免不同計量口徑造成超額。使用量記錄在 `meetings/azure_tts_usage.json`，每個 UTC 月自動歸零。Cost Management 預算只能對費用發通知，不能取代這個字元硬上限。
 
 主持一場會議（先讓與會者進語音頻道，或直接給頻道 ID）：
 

@@ -14,6 +14,7 @@
 """
 import asyncio
 import json
+import pytest
 
 from aiohttp.test_utils import TestClient, TestServer
 
@@ -77,7 +78,7 @@ def test_health_and_index_and_sse_snapshot_then_live_event():
             resp = await client.get("/health")
             assert resp.status == 200
             body_json = await resp.json()
-            assert body_json == {"ok": True, "events": 1}
+            assert body_json == {"ok": True}
 
             # (b) /
             resp = await client.get("/")
@@ -117,6 +118,46 @@ def test_health_and_index_and_sse_snapshot_then_live_event():
             await client.close()
 
     asyncio.run(body())
+
+
+def test_security_separates_viewer_and_operator_permissions():
+    async def body():
+        session = FakeSession()
+        security = spectator.SpectatorSecurity("v" * 32, "o" * 32, ("https://demo.local",))
+        server = TestServer(spectator._build_app(session, security))
+        client = TestClient(server)
+        await client.start_server()
+        try:
+            assert (await client.get("/events")).status == 401
+            viewer = {"Authorization": "Bearer " + "v" * 32}
+            operator = {"Authorization": "Bearer " + "o" * 32,
+                        "Origin": "https://demo.local"}
+            assert (await client.post("/phase", headers=viewer,
+                                      json={"phase": "呻吟區"})).status == 401
+            assert (await client.post("/phase", headers=operator,
+                                      json={"phase": "呻吟區"})).status == 200
+            denied = await client.post(
+                "/end", headers={"Authorization": "Bearer " + "o" * 32,
+                                 "Origin": "https://evil.example"})
+            assert denied.status == 403
+            health = await client.get("/health")
+            assert health.status == 200
+            assert "Content-Security-Policy" in health.headers
+        finally:
+            await client.close()
+
+    asyncio.run(body())
+
+
+def test_security_env_rejects_missing_short_or_shared_tokens(monkeypatch):
+    monkeypatch.delenv("AHEM_VIEWER_TOKEN", raising=False)
+    monkeypatch.delenv("AHEM_OPERATOR_TOKEN", raising=False)
+    with pytest.raises(RuntimeError):
+        spectator.SpectatorSecurity.from_env()
+    monkeypatch.setenv("AHEM_VIEWER_TOKEN", "x" * 32)
+    monkeypatch.setenv("AHEM_OPERATOR_TOKEN", "x" * 32)
+    with pytest.raises(RuntimeError):
+        spectator.SpectatorSecurity.from_env()
 
 
 def test_post_phase_valid_updates_session_and_notifies_subscribers():

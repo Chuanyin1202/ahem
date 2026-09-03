@@ -24,6 +24,7 @@ from .discord_source import MeetingBot
 from .events import Event
 from .hearing import HearingMonitor
 from .phrasing import PHRASE_KINDS, PhraseBank, generate_patterns, greeting_text
+from .security import ConsentPolicy, prepare_private_dir, write_protected_text
 from .speaker import ESCALATE_SECONDS, Chair, Earcon, Intervention, Voice
 from .state import MeetingState
 from .stt import STTPool
@@ -1000,6 +1001,13 @@ def install_shutdown_signal_handlers(main_task: asyncio.Task) -> None:
 async def main_async(args) -> None:
     load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
+    ConsentPolicy(
+        granted=bool(getattr(args, "consent", False)),
+        privacy_mode=getattr(args, "privacy_mode", "development"),
+    ).require("ElevenLabs/OpenAI")
+    if getattr(args, "privacy_mode", "development") == "strict":
+        os.environ["AHEM_SECURE_STORAGE"] = "1"
+
     main_task = asyncio.current_task()
     install_shutdown_signal_handlers(main_task)
 
@@ -1242,6 +1250,8 @@ def _try_write_minutes(session: Session, out_dir: Path) -> tuple[Path, Path] | N
 def _read_md(path: Path) -> str:
     """讀回剛寫出的 md。理論上必定存在（上一行才寫的），但這是 shutdown 路徑——
     真的讀不到也只該讓 `minutes` 事件少一份內容，不能賠掉整個收尾。"""
+    if path.name.endswith(".ahem"):
+        return ""  # 嚴格模式不把解密後全文重新送進 SSE。
     try:
         return path.read_text(encoding="utf-8")
     except OSError as e:
@@ -1280,10 +1290,10 @@ def _write_events_jsonl(s: Session, events_path: Path | None) -> None:
     """
     if events_path is None:
         return
-    with events_path.open("w", encoding="utf-8") as f:
-        for event in s.events:
-            f.write(json.dumps(dataclasses.asdict(event), ensure_ascii=False) + "\n")
-    print(f"事件紀錄：{events_path}")
+    contents = "".join(
+        json.dumps(dataclasses.asdict(event), ensure_ascii=False) + "\n" for event in s.events)
+    written = write_protected_text(events_path, contents, artifact_type="events")
+    print(f"事件紀錄：{written}")
 
 
 def summary(s: Session) -> Path:
@@ -1298,10 +1308,10 @@ def summary(s: Session) -> Path:
         print(f"- {p}：發言 {s.st.spoke_seconds(p) / 60:.1f} 分鐘"
               f"（佔 {s.st.share(p, s.now):.0%}）")
     out_dir = Path("meetings")
-    out_dir.mkdir(exist_ok=True)
+    prepare_private_dir(out_dir)
     ts = int(time.time())
     out = out_dir / f"meeting-{ts}.log"
-    out.write_text("\n".join(s.log), encoding="utf-8")
+    out = write_protected_text(out, "\n".join(s.log), artifact_type="transcript_log")
     print(f"\n逐字稿與介入紀錄：{out}")
 
     events_out = out_dir / f"meeting-{ts}.events.jsonl"
@@ -1325,6 +1335,10 @@ def main() -> None:
     ap.add_argument("--no-llm", action="store_true", help="只跑快路")
     ap.add_argument("--say-hello", action="store_true", help="進頻道後主席先開口問候")
     ap.add_argument("--spectator-port", type=int, default=0, help="觀戰 UI 監聽埠（0＝不開）")
+    ap.add_argument("--privacy-mode", choices=["strict", "development"], default="strict",
+                    help="strict 要求參與者同意並使用安全儲存")
+    ap.add_argument("--consent", action="store_true",
+                    help="確認參與者已知情同意音訊轉錄與 AI 處理")
     try:
         asyncio.run(main_async(ap.parse_args()))
     except KeyboardInterrupt:

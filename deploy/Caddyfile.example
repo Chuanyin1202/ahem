@@ -1,0 +1,9 @@
+# 對外只開放這個 HTTPS 入口；Ahem 原始 8765 埠維持 loopback。
+ahem-demo.example {
+    tls internal
+    reverse_proxy 127.0.0.1:8765
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        -Server
+    }
+}

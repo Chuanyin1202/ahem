@@ -23,6 +23,14 @@ from meeting_host.live import GLOSSARY_POLL_SECONDS, Session
 from meeting_host.state import MeetingState, Utterance
 
 
+def test_source_url_allows_public_https_and_blocks_local_networks():
+    assert g._safe_source_url("https://example.com/reference")
+    assert not g._safe_source_url("http://example.com/reference")
+    assert not g._safe_source_url("https://localhost/private")
+    assert not g._safe_source_url("https://127.0.0.1/private")
+    assert not g._safe_source_url("https://169.254.169.254/latest/meta-data")
+
+
 # ── 共用素材 ────────────────────────────────────────────────────────────
 def u(speaker, text, start, end=None):
     return Utterance(speaker, text, start, end if end is not None else start + 3.0)

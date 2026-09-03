@@ -13,6 +13,7 @@ import urllib.request
 from pathlib import Path
 
 from .events import Event
+from .security import prepare_private_dir, write_protected_text
 from .slow_path import API_URL, EFFORT, MODEL, _api_key
 
 
@@ -357,19 +358,20 @@ def write_minutes(session, out_dir: Path) -> tuple[Path, Path]:
     當下時間，實務上與 summary() 那次呼叫相差不到一秒，檔名時間戳可能差 1 秒。
     """
     out_dir = Path(out_dir)
-    out_dir.mkdir(exist_ok=True)
+    prepare_private_dir(out_dir)
     ts = int(time.time())
     host_path = out_dir / f"meeting-{ts}.host.md"
     minutes_path = out_dir / f"meeting-{ts}.minutes.md"
 
-    host_path.write_text(render_host_record(session.events, session.st.participants),
-                          encoding="utf-8")
+    host_path = write_protected_text(
+        host_path, render_host_record(session.events, session.st.participants),
+        artifact_type="host_record")
 
     try:
         payload = _call_minutes_llm(session.events)
         minutes_text = render_minutes(payload)
     except Exception as e:  # noqa: BLE001 — A 失敗不能拖垮 B，也不能讓 summary() 拋例外
         minutes_text = f"# 會議產出\n\n生成失敗：{type(e).__name__}: {e}"
-    minutes_path.write_text(minutes_text, encoding="utf-8")
+    minutes_path = write_protected_text(minutes_path, minutes_text, artifact_type="minutes")
 
     return host_path, minutes_path

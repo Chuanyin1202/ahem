@@ -1,7 +1,10 @@
 # FUTURE 黑客松 × Ahem 執行狀態
 
-最後更新：2026-09-03（Asia/Taipei）  
+最後更新：2026-09-03（Asia/Taipei）
+
 工作分支：`codex/future-hackathon-security`
+
+GitHub fork：<https://github.com/billiswen-png/ahem>
 
 這份文件是團隊的單一進度入口。每次執行、測試或交付後都必須更新日期、證據與未完成項目；沒有證據的項目不得標示完成。
 
@@ -42,7 +45,16 @@
 
 ## 下一個行動
 
-1. 由 Operator 在本機 Keychain 建立 KEK，並在安全測試伺服器設定環境變數。
-2. 依 `docs/demo-security-runbook.md` 完成 Discord 回歸並記錄非敏感結果。
-3. 到共用 Wi-Fi 執行網路與越權矩陣。
-4. 通過後把上述兩項勾選完成，再將 GitHub Project 對應項目改為「已完成」。
+1. 完成本機 GitHub 認證：目前 HTTPS credential 不可用，SSH 尚未信任 `github.com` host key，因此安全分支尚未推送到 fork。
+2. 推送 `codex/future-hackathon-security`，並確認遠端 commit 與本機一致。
+3. 由 Operator 在本機 Keychain 建立 KEK，並在安全測試伺服器設定環境變數。
+4. 依 `docs/demo-security-runbook.md` 完成 Discord 回歸並記錄非敏感結果。
+5. 到共用 Wi-Fi 執行網路與越權矩陣。
+6. 通過後把上述兩項勾選完成，再將 GitHub Project 對應項目改為「已完成」。
+
+## GitHub Project 同步狀態
+
+- 11 個已有程式／文件證據的項目：`待驗收`。
+- Discord 真實語音回歸：`進行中`。
+- 共用 Wi-Fi／越權／日誌與加密現場測試：`進行中`。
+- fork 已建立；安全分支因本機 Git 認證尚未完成而尚未上傳。

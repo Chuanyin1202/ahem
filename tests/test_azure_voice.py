@@ -3,7 +3,14 @@ import asyncio
 import pytest
 
 from meeting_host import speaker
-from meeting_host.speaker import AzureVoice, Voice, azure_spoken_text, build_voice
+from meeting_host.speaker import (
+    AzureUsageBudget,
+    AzureVoice,
+    Voice,
+    VoiceError,
+    azure_spoken_text,
+    build_voice,
+)
 
 
 def test_azure_spoken_text_keeps_confirmed_taiwan_pronunciations():
@@ -64,7 +71,11 @@ def test_azure_request_uses_ssml_profile_and_raw_pcm(monkeypatch):
             return Response()
 
     monkeypatch.setattr(speaker.aiohttp, "ClientSession", Session)
-    voice = AzureVoice("secret", region="eastasia")
+    class Budget:
+        def reserve(self, text):
+            captured["metered_text"] = text
+
+    voice = AzureVoice("secret", region="eastasia", usage_budget=Budget())
 
     async def collect():
         return b"".join([chunk async for chunk in voice._raw_stream("API 要收斂 & 決定")])
@@ -76,3 +87,24 @@ def test_azure_request_uses_ssml_profile_and_raw_pcm(monkeypatch):
     assert "rate='+12%'" in captured["data"]
     assert captured["headers"]["X-Microsoft-OutputFormat"] == "raw-24khz-16bit-mono-pcm"
     assert captured["headers"]["Ocp-Apim-Subscription-Key"] == "secret"
+    assert captured["metered_text"] == "誒批哀 要收練 & 決定"
+
+
+def test_azure_usage_budget_warns_once_and_persists(tmp_path, caplog):
+    budget = AzureUsageBudget(tmp_path / "usage.json", monthly_limit=100,
+                              hard_stop_percent=95, warning_percents=(80, 90, 95))
+    budget.reserve("字" * 81)
+    budget.reserve("字" * 5)
+
+    state = (tmp_path / "usage.json").read_text(encoding="utf-8")
+    assert '"characters": 86' in state
+    assert '"warned": [' in state
+    assert caplog.text.count("免費額度提醒") == 1
+
+
+def test_azure_usage_budget_blocks_before_safety_limit(tmp_path):
+    budget = AzureUsageBudget(tmp_path / "usage.json", monthly_limit=100,
+                              hard_stop_percent=95, warning_percents=(80, 90, 95))
+    assert budget.reserve("字" * 95) == 95
+    with pytest.raises(VoiceError, match="已阻止本次請求"):
+        budget.reserve("再")

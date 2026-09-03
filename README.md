@@ -53,8 +53,9 @@ Discord 語音（每人一軌）
 
 ```bash
 git clone https://github.com/Chuanyin1202/ahem.git && cd ahem
-python -m venv .venv && .venv/bin/pip install -r requirements.txt
-cp .env.example .env        # 填入 ELEVENLABS_API_KEY、OPENAI_API_KEY、DISCORD_BOT_TOKEN
+python -m venv .venv
+. .venv/bin/activate && sh scripts/install-secure.sh
+# 正式 Demo 請由 Keychain／秘密管理器注入 API key 與短效 Viewer／Operator Token。
 ```
 
 主持一場會議（先讓與會者進語音頻道，或直接給頻道 ID）：
@@ -62,12 +63,16 @@ cp .env.example .env        # 填入 ELEVENLABS_API_KEY、OPENAI_API_KEY、DISCO
 ```bash
 PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
     --topic "黑客松籌備" --duration 30 --say-hello --spectator-port 8765 \
+    --privacy-mode strict --consent \
     [--channel <頻道 ID>] [--keyterms 詞1 詞2] [--phase 發散期|呻吟區|收斂期] [--auto-phase suggest|apply] [--style strict|gentle|efficient] [--no-llm]
 ```
 
-觀戰畫面在 `http://localhost:8765`。`Ctrl-C` 結束會議並寫出記錄到 `meetings/`。
+觀戰畫面在 `http://localhost:8765/#token=<短效 Viewer 或 Operator Token>`。
+`Ctrl-C` 結束會議並將加密記錄寫入 `meetings/`。
 
-> **網路暴露**：觀戰服務綁定 `0.0.0.0`，同一網段的任何人都能開啟畫面、讀到完整逐字稿，且 `POST /phase`（切換階段）與 `POST /end`（結束會議）沒有認證。只在可信網路上使用，或用防火牆限制該埠。
+> **安全預設**：觀戰服務只綁定 `127.0.0.1`；事件需要 Viewer Token，
+> `POST /phase` 與 `POST /end` 需要 Operator Token。遠端展示請依
+> [`docs/security-architecture.md`](docs/security-architecture.md) 使用 HTTPS 反向代理。
 
 不用 Discord 也能看畫面——回放任何一份事件檔：
 

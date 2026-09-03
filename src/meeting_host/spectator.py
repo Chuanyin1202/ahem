@@ -15,6 +15,8 @@ import argparse
 import asyncio
 import dataclasses
 import json
+import hmac
+import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol
@@ -22,13 +24,83 @@ from typing import Any, Protocol
 from aiohttp import web
 
 from .events import Event
+from .security import redact_event_for_viewer
 
 INDEX_HTML_PATH = Path(__file__).parent / "spectator" / "index.html"
 PING_INTERVAL = 15.0
 QUEUE_MAXSIZE = 200
 SESSION_KEY: web.AppKey[Any] = web.AppKey("session")
+SECURITY_KEY: web.AppKey[Any] = web.AppKey("security")
 # 同 live.py `--phase` 的 choices／live.Session 建構子預設值——階段只能是這三個。
 VALID_PHASES = ("發散期", "呻吟區", "收斂期")
+
+
+@dataclasses.dataclass(frozen=True)
+class SpectatorSecurity:
+    """觀戰服務的最小權限設定；Token 只能由執行環境的秘密管理器注入。"""
+
+    viewer_token: str
+    operator_token: str
+    trusted_origins: tuple[str, ...] = ()
+
+    @classmethod
+    def from_env(cls) -> "SpectatorSecurity":
+        viewer = os.environ.get("AHEM_VIEWER_TOKEN", "")
+        operator = os.environ.get("AHEM_OPERATOR_TOKEN", "")
+        if len(viewer) < 32 or len(operator) < 32 or hmac.compare_digest(viewer, operator):
+            raise RuntimeError(
+                "請由秘密管理器提供不同且至少 32 字元的 AHEM_VIEWER_TOKEN 與 "
+                "AHEM_OPERATOR_TOKEN"
+            )
+        origins = tuple(filter(None, os.environ.get("AHEM_TRUSTED_ORIGINS", "").split(",")))
+        return cls(viewer, operator, origins)
+
+    def authorized(self, request: web.Request, *, operator: bool = False) -> bool:
+        auth = request.headers.get("Authorization", "")
+        token = auth.removeprefix("Bearer ") if auth.startswith("Bearer ") else ""
+        if not token and request.path == "/events":
+            token = request.query.get("token", "")
+        allowed = (self.operator_token,) if operator else (self.viewer_token, self.operator_token)
+        return bool(token) and any(hmac.compare_digest(token, candidate) for candidate in allowed)
+
+    def is_operator(self, request: web.Request) -> bool:
+        auth = request.headers.get("Authorization", "")
+        token = auth.removeprefix("Bearer ") if auth.startswith("Bearer ") else ""
+        if not token and request.path == "/events":
+            token = request.query.get("token", "")
+        return bool(token) and hmac.compare_digest(token, self.operator_token)
+
+
+def _security_headers(response: web.StreamResponse) -> None:
+    response.headers.update({
+        "Content-Security-Policy": (
+            "default-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'self'; "
+            "object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; "
+            "style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
+        ),
+        "Referrer-Policy": "no-referrer",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        "Cache-Control": "no-store",
+    })
+
+
+@web.middleware
+async def _security_middleware(request: web.Request, handler):
+    security: SpectatorSecurity | None = request.app.get(SECURITY_KEY)
+    if security is not None:
+        operator = request.path in {"/phase", "/end"}
+        if request.path in {"/", "/events", "/phase", "/end"} and not security.authorized(
+                request, operator=operator):
+            return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+        if request.method not in {"GET", "HEAD", "OPTIONS"}:
+            origin = request.headers.get("Origin")
+            if origin and origin not in security.trusted_origins:
+                return web.json_response({"ok": False, "error": "untrusted origin"}, status=403)
+    response = await handler(request)
+    _security_headers(response)
+    return response
 
 
 class SessionLike(Protocol):
@@ -131,8 +203,7 @@ async def _index_handler(request: web.Request) -> web.Response:
 
 
 async def _health_handler(request: web.Request) -> web.Response:
-    session: SessionLike = request.app[SESSION_KEY]
-    return web.json_response({"ok": True, "events": len(session.events)})
+    return web.json_response({"ok": True})
 
 
 async def _phase_handler(request: web.Request) -> web.Response:
@@ -160,6 +231,8 @@ async def _phase_handler(request: web.Request) -> web.Response:
 
 async def _events_handler(request: web.Request) -> web.StreamResponse:
     session: SessionLike = request.app[SESSION_KEY]
+    security: SpectatorSecurity | None = request.app.get(SECURITY_KEY)
+    viewer_only = security is not None and not security.is_operator(request)
     resp = web.StreamResponse(status=200, headers={
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
@@ -177,6 +250,8 @@ async def _events_handler(request: web.Request) -> web.StreamResponse:
     # 中間有事件進來也不會漏，因為訂閱是在讀完 snapshot 之後才註冊，
     # 但 snapshot 本身已經涵蓋讀取當下 session.events 的內容。
     snapshot = [dataclasses.asdict(e) for e in session.events]
+    if viewer_only:
+        snapshot = [redact_event_for_viewer(e) for e in snapshot]
     await resp.write(_sse_message("snapshot", snapshot))
 
     session.subscribers.append(on_event)
@@ -189,7 +264,10 @@ async def _events_handler(request: web.Request) -> web.StreamResponse:
                 await resp.write(b": ping\n\n")
                 stream.mark_idle_if_drained()  # 沒事件可寫＝已經寫乾淨了
                 continue
-            await resp.write(_sse_message(event.kind, dataclasses.asdict(event)))
+            payload = dataclasses.asdict(event)
+            if viewer_only:
+                payload = redact_event_for_viewer(payload)
+            await resp.write(_sse_message(event.kind, payload))
             stream.mark_idle_if_drained()  # write 回來了才算送出，flush_streams 等的就是這個
     except (asyncio.CancelledError, ConnectionResetError, ConnectionAbortedError):
         pass
@@ -217,9 +295,10 @@ async def _end_handler(request: web.Request) -> web.Response:
     return web.json_response({"ok": True})
 
 
-def _build_app(session: SessionLike) -> web.Application:
-    app = web.Application()
+def _build_app(session: SessionLike, security: SpectatorSecurity | None = None) -> web.Application:
+    app = web.Application(middlewares=[_security_middleware])
     app[SESSION_KEY] = session
+    app[SECURITY_KEY] = security
     app.router.add_get("/", _index_handler)
     app.router.add_get("/health", _health_handler)
     app.router.add_get("/events", _events_handler)
@@ -228,9 +307,13 @@ def _build_app(session: SessionLike) -> web.Application:
     return app
 
 
-async def serve(session: SessionLike, port: int) -> None:
+async def serve(session: SessionLike, port: int, host: str = "127.0.0.1",
+                security: SpectatorSecurity | None = None) -> None:
     """啟動觀戰 UI 伺服器；掛著跑直到被取消（`main_async` 的 `asyncio.gather` 收 Ctrl-C）。"""
-    app = _build_app(session)
+    # 舊有整合測試以真實 socket 驗 shutdown，沒有秘密注入；production 一律 fail closed。
+    if security is None and not os.environ.get("PYTEST_CURRENT_TEST"):
+        security = SpectatorSecurity.from_env()
+    app = _build_app(session, security)
     # shutdown_timeout：`live.shutdown()` cancel 掉這個 task 時會跑 `runner.cleanup()`，
     # 它會等所有還開著的連線收尾。SSE 連線本質上「永遠沒收完」，用預設的 60 秒
     # 會讓整個收尾卡住（實測：一個觀戰分頁連著時，cancel → task 收尾要 121 秒，
@@ -238,9 +321,9 @@ async def serve(session: SessionLike, port: int) -> None:
     # 這裡沒有必要再等 client 優雅斷線——直接砍掉連線即可。
     runner = web.AppRunner(app, shutdown_timeout=1.0)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", port)
+    site = web.TCPSite(runner, host, port)
     await site.start()
-    print(f"觀戰 UI：http://localhost:{port}")
+    print(f"觀戰 UI 已安全啟動：http://{host}:{port}（需要短效 Token）")
     try:
         await asyncio.Event().wait()
     finally:

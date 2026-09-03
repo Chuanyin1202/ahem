@@ -1,0 +1,11 @@
+# 範例片段，套用前必須依現場介面與投影機 IP 審核。
+# 不直接執行這份檔案；避免誤鎖管理連線。
+block in log all
+pass in on lo0
+pass in proto tcp from 192.0.2.20 to any port 443 keep state
+block in proto tcp to any port 8765
+
+# 出站網域白名單應交由 DNS-aware egress proxy 管理；pf 不適合追蹤動態 CDN IP。
+pass out proto { tcp udp } to any port { 53, 123 } keep state
+pass out proto tcp to any port 443 keep state
+block out to { 10.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16 }

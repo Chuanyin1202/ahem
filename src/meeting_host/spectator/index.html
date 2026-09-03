@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ahem 觀戰畫面</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
   /* ── 版面與色票逐值抄自 docs/design/spectator-v2/Main.dc.html（定稿「陶土 · 極簡」）──
      這份實作的驗收標準是「與設計稿逐項數值一致」，不是「看起來像」。改任何一個
@@ -326,6 +325,10 @@
 </div>
 
 <script>
+  // Token 從 URL fragment 讀取；fragment 不會進入 HTTP access log。清除網址後，
+  // Token 只保留在這個分頁的記憶體中。
+  var securityToken = new URLSearchParams(location.hash.replace(/^#/, "")).get("token") || "";
+  history.replaceState(null, "", location.pathname);
 (function () {
   "use strict";
 
@@ -574,7 +577,7 @@
       el("phase-menu").hidden = true;
       fetch("/phase", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + securityToken },
         body: JSON.stringify({ phase: item.dataset.phase }),
       }).catch(function (err) { console.error("切換階段失敗", err); });
     });
@@ -985,7 +988,7 @@
     clearTimeout(endTimer);
     endArmed = false;
     endBtn.textContent = "結束中…";
-    fetch("/end", { method: "POST" }).then(function (r) {
+    fetch("/end", { method: "POST", headers: { "Authorization": "Bearer " + securityToken } }).then(function (r) {
       if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || "結束失敗"); });
     }).catch(function (err) {
       console.error("結束會議失敗", err);
@@ -1259,7 +1262,7 @@
     "queued", "spoken", "failed", "dropped", "share", "minutes", "glossary", "hearing",
     "phase", "phase_suggestion", "partial"];
 
-  var source = new EventSource("/events");
+  var source = new EventSource("/events?token=" + encodeURIComponent(securityToken));
   source.addEventListener("snapshot", function (e) {
     var events = JSON.parse(e.data);
     resetForSnapshot();

@@ -97,14 +97,21 @@ def test_target_specific_still_drops_on_speaker_change_with_real_wiring():
     asyncio.run(go())
 
 
-def test_room_level_too_old_eventually_drops_for_real():
-    """驗收 3：換人換不停、真的等不到一次停頓——存活超過既有的 ESCALATE_SECONDS
-    門檻之後不再無限重生，讓它照 Chair 原本的行為真的作廢，不能因為換人講話
-    這條保護放寬了就變成無限期留著一句可能早就過時的話。
+def test_room_level_too_old_escalates_to_hard_instead_of_dying_silently():
+    """驗收 3（2026-09-03 三人真實會議修正後）：換人換不停、真的等不到一次
+    停頓——存活超過既有的 ESCALATE_SECONDS 門檻之後**升級成硬打斷**，不再是
+    悄悄作廢。
+
+    背景：原本這裡超過年齡上限就放行讓它「照 Chair 原本的行為真的作廢」，
+    但那條路根本不會經過 Chair 自己的硬打斷判斷（那個判斷比較的是
+    `_pending_since`，每次重生都被 `request()` 重設，快速換人時永遠來不及
+    累積滿 ESCALATE_SECONDS）——結果是換人換不停的 room-level 介入永遠沒有
+    機會變成硬打斷，只會在這裡放棄。三人真實會議實測：兩次「離題」判定各自
+    重生 3～4 次後在這裡被丟掉，全場只有開場問候一句話。
 
     用倒退 `created_at` 模擬「這句話已經存在 ESCALATE_SECONDS 那麼久」——
     `Session.on_dropped` 用的是真實時鐘（`Session.now`），單元測試裡不會真的
-    等 15 秒，直接讓它一開始就已經「太老」，驗證重生機制確實會放行讓它作廢。
+    等 15 秒，直接讓它一開始就已經「太老」。
     """
     async def go():
         session = Session(MeetingState(topic="t", duration_min=30, participants=["A", "B"]))
@@ -121,13 +128,17 @@ def test_room_level_too_old_eventually_drops_for_real():
         iv = _room_iv(session, created_at=old_created_at)
         assert h.request(iv) is True
 
-        session.note_speaker("B")  # 換人 → revision 過期 → 這次不該被重生
-        await h.run_ticks(2)
+        session.note_speaker("B")  # 換人 → revision 過期 → 太老，升級成硬打斷重新排入
+        await h.run_ticks(2)  # hard 一進 pending 立刻不等安靜開講，這兩輪內就會轉成 playing
 
-        assert h.chair.pending is None
-        assert not h.spoken
+        await h.wait_task_settled()
+        h.player.drain_all()
+        await h.run_ticks(2, drain=True)
+
+        assert len(h.spoken) == 1
+        assert h.spoken[0][0].hard is True
         dropped = [e for e in session.events if e.kind == "dropped"]
-        assert dropped and dropped[0].data["reason"] == "revision 過期"
+        assert not dropped  # 這次不是真的作廢——沒有 dropped 事件
     asyncio.run(go())
 
 

@@ -383,16 +383,32 @@ def resurrect_room_level(iv: Intervention, reason: str, now: float, revision: in
     `iv.created_at` 跨重生不變（`dataclasses.replace` 不動沒指定的欄位）——
     用它幫重生設存活上限，沿用 Chair 既有的 `ESCALATE_SECONDS`（軟插入等不到
     停頓就升級硬打斷的同一個門檻，不另外發明新數字）：換人換不停、真的等不到
-    一次停頓的話，超過這個年紀就不再重生，讓它照 Chair 原本的行為真的作廢
-    ——避免一句可能早就不合時宜的話（例如話題其實已經自己拉回來了）被無限期
-    留著，拖到很久以後才開口。
+    一次停頓的話，超過這個年紀**升級成硬打斷**，不是放棄。
+
+    2026-09-03 三人真實會議實測發現：原本這裡超過年齡上限就 `return None`，
+    交給 Chair 照它原本的行為真的作廢——但 Chair 的作廢路徑只在 revision
+    不符時觸發，走到那條路根本沒機會經過 `Chair.tick()` 自己的
+    `waited >= ESCALATE_SECONDS` 硬打斷判斷（那個判斷比較的是 `_pending_since`，
+    每次重生都被 `request()` 重設成 `now`，在三人以上快速交替時永遠來不及
+    累積滿）。結果是：換人換不停的 room-level 介入，明明是「Chair 該做卻做
+    不到」的情境，反而永遠等不到 Chair 那條硬打斷路徑，只會靜靜作廢——
+    那場會議 11 分鐘起兩次「離題」判定，各自被重生 3～4 次後放棄，全場只有
+    開場問候一句話。
+
+    這裡（`Session.on_dropped` 呼叫端）跟 `Chair.tick()` 是兩套時鐘座標：
+    這裡用 `Session.now`（相對會議起點），`Chair.tick()` 用裸 `perf_counter`
+    （見 `Chair` docstring 的座標警告）——`iv.created_at` 是前者，不能拿去跟
+    `Chair.tick()` 的 `now` 比。升級決定必須留在這個座標系裡做，不能想著
+    「反正 Chair.tick() 也有一個 ESCALATE_SECONDS 判斷，把值傳過去就好」。
     """
     if iv.target is not None:
         return None
     if reason not in _REVISION_STALE_REASONS:
         return None
     if now - iv.created_at >= ESCALATE_SECONDS:
-        return None
+        # 等不到一次停頓插進去，就不再客氣地排隊——直接升級成硬打斷重新排入，
+        # 沿用原本判斷出的話術，只是不再等安靜。
+        return dataclasses.replace(iv, revision=revision, hard=True)
     return dataclasses.replace(iv, revision=revision)
 
 

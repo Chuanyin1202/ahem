@@ -1,7 +1,7 @@
 # FUTURE 黑客松資安驗收紀錄
 
 驗收日期：2026-09-03
-基準 commit：`b527ec685c9d9b22ff76135f2d379a4afe32cf58`
+基準 commit：`4a8a72fdc557379a7fc5b395027903518f6270c0`
 實作分支：`codex/future-hackathon-security`
 
 ## 自動化結果

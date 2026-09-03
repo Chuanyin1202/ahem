@@ -21,7 +21,8 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: sh scripts/install-secure.sh
-      - run: python -m pip install bandit pip-audit
+      - run: python -m pip install bandit pip-audit -r requirements-dev.txt
+      - run: python -m playwright install --with-deps chromium
       - run: PYTHONPATH=src pytest -q
       - run: PYTHONPATH=src pytest tests/test_update_project_status.py -q
       - run: bandit -q -lll -r src -x tests

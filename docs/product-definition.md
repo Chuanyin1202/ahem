@@ -77,10 +77,18 @@
 
 **微軟那個是議程與計時器導向（線性推進，時間到就催），它不知道什麼叫呻吟區**，所以它會在群體正需要衝突的時候去「幫忙收斂」——那是專業引導師眼中的低級錯誤。
 
-### 待補（尚未查證）
+### 已查證：IAF 與 Liberating Structures 可以怎麼用
 
-- IAF（International Association of Facilitators）引導師能力框架
-- Liberating Structures 等其他流派能不能再疊上去
+IAF 的核心能力分成六個面向：建立合作式客戶關係、規劃合適的群體流程、建立並維持參與環境、引導群體得到合適且有用的成果、建立並維持專業知識，以及展現正向專業態度。對 Ahem 最直接的是「參與環境」與「成果引導」；其餘仍涉及需求訪談、流程設計、專業判斷與倫理，不能因為系統會計時、提醒或切換階段，就宣稱等同 IAF 認證引導師。
+
+Liberating Structures（LS）是用來改變群體互動方式的結構化方法庫。官方目前列出 43 種方法並以 10 項原則為基礎；例如 1-2-4-All、Wicked Questions、What, So What, Now What。它適合成為 Ahem 的「會議流程模板輸入」，但不應由模型在會議中未經 Operator 確認就自行換方法。
+
+建議整合邊界：
+
+1. Operator 在會前明確選擇 LS 模板、每段時間與預期產出。
+2. Ahem 只執行計時、輪次、發言公平性與階段提示，不冒充專業認證。
+3. 遇到衝突、個資、敏感議題或需要改變流程時，交回 Operator 決定。
+4. 先以小型、低風險會議驗證，再把實測結果納入主持風格門檻調校。
 
 ---
 
@@ -98,7 +106,7 @@
 
 **評審不是觀眾，是被管的人**——他們會親身感受到被打斷、被點名、被裁決。
 
-（完整腳本與失敗保險尚未撰寫。）
+完整操作腳本、故障處置與安全驗收已分別寫入 [`demo-runbook.md`](demo-runbook.md) 與 [`demo-security-runbook.md`](demo-security-runbook.md)。
 
 ---
 
@@ -111,3 +119,7 @@
 - [CLARA (ACM TOCHI)](https://dl.acm.org/doi/10.1145/3786325)
 - [Kaner's Diamond of Participation](https://www.chriscorrigan.com/parkinglot/the-diamond-of-participation/)
 - [Facilitator's Guide to Participatory Decision-Making (Kaner) PDF](https://www.storypikes.com/workshops/PDFs/Facilitators%20Guide%20to%20Participation%20by%20Sam%20Kaner%20with%20Lenny%20Lind-Catherine%20Toldi-Sarah%20Fisk%20and%20Duane%20Berger-2007.pdf)
+- [IAF Core Competencies](https://iaf-world.org/the-iaf-core-competencies/)
+- [Liberating Structures：Structures Overview](https://www.liberatingstructures.com/structures-overview-1)
+- [Liberating Structures Menu](https://www.liberatingstructures.com/ls-menu-1)
+- [Liberating Structures Principles](https://www.liberatingstructures.com/ls-principles)

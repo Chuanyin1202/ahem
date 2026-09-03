@@ -6,14 +6,14 @@
 
 ## 自動化結果
 
-- pytest：531 passed、25 skipped、2 xfailed。
+- pytest：544 passed、21 skipped、2 xfailed。
 - pip check：No broken requirements found。
 - pip-audit：No known vulnerabilities found。
 - Bandit（High gate）：0 High。
 - CycloneDX SBOM：`sbom.cdx.json`。
 - SBOM SHA-256：`428dabd22a34571bc657e7dd9f474d0011269575ce464f00391f18146a95ef50`。
 
-Skipped 項目需要真實 Discord／API／Playwright 環境；本次未使用真實 Token，
+Skipped 項目需要私人 real-holdout 資料或真實 Discord／API 環境；Playwright／Chromium UI 與權限測試已實際執行。本次未使用真實 Token，
 也不把這些結果描述為現場整合測試。兩個 xfail 為上游既有的預期失敗。
 
 ## 已驗證控制

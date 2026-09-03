@@ -20,18 +20,23 @@ STYLES: dict[str, dict[str, float]] = {
 }
 LABELS = {"strict": "嚴格主席", "gentle": "溫和引導", "efficient": "效率優先"}
 
+_STYLE_KEYS = {key for values in STYLES.values() for key in values}
+_BASE_DEFAULTS = {key: getattr(fast_path, key) for key in _STYLE_KEYS}
+
 
 def defaults() -> dict[str, float]:
-    keys = {k for v in STYLES.values() for k in v}
-    return {k: getattr(fast_path, k) for k in keys}
+    """回傳目前實際生效的門檻，供狀態頁與測試檢查。"""
+    return {key: getattr(fast_path, key) for key in _STYLE_KEYS}
 
 
 def apply(name: str | None) -> dict[str, float]:
-    """套用檔位到 `fast_path` 的模組常數，回傳實際生效的值。`None` 不動任何東西。"""
+    """套用檔位並回傳其設定值；每次先回復基準值，避免前一檔位殘留。"""
     if name is None:
         return {}
     if name not in STYLES:
         raise ValueError(f"未知的風格檔位：{name!r}，可用：{sorted(STYLES)}")
+    for key, value in _BASE_DEFAULTS.items():
+        setattr(fast_path, key, value)
     applied = {}
     for k, v in STYLES[name].items():
         assert hasattr(fast_path, k), k

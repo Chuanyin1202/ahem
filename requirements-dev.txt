@@ -1,0 +1,2 @@
+# 前端整合測試；瀏覽器本體以 `python -m playwright install chromium` 安裝。
+playwright==1.62.0

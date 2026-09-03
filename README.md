@@ -98,6 +98,18 @@ scripts/security-check.sh
 PYTHONPATH=src .venv/bin/python -m meeting_host.preflight --mode local
 ```
 
+前端整合測試需安裝 Playwright；安裝後不再以 skipped 略過觀戰 UI：
+
+```bash
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m playwright install chromium
+make eval-ui
+```
+
+可重複驗證入口：`make eval-regression` 跑離線狀態／時序／封包回歸，
+`make eval-ui` 跑 Chromium UI，`make eval-quality EVENTS=... LABELS=...` 執行至少五輪
+模型品質重評；`make eval-realtime` 必須明確提供真實 Discord 授權環境才會執行。
+
 最新完成項目、待驗收項目與證據統一記錄在 [`PROJECT_STATUS.md`](PROJECT_STATUS.md)。
 
 沒有真實會議資料時，需真實錄音或瀏覽器的測試會明確標示 skipped，已知限制則維持 xfailed；最新實際數量與掃描證據以 [`PROJECT_STATUS.md`](PROJECT_STATUS.md) 為準。真實資料放進 `experiments/holdout/` 後，相關回歸測試會自動啟用（見[資料政策](#資料政策)）。

@@ -1282,13 +1282,11 @@
   }
 
   function establishSession() {
-    if (!securityToken) {
-      history.replaceState(null, "", location.pathname);
-      return Promise.reject(new Error("缺少 Viewer／Operator Token"));
-    }
+    var headers = {};
+    if (securityToken) headers.Authorization = "Bearer " + securityToken;
     return fetch("/session", {
       method: "POST",
-      headers: { "Authorization": "Bearer " + securityToken },
+      headers: headers,
     }).then(function (response) {
       if (!response.ok) throw new Error("Token 驗證失敗");
       securityToken = "";

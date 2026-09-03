@@ -29,11 +29,15 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 
 ## 最新自動化證據
 
-- `pytest`：521 passed、25 skipped、2 xfailed。
+<!-- AUTO-SECURITY-RESULTS:START -->
+- 執行時間：`2026-09-03 11:27:38 CST`。
+- Git commit：`d8e75a4`。
+- `pytest`：524 passed、25 skipped、2 xfailed。
 - `pip check`：No broken requirements found。
 - `pip-audit --local`：No known vulnerabilities found。
 - `bandit -lll -r src`：0 個 High severity finding。
 - `sbom.cdx.json` SHA-256：`428dabd22a34571bc657e7dd9f474d0011269575ce464f00391f18146a95ef50`。
+<!-- AUTO-SECURITY-RESULTS:END -->
 
 ## 最新簡報交付
 
@@ -50,6 +54,8 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 3. 完成必須附可重現證據；人工環境尚未驗證時只能標示「尚未完成」或「待驗收」。
 4. 不記錄 Token、語音密鑰、原始音訊、完整逐字稿或可識別個人的內容。
 5. GitHub Project 狀態必須與本文件一致。
+
+執行 `scripts/security-check.sh` 可一次完成本機安全檢查並自動更新上方證據區塊。這個流程只保存統計與雜湊，不保存測試輸出中的秘密或會議內容。
 
 ## 下一個行動
 

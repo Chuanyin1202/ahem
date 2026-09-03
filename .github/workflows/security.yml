@@ -23,6 +23,7 @@ jobs:
       - run: sh scripts/install-secure.sh
       - run: python -m pip install bandit pip-audit
       - run: PYTHONPATH=src pytest -q
+      - run: PYTHONPATH=src pytest tests/test_update_project_status.py -q
       - run: bandit -q -lll -r src -x tests
       - run: pip-audit --local
       - name: Generate CycloneDX SBOM

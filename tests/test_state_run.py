@@ -4,6 +4,8 @@
 沒有把「這個人已經停了多久」算進去——單人會議永遠不會換人，run 因此永遠不會
 歸零，最終誤觸發「發言超時」硬打斷（見 task-f-report.md 的真實會議 log 證據）。
 """
+import pytest
+
 from meeting_host.state import MeetingState, Utterance
 
 
@@ -134,3 +136,64 @@ def test_j_speaking_branch_also_resets_after_an_interruption():
     speaker, run = s.current_run_seconds(now=8.0)
     assert speaker == "Alex"
     assert run == 8.0 - 4.0  # 只算 Bob 插話之後這一段，不含插話前的「一」
+
+
+# 2026-09-03：真實三人會議實測，「講話中」旗標卡住不放的迴歸。
+#
+# 症狀：達哥說完「請聽我」後 STT 187 秒完全沒有任何事件——不是連線斷掉
+# （`stopped_speaking` 沒被呼叫），也不是他真的一直在講（Discord 音訊封包
+# 持續在送，但 ElevenLabs 沒回任何 partial 或 commit）。`speaking["達哥"]`
+# 卡住不放，run 跟著牆鐘一路長大，觸發「發言超時」，主席對著已經沉默 3 分鐘
+# 的人說「你講了 3 分鐘」——使用者在會議現場當場發現並口頭確認。
+
+
+def test_k_stale_speaking_flag_freezes_instead_of_growing_with_wall_clock():
+    """`speaking_now` 帶 `seen_at`（生產路徑真正的用法）：太久沒有新訊號，
+    旗標不再被信任，run 凍結在最後真的有動靜的時刻，不跟著牆鐘繼續長大。"""
+    s = st()
+    s.speaking_now("達哥", since=100.0, seen_at=100.0)   # 唯一一次真的收到訊號
+    # 44.9 秒後（未過 SPEAKING_STALE_SECONDS=45.0）——旗標仍算新鮮
+    speaker, run = s.current_run_seconds(now=100.0 + 44.9)
+    assert speaker == "達哥"
+    assert run == pytest.approx(44.9)
+
+    # 187 秒後（今晚實測的落差）——旗標早已過期，不能再信任
+    speaker, run = s.current_run_seconds(now=100.0 + 187.0)
+    assert speaker is None
+    assert run == 0.0  # 沒有任何已完成的發言可以回退，落回「無人在講」
+
+
+def test_l_stale_speaking_flag_falls_back_to_last_real_utterance():
+    """旗標過期時落到「已完成發言」那支，且看的是全體最後一句
+    （可能是別人講的），不是死抓著卡住的那個人不放。「已完成」那支本來就有
+    自己的 RUN_GAP_SECONDS 沉默判斷，這裡用一個離最後一句夠近的 now，
+    單純驗證「過期就不再挑達哥」這一件事，不跟那條既有規則糾纏在一起。"""
+    s = st()
+    s.add(Utterance("光の神", "OK", 650.0, 653.1))  # 別人後來正常講了一句
+    s.speaking_now("達哥", since=519.7, seen_at=519.7)
+    speaker, run = s.current_run_seconds(now=655.0)  # 早就過了達哥的 45 秒門檻
+    assert speaker == "光の神"  # 不是「達哥」——他的旗標早就過期了
+    assert run == 653.1 - 650.0
+
+
+def test_m_speaking_now_without_seen_at_never_goes_stale():
+    """沒給 `seen_at`（既有呼叫方式：`run.py` 回放工具、本檔其餘所有測試）——
+    完全不寫 `speaking_seen`，過期檢查形同不存在，行為跟這條防護加上去之前
+    一模一樣。這條防止未來有人「順手」把預設行為改成會過期。"""
+    s = st()
+    s.speaking_now("Alex", since=0.0)  # 沒給 seen_at
+    speaker, run = s.current_run_seconds(now=200.0)  # 遠超過 45 秒
+    assert speaker == "Alex"
+    assert run == 200.0
+
+
+def test_n_fresh_repeated_signals_never_go_stale_even_across_a_long_monologue():
+    """真的連續講很久（STT 持續每秒送 partial）：只要訊號沒斷過，
+    無論講多久都不該被當成卡住——這是這條防護不能誤傷的正面案例。"""
+    s = st()
+    s.speaking_now("Alex", since=0.0, seen_at=0.0)
+    for t in range(1, 201):  # 模擬 STT 每秒一筆 partial，連續 200 秒
+        s.speaking_now("Alex", since=0.0, seen_at=float(t))
+    speaker, run = s.current_run_seconds(now=200.0)
+    assert speaker == "Alex"
+    assert run == 200.0

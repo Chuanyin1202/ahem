@@ -672,7 +672,10 @@ class Session:
                 self.on_partial(ev)
                 continue
             if isinstance(ev, Speaking):
-                self.st.speaking_now(ev.speaker, ev.since)
+                # seen_at=self.now：每次真的收到 STT partial 才會走到這裡，
+                # current_run_seconds 靠這個判斷「正在說話」旗標是不是卡住了
+                # 太久沒更新（見 state.SPEAKING_STALE_SECONDS）。
+                self.st.speaking_now(ev.speaker, ev.since, self.now)
                 self.emit("speaking", {"speaker": ev.speaker, "active": True})
                 continue
             if isinstance(ev, SpeakingStopped):

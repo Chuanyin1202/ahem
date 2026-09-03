@@ -6,7 +6,7 @@
 
 ## 自動化結果
 
-- pytest：550 passed、21 skipped、2 xfailed。
+- pytest：557 passed、21 skipped、2 xfailed。
 - pip check：No broken requirements found。
 - pip-audit：No known vulnerabilities found。
 - Bandit（High gate）：0 High。

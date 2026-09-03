@@ -40,7 +40,7 @@ class ChairHarness:
         self.dropped: list[tuple] = []
         self.chair = Chair(
             state, self.output, voice, earcon if earcon is not None else FakeEarcon(),
-            clock=self.clock, revision=revision,
+            clock=self.clock, sleep=self.clock.sleep, revision=revision,
             on_spoken=lambda iv, at: self.spoken.append((iv, at)),
             on_failed=lambda iv, r: self.failed.append((iv, r)),
             on_escalate=on_escalate or (lambda iv: iv),
@@ -57,19 +57,19 @@ class ChairHarness:
         for _ in range(n):
             await self.chair.tick()
             await self.clock.drain(2)
-            self.clock.t += step
+            await self.clock.advance(step)
             if drain:
                 self.player.drain_all()
 
     async def wait_task_settled(self, timeout: float = 2.0) -> None:
-        """⚠️ 時鐘契約缺口（見 clock.py 模組說明）：hard 路徑的 EARCON_GATE
-        等待（`Chair._speak` 裡 `await asyncio.sleep(gap)`）與 `Voice` 的逾時
-        計時，用的是真實 `asyncio.sleep`／`time.perf_counter`，`VirtualClock`
-        完全推不動——這裡只能真的等 task 跑完（最多等 `timeout` 秒真實時間），
-        跟 tests/test_chair.py 既有測試的 `asyncio.wait_for(c._task, ...)`
-        是同一個妥協。第 3 步把 Clock 注入 `Chair._speak`／`Voice` 之後，
-        這個方法理論上可以整個刪掉，改成單純反覆 `advance()`。
-        """
+        """用虛擬時間驅動 Chair task 完成；`timeout` 是虛擬秒數上限。"""
         task = self.chair._task
-        if task is not None and not task.done():
-            await asyncio.wait_for(task, timeout=timeout)
+        if task is None:
+            return
+        steps = max(1, int(timeout / 0.05))
+        for _ in range(steps):
+            if task.done():
+                break
+            await self.clock.advance(0.05)
+        assert task.done(), f"Chair task 在 {timeout:g} 虛擬秒內未完成"
+        await task

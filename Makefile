@@ -2,7 +2,7 @@ PYTHON ?= .venv/bin/python
 PYTHONPATH := src
 ROUNDS ?= 5
 
-.PHONY: test security preflight eval-regression eval-ui eval-quality eval-realtime
+.PHONY: test security preflight eval-regression eval-ui eval-quality eval-realtime eval-audio
 
 test:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m pytest -q
@@ -26,3 +26,7 @@ eval-quality:
 eval-realtime:
 	@test "$$MEETING_HOST_RUN_REAL_DISCORD" = "1" || (echo "需要明確設定 MEETING_HOST_RUN_REAL_DISCORD=1" >&2; exit 2)
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m pytest -q tests/test_live_shutdown.py
+
+eval-audio:
+	@test -n "$(SCENARIO)" -a -n "$(OUTPUT)" || (echo "需要 SCENARIO=<scenario.json> OUTPUT=<audio.wav>" >&2; exit 2)
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) experiments/generate_synthetic_audio.py "$(SCENARIO)" --output "$(OUTPUT)"

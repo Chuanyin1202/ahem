@@ -36,6 +36,9 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 - [x] 更新 Demo 操作手冊，移除會輸出秘密的 `.env`／API Key 檢查方式，改為 fail-closed 預檢、fragment 一次性交換與本機／HTTPS 安全邊界。
 - [x] 同步原始 Ahem `237e945` 的 Spectator 未授權控制修正；保留其 `/phase`、`/end` 風險回歸，同時維持本分支更嚴格的雙角色、讀取端保護、loopback 與短效 session 設計。
 - [x] 修正回放模式手動切換階段後畫面不立即更新的限制；現在會沿用原會議 metadata 重送狀態，可在無 Discord 情況下展示階段操作。
+- [x] `Chair`、`Session`、背景輪詢、提示音等待與 `Voice` timeout 已支援同一個 `VirtualClock`；核心回歸不再因牆鐘等待而產生不穩定或拖慢。
+- [x] 新增本機 TTS 合成音軌工具、三人三階段虛構情境、重疊 PCM 飽和混音測試與 `make eval-audio`；實際產物已驗證為 16kHz／mono／PCM16 並附不含逐句文字的 manifest。
+- [x] Regression 明確採固定 stub 而不保存 LLM 回應快取，避免模型輸出引用逐字稿後落地；真模型 `eval-quality` 維持禁快取且至少五輪。
 
 ## 尚未完成（4 項，需要真實環境或私人資料）
 
@@ -49,13 +52,13 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 ## 最新自動化證據
 
 <!-- AUTO-SECURITY-RESULTS:START -->
-- 執行時間：`2026-09-03 15:17:50 CST`。
-- Git commit：`8a0272c`。
-- `pytest`：550 passed、21 skipped、2 xfailed。
+- 執行時間：`2026-09-03 15:33:34 CST`。
+- Git commit：`5d14caa`。
+- `pytest`：557 passed、21 skipped、2 xfailed。
 - `pip check`：No broken requirements found。
 - `pip-audit --local`：No known vulnerabilities found。
 - `bandit -lll -r src`：0 個 High severity finding。
-- `sbom.cdx.json` SHA-256：`76608fa4b1769b2c824275683682738283cc29beb1978bfea948ccef1a999a55`。
+- `sbom.cdx.json` SHA-256：`360ae8b21fb5c368c677302441da0917c6819428e28f888e6c930d3b0763135c`。
 <!-- AUTO-SECURITY-RESULTS:END -->
 
 ## 最新簡報交付

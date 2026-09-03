@@ -11,7 +11,7 @@ import dataclasses
 import queue
 import time
 import wave
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -132,11 +132,15 @@ class Voice:
     """文字 → 48k 立體聲 PCM 串流。逾時是必要的：TTS 卡住時主席不能無限期沉默。"""
 
     def __init__(self, api_key: str, voice_id: str = VOICE_ID, *,
-                 first_byte_timeout: float = 3.0, total_timeout: float = 15.0):
+                 first_byte_timeout: float = 3.0, total_timeout: float = 15.0,
+                 clock: Callable[[], float] = time.perf_counter,
+                 sleep: Callable[[float], Awaitable[None]] = asyncio.sleep):
         self.api_key = api_key
         self.voice_id = voice_id
         self.first_byte_timeout = first_byte_timeout
         self.total_timeout = total_timeout
+        self.clock = clock
+        self.sleep = sleep
 
     async def _raw_stream(self, text: str) -> AsyncIterator[bytes]:
         """ElevenLabs HTTP stream：raw s16le mono @ TTS_RATE。測試以假的覆蓋。"""
@@ -151,13 +155,35 @@ class Voice:
 
     async def synth(self, text: str) -> AsyncIterator[bytes]:
         up = Upsampler(TTS_RATE)
-        t0 = time.perf_counter()
+        t0 = self.clock()
         it = self._raw_stream(text).__aiter__()
         first = True
         while True:
-            budget = self.first_byte_timeout if first else max(0.0, self.total_timeout - (time.perf_counter() - t0))
+            budget = self.first_byte_timeout if first else max(
+                0.0, self.total_timeout - (self.clock() - t0)
+            )
             try:
-                chunk = await asyncio.wait_for(it.__anext__(), timeout=budget)
+                if budget <= 0:
+                    raise asyncio.TimeoutError
+                next_chunk = asyncio.create_task(it.__anext__())
+                timeout = asyncio.create_task(self.sleep(budget))
+                try:
+                    done, _ = await asyncio.wait(
+                        {next_chunk, timeout}, return_when=asyncio.FIRST_COMPLETED
+                    )
+                    if next_chunk in done:
+                        timeout.cancel()
+                        await asyncio.gather(timeout, return_exceptions=True)
+                        chunk = await next_chunk
+                    else:
+                        next_chunk.cancel()
+                        await asyncio.gather(next_chunk, return_exceptions=True)
+                        raise asyncio.TimeoutError
+                except asyncio.CancelledError:
+                    next_chunk.cancel()
+                    timeout.cancel()
+                    await asyncio.gather(next_chunk, timeout, return_exceptions=True)
+                    raise
             except StopAsyncIteration:
                 return
             except asyncio.TimeoutError as e:
@@ -189,12 +215,13 @@ class Chair:
 
     def __init__(self, state, output: Output, voice: Voice, earcon: Earcon, *,
                  clock: Callable[[], float] = time.perf_counter,
+                 sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
                  revision: Callable[[], int] = lambda: 0,
                  on_spoken: Callable | None = None, on_failed: Callable | None = None,
                  on_escalate: Callable[["Intervention"], "Intervention | None"] | None = None,
                  on_dropped: Callable[["Intervention", str], None] | None = None):
         self.state, self.output, self.voice, self.earcon = state, output, voice, earcon
-        self.clock, self.revision = clock, revision
+        self.clock, self.sleep, self.revision = clock, sleep, revision
         self.on_spoken = on_spoken or (lambda iv, at: None)
         self.on_failed = on_failed or (lambda iv, reason: None)
         self.on_escalate = on_escalate or (lambda iv: iv)  # 預設：升級時文字原封不動重播
@@ -261,7 +288,7 @@ class Chair:
     async def run(self) -> None:
         while True:
             await self.tick()
-            await asyncio.sleep(TICK)
+            await self.sleep(TICK)
 
     # ── 狀態機 ──
     async def tick(self) -> None:
@@ -358,7 +385,7 @@ class Chair:
                 if hard:
                     gap = EARCON_GATE - (self.clock() - t0)
                     if gap > 0:
-                        await asyncio.sleep(gap)
+                        await self.sleep(gap)
                 prebuffered = True
                 for f in frames:
                     self.output.enqueue(f)
@@ -367,7 +394,7 @@ class Chair:
                 if hard and not prebuffered:
                     gap = EARCON_GATE - (self.clock() - t0)
                     if gap > 0:
-                        await asyncio.sleep(gap)
+                        await self.sleep(gap)
                     prebuffered = True
                 self.output.enqueue(f)
             # 「有沒有出聲」交給 tick() 看 output.first_audible_at 判斷（見上）——

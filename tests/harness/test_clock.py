@@ -55,3 +55,17 @@ def test_repeated_advance_eventually_lets_scheduled_task_finish():
         assert task.done(), "20 輪 advance() 後 stepper 仍未跑完"
         assert state["steps"] == 3
     asyncio.run(go())
+
+
+def test_sleep_finishes_only_after_virtual_deadline():
+    async def go():
+        c = VirtualClock(start=10.0)
+        task = asyncio.create_task(c.sleep(1.0))
+        await c.drain()
+        assert not task.done()
+        await c.advance(0.99)
+        assert not task.done()
+        await c.advance(0.01)
+        assert task.done()
+
+    asyncio.run(go())

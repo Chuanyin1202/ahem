@@ -5,7 +5,10 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_dir"
 
 python_bin="${AHEM_PYTHON:-$repo_dir/.venv/bin/python}"
-if [[ ! -x "$python_bin" ]]; then
+if [[ "$python_bin" != */* ]]; then
+  python_bin="$(command -v "$python_bin" || true)"
+fi
+if [[ -z "$python_bin" || ! -x "$python_bin" ]]; then
   echo "找不到 Python 環境：$python_bin" >&2
   echo "請先執行 scripts/install-secure.sh，或設定 AHEM_PYTHON。" >&2
   exit 2

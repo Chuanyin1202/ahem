@@ -560,10 +560,36 @@
     });
   }
 
+  // ── 操作權杖 ──
+  // 伺服器啟動時印出的 ?k=… 才能 POST /phase 與 /end；沒有權杖的人是唯讀觀眾。
+  // 讀完立刻用 replaceState 把 k 從網址列抹掉：demo 時這個畫面會投影出去，
+  // token 留在網址列等於公開。之後靠 sessionStorage 撐過重新整理。
+  var authToken = (function () {
+    var q = new URLSearchParams(location.search).get("k");
+    if (q) {
+      try { sessionStorage.setItem("ahem-token", q); } catch (e) { /* 隱私模式 */ }
+      var clean = location.pathname + location.hash;
+      history.replaceState(null, "", clean);
+      return q;
+    }
+    try { return sessionStorage.getItem("ahem-token") || ""; } catch (e) { return ""; }
+  })();
+  function canOperate() { return !!authToken; }
+  function authHeaders(extra) {
+    var h = extra || {};
+    if (authToken) h["X-Ahem-Token"] = authToken;
+    return h;
+  }
+  // 唯讀觀眾不顯示會誤導的操作項——按了只會拿到 403。
+  if (!canOperate()) {
+    el("btn-end").hidden = true;
+    el("status").style.cursor = "default";
+  }
+
   // 階段切換：點狀態列開選單。POST /phase 後伺服器會重送 meeting 事件，
   // 這裡不做本地樂觀高亮，等事件回來再 renderTop()（單一事實來源）。
   el("status").addEventListener("click", function (e) {
-    if (!state.meeting || state.ended) return;
+    if (!state.meeting || state.ended || !canOperate()) return;
     e.stopPropagation();
     el("phase-menu").hidden = !el("phase-menu").hidden;
   });
@@ -574,7 +600,7 @@
       el("phase-menu").hidden = true;
       fetch("/phase", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ phase: item.dataset.phase }),
       }).catch(function (err) { console.error("切換階段失敗", err); });
     });
@@ -985,7 +1011,7 @@
     clearTimeout(endTimer);
     endArmed = false;
     endBtn.textContent = "結束中…";
-    fetch("/end", { method: "POST" }).then(function (r) {
+    fetch("/end", { method: "POST", headers: authHeaders() }).then(function (r) {
       if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || "結束失敗"); });
     }).catch(function (err) {
       console.error("結束會議失敗", err);

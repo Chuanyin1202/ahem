@@ -67,7 +67,9 @@ PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
 
 The spectator view is at `http://localhost:8765`. `Ctrl-C` ends the meeting and writes the records to `meetings/`.
 
-> **Network exposure**: the spectator server binds `0.0.0.0`. Anyone on the same network can open the view and read the full transcript, and `POST /phase` (switch phase) and `POST /end` (end the meeting) are unauthenticated. Use it on a trusted network only, or firewall the port.
+Startup prints two URLs: a read-only one for viewers and one with `?k=<token>` for the operator. `POST /phase` (switch phase) and `POST /end` (end the meeting) require an `X-Ahem-Token` header and return 403 without it. The token is random per start; pin one with `--spectator-token` or the `AHEM_SPECTATOR_TOKEN` environment variable.
+
+> **Network exposure**: the server binds `0.0.0.0` and **reads are always public**. Anyone who can reach the port sees the full transcript. This matters behind a public domain (reverse proxy, tunnel): the two state-changing endpoints are gated by the token, the transcript is not. Keep real meeting content off a public address, or put authentication in front of it.
 
 The view also works without Discord, replaying any event log:
 

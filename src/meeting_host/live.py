@@ -1093,7 +1093,8 @@ async def main_async(args) -> None:
     if args.spectator_port:
         serve = _try_import_spectator_serve()
         if serve is not None:
-            tasks.append(asyncio.create_task(serve(session, args.spectator_port)))
+            tasks.append(asyncio.create_task(
+                serve(session, args.spectator_port, args.spectator_token or None)))
 
     from . import style as _style
     _applied = _style.apply(args.style)
@@ -1325,6 +1326,9 @@ def main() -> None:
     ap.add_argument("--no-llm", action="store_true", help="只跑快路")
     ap.add_argument("--say-hello", action="store_true", help="進頻道後主席先開口問候")
     ap.add_argument("--spectator-port", type=int, default=0, help="觀戰 UI 監聽埠（0＝不開）")
+    ap.add_argument("--spectator-token", default="",
+                    help="操作權杖（POST /phase、/end 要帶）。留空＝讀環境變數 "
+                         "AHEM_SPECTATOR_TOKEN，再沒有就每次啟動隨機產生一組並印出來")
     try:
         asyncio.run(main_async(ap.parse_args()))
     except KeyboardInterrupt:

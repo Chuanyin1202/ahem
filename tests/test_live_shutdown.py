@@ -211,6 +211,10 @@ def _spawn_live(extra_args: list[str] | None = None, **popen_kwargs) -> subproce
     )
 
 
+# POST /phase、/end 要帶的操作權杖（`serve()` 沒指定就隨機產生，測試端釘一組才知道要帶什麼）
+_TOKEN = "shutdown-test-token"
+
+
 def _spawn_driver(extra_args: list[str] | None = None, **popen_kwargs) -> subprocess.Popen:
     """起 `tests/harness/live_shutdown_driver.py`——本檔預設會跑的那組用這個，
     不連 Discord、不打 LLM／TTS。"""
@@ -797,7 +801,8 @@ def test_double_post_end_still_exits_cleanly():
     冒煙守門（returncode 與檔案），確認整條路徑沒有回歸。
     """
     port = _free_port()
-    proc = _spawn_driver(extra_args=["--spectator-port", str(port)])
+    proc = _spawn_driver(extra_args=["--spectator-port", str(port),
+                                     "--spectator-token", _TOKEN])
     statuses = []
     out = ""
     try:
@@ -807,7 +812,8 @@ def test_double_post_end_still_exits_cleanly():
         while True:
             try:
                 req = urllib.request.Request(f"http://127.0.0.1:{port}/end", data=b"",
-                                              method="POST")
+                                              method="POST",
+                                              headers={"X-Ahem-Token": _TOKEN})
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     statuses.append(resp.status)
             except (urllib.error.URLError, OSError) as e:
@@ -887,7 +893,8 @@ def test_double_post_end_still_exits_cleanly_real_discord():
     冒煙守門（returncode 與檔案），確認整條路徑沒有回歸。
     """
     port = _free_port()
-    proc = _spawn_live(extra_args=["--spectator-port", str(port)])
+    proc = _spawn_live(extra_args=["--spectator-port", str(port),
+                                   "--spectator-token", _TOKEN])
     statuses = []
     try:
         for _ in range(300):  # 等觀戰 UI 起來（bot 登入要幾秒）
@@ -903,7 +910,8 @@ def test_double_post_end_still_exits_cleanly_real_discord():
         while True:
             try:
                 req = urllib.request.Request(f"http://127.0.0.1:{port}/end", data=b"",
-                                              method="POST")
+                                              method="POST",
+                                              headers={"X-Ahem-Token": _TOKEN})
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     statuses.append(resp.status)
             except (urllib.error.URLError, OSError) as e:
@@ -939,7 +947,8 @@ def test_double_sigterm_during_flush_exits_without_traceback_real_discord():
     離開碼結束，而且事件紀錄照樣寫得出去。
     """
     port = _free_port()
-    proc = _spawn_live(extra_args=["--spectator-port", str(port)])
+    proc = _spawn_live(extra_args=["--spectator-port", str(port),
+                                   "--spectator-token", _TOKEN])
     sock = None
     try:
         for _ in range(300):

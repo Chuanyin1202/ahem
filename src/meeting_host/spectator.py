@@ -15,6 +15,8 @@ import argparse
 import asyncio
 import dataclasses
 import json
+import os
+import secrets
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol
@@ -27,6 +29,10 @@ INDEX_HTML_PATH = Path(__file__).parent / "spectator" / "index.html"
 PING_INTERVAL = 15.0
 QUEUE_MAXSIZE = 200
 SESSION_KEY: web.AppKey[Any] = web.AppKey("session")
+TOKEN_KEY: web.AppKey[Any] = web.AppKey("token")
+# 兩個會改變狀態的端點（POST /phase、POST /end）要帶的 header。
+# GET 一律公開——觀戰畫面本來就是給人看的。
+TOKEN_HEADER = "X-Ahem-Token"
 # 同 live.py `--phase` 的 choices／live.Session 建構子預設值——階段只能是這三個。
 VALID_PHASES = ("發散期", "呻吟區", "收斂期")
 
@@ -141,6 +147,8 @@ async def _phase_handler(request: web.Request) -> web.Response:
     `session.phase` 是慢路 prompt 真正吃的欄位（`live.py` `_run_slow_score` 傳
     `self.phase`），所以這裡改了會**真的**影響下一次 LLM 評分，不只是畫面顯示。
     """
+    if not _authorised(request):
+        return web.json_response({"ok": False, "error": "forbidden"}, status=403)
     session: SessionLike = request.app[SESSION_KEY]
     try:
         payload = await request.json()
@@ -210,6 +218,8 @@ async def _end_handler(request: web.Request) -> web.Response:
     連按兩次都是 200，但只有第一次真的送出取消。第二次送取消會打斷正在跑的
     `live.shutdown()`——`bot.close()` 與 events.jsonl 正好在那時候要做完。
     """
+    if not _authorised(request):
+        return web.json_response({"ok": False, "error": "forbidden"}, status=403)
     session: SessionLike = request.app[SESSION_KEY]
     if not session.request_end():
         return web.json_response(
@@ -217,9 +227,24 @@ async def _end_handler(request: web.Request) -> web.Response:
     return web.json_response({"ok": True})
 
 
-def _build_app(session: SessionLike) -> web.Application:
+def _authorised(request: web.Request) -> bool:
+    """POST 端點的守門。`token=None` ⇒ 不設防（單元測試與回放模式）。
+
+    刻意不做「來源是本機就放行」：cloudflared 是在同一台機器上連 `localhost:<port>`，
+    過 tunnel 的請求來源 IP 全部是 127.0.0.1——那條捷徑等於把整個網際網路
+    當成本機放行。要擋就只能靠這個 header。
+    """
+    token = request.app[TOKEN_KEY]
+    if token is None:
+        return True
+    given = request.headers.get(TOKEN_HEADER, "")
+    return secrets.compare_digest(given, token)
+
+
+def _build_app(session: SessionLike, token: str | None = None) -> web.Application:
     app = web.Application()
     app[SESSION_KEY] = session
+    app[TOKEN_KEY] = token
     app.router.add_get("/", _index_handler)
     app.router.add_get("/health", _health_handler)
     app.router.add_get("/events", _events_handler)
@@ -228,9 +253,15 @@ def _build_app(session: SessionLike) -> web.Application:
     return app
 
 
-async def serve(session: SessionLike, port: int) -> None:
-    """啟動觀戰 UI 伺服器；掛著跑直到被取消（`main_async` 的 `asyncio.gather` 收 Ctrl-C）。"""
-    app = _build_app(session)
+async def serve(session: SessionLike, port: int, token: str | None = None) -> None:
+    """啟動觀戰 UI 伺服器；掛著跑直到被取消（`main_async` 的 `asyncio.gather` 收 Ctrl-C）。
+
+    沒給 token 就現場產一組：`POST /phase` 與 `POST /end` 一律要驗，操作者
+    用啟動時印出的那個網址（`?k=…`）開畫面，其他人開沒有參數的網址是唯讀。
+    服務綁 0.0.0.0 且可能掛在公開網域後面，不設防等於誰都能結束會議。
+    """
+    token = token or os.environ.get("AHEM_SPECTATOR_TOKEN") or secrets.token_urlsafe(12)
+    app = _build_app(session, token)
     # shutdown_timeout：`live.shutdown()` cancel 掉這個 task 時會跑 `runner.cleanup()`，
     # 它會等所有還開著的連線收尾。SSE 連線本質上「永遠沒收完」，用預設的 60 秒
     # 會讓整個收尾卡住（實測：一個觀戰分頁連著時，cancel → task 收尾要 121 秒，
@@ -240,7 +271,8 @@ async def serve(session: SessionLike, port: int) -> None:
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    print(f"觀戰 UI：http://localhost:{port}")
+    print(f"觀戰 UI（唯讀）：http://localhost:{port}")
+    print(f"觀戰 UI（可操作）：http://localhost:{port}/?k={token}")
     try:
         await asyncio.Event().wait()
     finally:

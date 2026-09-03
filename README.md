@@ -92,6 +92,12 @@ PYTHONPATH=src .venv/bin/python -m meeting_host.spectator --replay examples/synt
 scripts/security-check.sh
 ```
 
+真實 Demo 啟動前，先執行不洩漏秘密值的安全預檢：
+
+```bash
+PYTHONPATH=src .venv/bin/python -m meeting_host.preflight --mode local
+```
+
 最新完成項目、待驗收項目與證據統一記錄在 [`PROJECT_STATUS.md`](PROJECT_STATUS.md)。
 
 沒有真實會議資料時，需真實錄音或瀏覽器的測試會明確標示 skipped，已知限制則維持 xfailed；最新實際數量與掃描證據以 [`PROJECT_STATUS.md`](PROJECT_STATUS.md) 為準。真實資料放進 `experiments/holdout/` 後，相關回歸測試會自動啟用（見[資料政策](#資料政策)）。

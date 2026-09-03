@@ -13,13 +13,18 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import dataclasses
+import hashlib
 import json
 import hmac
 import os
+import secrets
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol
+from urllib.parse import urlsplit
 
 from aiohttp import web
 
@@ -42,6 +47,21 @@ class SpectatorSecurity:
     viewer_token: str
     operator_token: str
     trusted_origins: tuple[str, ...] = ()
+    session_ttl_seconds: int = 3600
+    cookie_name: str = "ahem_session"
+
+    def __post_init__(self) -> None:
+        if (len(self.viewer_token) < 32 or len(self.operator_token) < 32
+                or hmac.compare_digest(self.viewer_token, self.operator_token)):
+            raise ValueError("Viewer／Operator Token 必須不同且至少 32 字元")
+        if not 60 <= self.session_ttl_seconds <= 86_400:
+            raise ValueError("短效工作階段期限必須介於 60 秒與 24 小時")
+        for origin in self.trusted_origins:
+            parsed = urlsplit(origin)
+            if (parsed.scheme not in {"http", "https"} or not parsed.netloc
+                    or parsed.path not in {"", "/"} or parsed.query or parsed.fragment
+                    or "*" in origin):
+                raise ValueError(f"不安全的 trusted origin：{origin!r}")
 
     @classmethod
     def from_env(cls) -> "SpectatorSecurity":
@@ -52,23 +72,64 @@ class SpectatorSecurity:
                 "請由秘密管理器提供不同且至少 32 字元的 AHEM_VIEWER_TOKEN 與 "
                 "AHEM_OPERATOR_TOKEN"
             )
-        origins = tuple(filter(None, os.environ.get("AHEM_TRUSTED_ORIGINS", "").split(",")))
+        origins = tuple(origin.strip().rstrip("/") for origin in
+                        os.environ.get("AHEM_TRUSTED_ORIGINS", "").split(",")
+                        if origin.strip())
         return cls(viewer, operator, origins)
 
-    def authorized(self, request: web.Request, *, operator: bool = False) -> bool:
+    def _token_role(self, token: str) -> str | None:
+        if token and hmac.compare_digest(token, self.operator_token):
+            return "operator"
+        if token and hmac.compare_digest(token, self.viewer_token):
+            return "viewer"
+        return None
+
+    def _signing_key(self) -> bytes:
+        material = f"{self.viewer_token}\0{self.operator_token}".encode()
+        return hashlib.sha256(material).digest()
+
+    def issue_session(self, token: str, *, now: int | None = None) -> tuple[str, str]:
+        """把長效 Token 換成一小時短效 Cookie；Cookie 不含原始 Token。"""
+        role = self._token_role(token)
+        if role is None:
+            raise PermissionError("invalid token")
+        expires = (int(time.time()) if now is None else now) + self.session_ttl_seconds
+        nonce = secrets.token_urlsafe(12)
+        payload = f"{role}.{expires}.{nonce}"
+        signature = hmac.new(self._signing_key(), payload.encode(), hashlib.sha256).digest()
+        encoded_signature = base64.urlsafe_b64encode(signature).decode().rstrip("=")
+        return f"{payload}.{encoded_signature}", role
+
+    def session_role(self, value: str, *, now: int | None = None) -> str | None:
+        try:
+            role, expires_text, nonce, signature = value.split(".", 3)
+            expires = int(expires_text)
+        except (TypeError, ValueError):
+            return None
+        if role not in {"viewer", "operator"} or not nonce:
+            return None
+        if expires < (int(time.time()) if now is None else now):
+            return None
+        payload = f"{role}.{expires}.{nonce}"
+        expected = base64.urlsafe_b64encode(
+            hmac.new(self._signing_key(), payload.encode(), hashlib.sha256).digest()
+        ).decode().rstrip("=")
+        return role if hmac.compare_digest(signature, expected) else None
+
+    def request_role(self, request: web.Request) -> str | None:
         auth = request.headers.get("Authorization", "")
         token = auth.removeprefix("Bearer ") if auth.startswith("Bearer ") else ""
-        if not token and request.path == "/events":
-            token = request.query.get("token", "")
-        allowed = (self.operator_token,) if operator else (self.viewer_token, self.operator_token)
-        return bool(token) and any(hmac.compare_digest(token, candidate) for candidate in allowed)
+        role = self._token_role(token)
+        if role is not None:
+            return role
+        return self.session_role(request.cookies.get(self.cookie_name, ""))
+
+    def authorized(self, request: web.Request, *, operator: bool = False) -> bool:
+        role = self.request_role(request)
+        return role == "operator" if operator else role in {"viewer", "operator"}
 
     def is_operator(self, request: web.Request) -> bool:
-        auth = request.headers.get("Authorization", "")
-        token = auth.removeprefix("Bearer ") if auth.startswith("Bearer ") else ""
-        if not token and request.path == "/events":
-            token = request.query.get("token", "")
-        return bool(token) and hmac.compare_digest(token, self.operator_token)
+        return self.request_role(request) == "operator"
 
 
 def _security_headers(response: web.StreamResponse) -> None:
@@ -91,7 +152,7 @@ async def _security_middleware(request: web.Request, handler):
     security: SpectatorSecurity | None = request.app.get(SECURITY_KEY)
     if security is not None:
         operator = request.path in {"/phase", "/end"}
-        if request.path in {"/", "/events", "/phase", "/end"} and not security.authorized(
+        if request.path in {"/events", "/phase", "/end"} and not security.authorized(
                 request, operator=operator):
             return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
         if request.method not in {"GET", "HEAD", "OPTIONS"}:
@@ -206,6 +267,31 @@ async def _health_handler(request: web.Request) -> web.Response:
     return web.json_response({"ok": True})
 
 
+async def _session_handler(request: web.Request) -> web.Response:
+    """以一次性的 Authorization header 換短效 HttpOnly Cookie，避免 Token 出現在 URL。"""
+    security: SpectatorSecurity | None = request.app.get(SECURITY_KEY)
+    if security is None:
+        return web.json_response({"ok": True, "role": "development"})
+    auth = request.headers.get("Authorization", "")
+    token = auth.removeprefix("Bearer ") if auth.startswith("Bearer ") else ""
+    try:
+        session_value, role = security.issue_session(token)
+    except PermissionError:
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    response = web.json_response({"ok": True, "role": role,
+                                  "expires_in": security.session_ttl_seconds})
+    response.set_cookie(
+        security.cookie_name,
+        session_value,
+        max_age=security.session_ttl_seconds,
+        httponly=True,
+        secure=request.secure or os.environ.get("AHEM_COOKIE_SECURE") == "1",
+        samesite="Strict",
+        path="/",
+    )
+    return response
+
+
 async def _phase_handler(request: web.Request) -> web.Response:
     """H3：工程視角的階段分頁改為可點——POST 一個合法階段，更新 session 並重送 meeting 事件。
 
@@ -301,6 +387,7 @@ def _build_app(session: SessionLike, security: SpectatorSecurity | None = None) 
     app[SECURITY_KEY] = security
     app.router.add_get("/", _index_handler)
     app.router.add_get("/health", _health_handler)
+    app.router.add_post("/session", _session_handler)
     app.router.add_get("/events", _events_handler)
     app.router.add_post("/phase", _phase_handler)
     app.router.add_post("/end", _end_handler)

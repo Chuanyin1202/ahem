@@ -22,21 +22,31 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 - [x] SBOM、CI 測試、Bandit 高風險門檻與 pip-audit。
 - [x] 可向 Ahem 上游提交的 Issue／PR 拆分提案。
 
+## 本次追加完成
+
+- [x] Spectator Token 不再出現在 SSE query string；網址 fragment 只用於一次交換一小時短效、帶簽章的 HttpOnly／SameSite Cookie，交換後立即清除。
+- [x] 短效 session 的角色、到期、竄改與不安全 trusted origin 均採 fail closed，並有自動測試。
+- [x] 新增 `meeting_host.preflight`：啟動 Demo 前檢查角色 Token、Keychain KEK、加密儲存、loopback／LAN 邊界、Secure Cookie、資料夾權限與監聽埠，全程不輸出秘密值。
+- [x] 以臨時隨機 Token 與測試 KEK 實跑本機預檢邏輯，所有檢查通過並得到 `READY`；真實 CLI 會因主機尚未建立 KEK／Token 而正確顯示 `BLOCKED`。
+- [x] `scripts/security-check.sh` 現在每次都重新產生 CycloneDX SBOM，再更新本文件的雜湊。
+
 ## 尚未完成（2 項，需要真實環境）
 
 - [ ] **Discord 真實語音回歸**：需要在授權的 Discord 測試伺服器，以實際 Bot、STT/TTS 帳號執行收音、發聲、斷線重連與安全日誌檢查。密鑰不得貼入 Issue、PR 或本文件。
 - [ ] **共用 Wi-Fi／跨裝置邊界驗收**：需要在比賽現場或等價網路，驗證未授權裝置無法連線、Viewer 無法操作、Operator 才能切換階段／結束會議，以及 HTTPS 憑證鏈正常。
 
+本機已完成上述兩項所需的程式、離線測試、預檢與 runbook；目前電腦沒有 Ahem Keychain KEK、Viewer／Operator Token、Discord／ElevenLabs／OpenAI 憑證，因此不能誠實宣稱已完成真實服務整合。建立或輸入這些秘密必須由持有人在受控終端操作，不應寫入 repo、Project 或對話。
+
 ## 最新自動化證據
 
 <!-- AUTO-SECURITY-RESULTS:START -->
-- 執行時間：`2026-09-03 11:28:43 CST`。
-- Git commit：`6198efb`。
-- `pytest`：524 passed、25 skipped、2 xfailed。
+- 執行時間：`2026-09-03 14:09:56 CST`。
+- Git commit：`9b50b40`。
+- `pytest`：531 passed、25 skipped、2 xfailed。
 - `pip check`：No broken requirements found。
 - `pip-audit --local`：No known vulnerabilities found。
 - `bandit -lll -r src`：0 個 High severity finding。
-- `sbom.cdx.json` SHA-256：`428dabd22a34571bc657e7dd9f474d0011269575ce464f00391f18146a95ef50`。
+- `sbom.cdx.json` SHA-256：`ff49f346f3a44b5ad09da2a0372384e758737a9277aed74487538368083e1732`。
 <!-- AUTO-SECURITY-RESULTS:END -->
 
 ## 最新簡報交付

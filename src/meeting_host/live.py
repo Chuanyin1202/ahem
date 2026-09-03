@@ -14,7 +14,7 @@ import json
 import os
 import signal
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -401,7 +401,10 @@ class Session:
     def __init__(self, st: MeetingState, phase: str = "發散期",
                  cancel: Callable[[], object] | None = None,
                  phrase_bank: PhraseBank | None = None,
-                 auto_phase: str | None = None):
+                 auto_phase: str | None = None,
+                 clock: Callable[[], float] = time.perf_counter,
+                 sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+                 wall_clock: Callable[[], float] = time.time):
         self.st = st
         self.phase = phase
         # 階段自動判斷：None＝關（預設，行為與從前完全相同）、"suggest"＝只建議、
@@ -418,10 +421,12 @@ class Session:
         # 收尾是否已經啟動。request_end() 與 shutdown() 都會設；設了之後
         # request_end() 不再送第二次 cancel（見該方法的 docstring）。
         self.ending = False
-        self.t0 = time.perf_counter()
+        self.clock = clock
+        self.sleep = sleep
+        self.t0 = self.clock()
         # perf_counter 沒有掛鐘對應，t=0（now=0）那一刻的真實時間另外記一次 wall
         # clock，只給觀戰 UI 用（把逐字稿的相對秒換算成真實時鐘時間，見 emit_meeting）。
-        self.wall_start = time.time()
+        self.wall_start = wall_clock()
         self.done: set[tuple[str, str | None]] = set()
         self.log: list[str] = []
         self.chair: Chair | None = None  # bot 進頻道後由 start_chair 填入
@@ -459,7 +464,7 @@ class Session:
 
     @property
     def now(self) -> float:
-        return time.perf_counter() - self.t0
+        return self.clock() - self.t0
 
     def _log(self, line: str) -> None:
         print(line)
@@ -639,7 +644,7 @@ class Session:
         （真人一直沒有音訊也要在有限時間內問候），順便當一層備援。
         """
         while not gate.greeted:
-            await asyncio.sleep(HELLO_POLL_SECONDS)
+            await self.sleep(HELLO_POLL_SECONDS)
             self.maybe_greet_hello(gate)
 
     async def consume(self, pool: STTPool) -> None:
@@ -747,7 +752,7 @@ class Session:
     async def watch_fast(self, hello_gate: "HelloGate | None" = None) -> None:
         """快路：規則、零延遲，每秒檢查。"""
         while True:
-            await asyncio.sleep(1.0)
+            await self.sleep(1.0)
             self._fast_tick(hello_gate)
 
     async def _run_slow_score(self, last_n: int) -> int:
@@ -837,7 +842,7 @@ class Session:
         """慢路：LLM 評分，背景持續跑，不阻塞任何東西。"""
         last_n = 0
         while True:
-            await asyncio.sleep(TICK)
+            await self.sleep(TICK)
             if self.chair is None:
                 continue
             last_n = await self._run_slow_score(last_n)
@@ -860,7 +865,7 @@ class Session:
         from . import phase as ph
         det = ph.PhaseDetector(current=self.phase)
         while True:
-            await asyncio.sleep(ph.PHASE_TICK_SECONDS)
+            await self.sleep(ph.PHASE_TICK_SECONDS)
             if self.chair is None or ph.judgeable(self.st, self.now) is not None:
                 continue
             if det.current != self.phase:      # 人手動切了，偵測器跟著對齊
@@ -901,7 +906,7 @@ class Session:
                 return
             await asyncio.to_thread(self.phrase_bank.refill, kind)
         while self.phrase_bank.can_generate():
-            await asyncio.sleep(PHRASING_POLL_SECONDS)
+            await self.sleep(PHRASING_POLL_SECONDS)
             for kind in PHRASE_KINDS:
                 if not self.phrase_bank.can_generate():
                     break
@@ -952,7 +957,7 @@ class Session:
         seen: set[tuple[str, float, str]] = set()
         last_run = 0.0
         while True:
-            await asyncio.sleep(GLOSSARY_POLL_SECONDS)
+            await self.sleep(GLOSSARY_POLL_SECONDS)
             try:
                 snapshot = list(self.st.utterances)  # 同一個 event loop，複製期間不會被改
                 batch = [u for u in snapshot if (u.speaker, u.start, u.text) not in seen]
@@ -1063,9 +1068,10 @@ async def main_async(args) -> None:
 
     async def start_chair():
         while getattr(bot, "output", None) is None:  # 等 bot 進頻道
-            await asyncio.sleep(0.5)
+            await session.sleep(0.5)
         nonlocal chair
         chair = Chair(st, bot.output, voice, earcon,
+                      clock=session.clock, sleep=session.sleep,
                       revision=lambda: session.revision, on_spoken=on_spoken, on_failed=on_failed,
                       on_escalate=on_escalate, on_dropped=session.on_dropped)
         session.chair = chair

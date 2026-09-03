@@ -1,21 +1,19 @@
 """虛擬時鐘：regression suite 唯一的時間來源（提案 §2 時鐘契約的測試側落地）。
 
-⚠️ 這張單不做時鐘注入到 production（第 3 步）。`VirtualClock` 目前只能接在
+`VirtualClock` 目前可同時注入 `Chair` 與 `Session` 的讀時鐘及 async sleep，
+因此核心狀態機、提示音間隔、背景輪詢與 `Voice` 網路 timeout 不再依賴牆鐘。
+Output 的 Discord 播放執行緒仍由 Discord 以 20ms 節奏拉取，不由 asyncio 驅動。
+
+目前可接在
 兩種地方：
 
-1. 本來就把 `clock: Callable[[], float]` 當建構參數收的物件——目前只有
-   `Chair`（見 `speaker.py` 的 `Chair.__init__`，production 已經支援注入，
-   這張單不用改 `src/` 就能用）。
+1. 收 `clock`／`sleep` 建構參數的 `Chair` 與 `Session`。
 2. 把時間當一般參數傳進去的純函式——`MeetingState.silent_for(now)`、
    `MeetingState.current_run_seconds(now)`、`fast_path.check(st, now, ...)`。
    這些函式本來就是決定性的，甚至不需要接這個類別，直接傳明確的 float 即可。
 
-`Session`（live.py）的 `now` 屬性、`Chair.run()`／`watch_fast`／`watch_slow`
-的 `asyncio.sleep(...)`、`Chair._speak()` 的 EARCON_GATE 等待、`Voice.synth()`
-的逾時計時，全部還是裸 `time.perf_counter()`／真實 `asyncio.sleep`——這個
-模組完全推不動它們。那正是提案第七節第 3 步「Clock 注入」要解決的事，
-這裡不越界去動 `src/`（見 tests/harness/chair_runner.py 的
-`ChairHarness.wait_task_settled` docstring，那裡具體點出這個缺口打在哪）。
+Output 播放執行緒的節奏由 Discord runtime 控制；回歸測試以 `FakePlayer` 的
+frame ledger 取代牆鐘播放，驗證每幀順序、遺漏與重複。
 """
 import asyncio
 
@@ -32,6 +30,7 @@ class VirtualClock:
 
     def __init__(self, start: float = 0.0):
         self.t = start
+        self._sleepers: list[tuple[float, asyncio.Future[None]]] = []
 
     def __call__(self) -> float:
         return self.t
@@ -39,10 +38,30 @@ class VirtualClock:
     def now(self) -> float:
         return self.t
 
+    async def sleep(self, seconds: float) -> None:
+        """等待虛擬秒數；只有 `advance()` 到期限後才完成，不碰牆鐘。"""
+        if seconds < 0:
+            raise ValueError(f"時間不能倒流：{seconds}")
+        if seconds == 0:
+            await asyncio.sleep(0)
+            return
+        future = asyncio.get_running_loop().create_future()
+        self._sleepers.append((self.t + seconds, future))
+        self._sleepers.sort(key=lambda item: item[0])
+        try:
+            await future
+        finally:
+            self._sleepers = [item for item in self._sleepers if item[1] is not future]
+
     async def advance(self, seconds: float, *, drain_rounds: int = 3) -> None:
         if seconds < 0:
             raise ValueError(f"時間不能倒流：{seconds}")
         self.t += seconds
+        ready = [item for item in self._sleepers if item[0] <= self.t]
+        self._sleepers = [item for item in self._sleepers if item[0] > self.t]
+        for _, future in ready:
+            if not future.done():
+                future.set_result(None)
         await self.drain(drain_rounds)
 
     async def drain(self, rounds: int = 3) -> None:

@@ -85,6 +85,12 @@ Tests:
 
 Install `requirements-dev.txt` and Playwright Chromium to run the browser integration suite. Tests that need private holdout data or explicitly authorised real Discord/API access remain skipped; current counts and scan evidence are recorded in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
+Generate an offline synthetic Chinese overlap track for STT stress testing (not a human-meeting quality claim):
+
+```bash
+make eval-audio SCENARIO=examples/synthetic-audio-scenario.json OUTPUT=experiments/audio/demo.wav
+```
+
 ## Where it stands
 
 Ahem has chaired and been measured on two real Discord meetings (14 and 43 minutes, both hand-labelled). Full figures and method are in [docs/validation-results.md](docs/validation-results.md) (Chinese); the conclusions:

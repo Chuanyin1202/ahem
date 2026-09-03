@@ -112,6 +112,14 @@ make eval-ui
 `make eval-ui` 跑 Chromium UI，`make eval-quality EVENTS=... LABELS=...` 執行至少五輪
 模型品質重評；`make eval-realtime` 必須明確提供真實 Discord 授權環境才會執行。
 
+產生不連外的虛構中文重疊音軌（僅供 STT 壓力測試，不是品質驗收）：
+
+```bash
+make eval-audio SCENARIO=examples/synthetic-audio-scenario.json OUTPUT=experiments/audio/demo.wav
+```
+
+工具使用本機 `say` 或 `espeak`，輸出 16kHz mono WAV 與不含逐句文字的 manifest。
+
 最新完成項目、待驗收項目與證據統一記錄在 [`PROJECT_STATUS.md`](PROJECT_STATUS.md)。
 
 沒有真實會議資料時，需真實錄音或瀏覽器的測試會明確標示 skipped，已知限制則維持 xfailed；最新實際數量與掃描證據以 [`PROJECT_STATUS.md`](PROJECT_STATUS.md) 為準。真實資料放進 `experiments/holdout/` 後，相關回歸測試會自動啟用（見[資料政策](#資料政策)）。

@@ -30,8 +30,8 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 ## 最新自動化證據
 
 <!-- AUTO-SECURITY-RESULTS:START -->
-- 執行時間：`2026-09-03 11:27:38 CST`。
-- Git commit：`d8e75a4`。
+- 執行時間：`2026-09-03 11:28:43 CST`。
+- Git commit：`6198efb`。
 - `pytest`：524 passed、25 skipped、2 xfailed。
 - `pip check`：No broken requirements found。
 - `pip-audit --local`：No known vulnerabilities found。

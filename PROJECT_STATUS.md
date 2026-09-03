@@ -102,5 +102,6 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 - 11 個已有程式／文件證據的項目：`待驗收`。
 - Discord 真實語音回歸：`進行中`。
 - 共用 Wi-Fi／越權／日誌與加密現場測試：`進行中`。
-- fork 與 `codex/future-hackathon-security` 分支已建立；最新遠端安全協作 commit：`795938b`。
+- fork 與 `codex/future-hackathon-security` 分支已建立；通過完整遠端安全閘門的程式 commit：`1c1e046`，最終證據 commit：`940bdce`。
+- 2026-09-03 已向原始專案建立 [`Chuanyin1202/ahem#1`](https://github.com/Chuanyin1202/ahem/pull/1)：狀態為 `Open`、非 Draft、可自動合併；標題、完整變更說明、561 項通過測試與 4 項外部驗收限制均已填寫。維護者修改 fork／存取 secrets 的權限保持關閉。
 - 受 Git Data API 單次傳輸限制，1.7 MB 的生成式架構 PNG 未包含在遠端 commit；原圖與完整簡報保留於本機交付目錄。

@@ -83,6 +83,8 @@ Tests:
 .venv/bin/python -m pytest tests/ -q
 ```
 
+Run `make security` for the full local gate, or `make secrets` for the tracked-file secret check only. The scanner reports path, line, and finding type without echoing the matched value.
+
 Install `requirements-dev.txt` and Playwright Chromium to run the browser integration suite. Tests that need private holdout data or explicitly authorised real Discord/API access remain skipped; current counts and scan evidence are recorded in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
 Generate an offline synthetic Chinese overlap track for STT stress testing (not a human-meeting quality claim):

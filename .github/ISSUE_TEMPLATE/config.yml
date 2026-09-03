@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 私密安全漏洞回報
+    url: https://github.com/billiswen-png/ahem/security/advisories/new
+    about: 請勿在公開 Issue 張貼漏洞利用方式、Token、逐字稿或個資。

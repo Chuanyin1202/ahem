@@ -6,7 +6,8 @@
 
 ## 自動化結果
 
-- pytest：557 passed、21 skipped、2 xfailed。
+- pytest：560 passed、21 skipped、2 xfailed。
+- 秘密掃描：0 個高可信秘密命中；只回報檔名、行號與類型，不輸出秘密值。
 - pip check：No broken requirements found。
 - pip-audit：No known vulnerabilities found。
 - Bandit（High gate）：0 High。
@@ -31,6 +32,7 @@ Skipped 項目需要私人 real-holdout 資料或真實 Discord／API 環境；P
 - 嚴格模式未取得同意時，外部 AI 資料流 fail closed。
 - 保存工具預設 dry-run，僅處理白名單內的到期會議產物。
 - `meeting_host.preflight` 能在不輸出秘密值的前提下，阻擋共用 Token、缺少 Keychain KEK、公開監聽、未加密儲存、錯誤目錄權限與不安全 LAN Cookie。
+- `scripts/check_no_secrets.py` 會檢查 Git 追蹤檔中的私鑰、常見服務 Token 與不應提交的金鑰檔名，並已納入本機與 CI 閘門。
 - 已使用臨時隨機 Token 與測試 KEK 在 loopback 模式驗證預檢邏輯，結果為 `READY`；臨時值未寫入檔案或輸出。真實主機缺少 KEK／Token 時會正確顯示 `BLOCKED`。
 
 ## 現場仍需人工驗證

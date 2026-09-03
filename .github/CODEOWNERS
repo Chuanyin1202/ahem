@@ -1,0 +1,7 @@
+* @billiswen-png
+
+# Security boundary changes need an explicit owner review.
+/src/meeting_host/security.py @billiswen-png
+/src/meeting_host/spectator.py @billiswen-png
+/deploy/ @billiswen-png
+/.github/workflows/ @billiswen-png

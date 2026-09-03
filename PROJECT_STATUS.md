@@ -39,6 +39,9 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 - [x] `Chair`、`Session`、背景輪詢、提示音等待與 `Voice` timeout 已支援同一個 `VirtualClock`；核心回歸不再因牆鐘等待而產生不穩定或拖慢。
 - [x] 新增本機 TTS 合成音軌工具、三人三階段虛構情境、重疊 PCM 飽和混音測試與 `make eval-audio`；實際產物已驗證為 16kHz／mono／PCM16 並附不含逐句文字的 manifest。
 - [x] Regression 明確採固定 stub 而不保存 LLM 回應快取，避免模型輸出引用逐字稿後落地；真模型 `eval-quality` 維持禁快取且至少五輪。
+- [x] 新增 fork 分支 CI：`main` 與 `codex/**` 的推送、PR、手動執行及每週排程都會跑安全閘門；同分支新執行會取消舊執行，避免重複耗用資源。
+- [x] 新增中文／英文 PR 檢查清單、Bug／功能 Issue 表單與 CODEOWNERS，讓每張協作項目都能寫清楚範圍、驗收、個資風險與外部環境限制。
+- [x] 新增零網路秘密掃描器，阻擋私鑰、常見服務 Token 與不應提交的金鑰檔；輸出只含路徑、行號與類型，並已納入 `make secrets`、`make security` 與 GitHub Actions。
 
 ## 尚未完成（4 項，需要真實環境或私人資料）
 
@@ -52,13 +55,14 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 ## 最新自動化證據
 
 <!-- AUTO-SECURITY-RESULTS:START -->
-- 執行時間：`2026-09-03 15:33:34 CST`。
-- Git commit：`a1a6ce4`。
-- `pytest`：557 passed、21 skipped、2 xfailed。
+- 執行時間：`2026-09-03 16:44:06 CST`。
+- Git commit：`e4e833c`。
+- `pytest`：560 passed、21 skipped、2 xfailed。
+- 秘密掃描：0 個高可信秘密命中。
 - `pip check`：No broken requirements found。
 - `pip-audit --local`：No known vulnerabilities found。
 - `bandit -lll -r src`：0 個 High severity finding。
-- `sbom.cdx.json` SHA-256：`360ae8b21fb5c368c677302441da0917c6819428e28f888e6c930d3b0763135c`。
+- `sbom.cdx.json` SHA-256：`c322601948683dbc7faee2e36d2c5c7f8d2ad2ae22088f40c46f1725dd5e48d0`。
 <!-- AUTO-SECURITY-RESULTS:END -->
 
 ## 最新簡報交付

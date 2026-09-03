@@ -2,13 +2,16 @@ PYTHON ?= .venv/bin/python
 PYTHONPATH := src
 ROUNDS ?= 5
 
-.PHONY: test security preflight eval-regression eval-ui eval-quality eval-realtime eval-audio
+.PHONY: test security secrets preflight eval-regression eval-ui eval-quality eval-realtime eval-audio
 
 test:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m pytest -q
 
 security:
 	AHEM_PYTHON=$(PYTHON) scripts/security-check.sh
+
+secrets:
+	$(PYTHON) scripts/check_no_secrets.py
 
 preflight:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m meeting_host.preflight --mode local

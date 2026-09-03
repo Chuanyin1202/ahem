@@ -35,6 +35,14 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 - `bandit -lll -r src`：0 個 High severity finding。
 - `sbom.cdx.json` SHA-256：`428dabd22a34571bc657e7dd9f474d0011269575ce464f00391f18146a95ef50`。
 
+## 最新簡報交付
+
+- 已依最新資安補強內容，使用內建 Imagegen 逐頁生成 8 張完整 16:9 圖文投影片。
+- 每一頁的標題、說明、數據與圖像都包含在生成圖片內；PPTX 僅負責依序承載八張滿版圖片。
+- 已輸出 `Ahem_FUTURE黑客松_資安補強_全圖文版.pptx`。
+- 已用同一組八張原圖輸出 `output/pdf/Ahem_FUTURE黑客松_資安補強_全圖文版.pdf`，並完成逐頁渲染檢查。
+- 第 7 頁初稿曾出現完成清單文字縮寫錯誤，已重新生成並改用修正版。
+
 ## 每次執行後的更新規則
 
 1. 先執行與本次修改相符的測試與掃描。

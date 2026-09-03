@@ -34,6 +34,8 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 - [x] 主持風格每次切換前會回復基準門檻，避免同一程序沿用上一檔位設定；三檔門檻順序已有回歸測試。
 - [x] 以 IAF 官方核心能力與 Liberating Structures 官方方法／原則補齊產品研究，並標明 Ahem 只協助流程、不可冒充認證引導師或繞過 Operator 決策。
 - [x] 更新 Demo 操作手冊，移除會輸出秘密的 `.env`／API Key 檢查方式，改為 fail-closed 預檢、fragment 一次性交換與本機／HTTPS 安全邊界。
+- [x] 同步原始 Ahem `237e945` 的 Spectator 未授權控制修正；保留其 `/phase`、`/end` 風險回歸，同時維持本分支更嚴格的雙角色、讀取端保護、loopback 與短效 session 設計。
+- [x] 修正回放模式手動切換階段後畫面不立即更新的限制；現在會沿用原會議 metadata 重送狀態，可在無 Discord 情況下展示階段操作。
 
 ## 尚未完成（4 項，需要真實環境或私人資料）
 
@@ -47,13 +49,13 @@ GitHub fork：<https://github.com/billiswen-png/ahem>
 ## 最新自動化證據
 
 <!-- AUTO-SECURITY-RESULTS:START -->
-- 執行時間：`2026-09-03 15:08:59 CST`。
-- Git commit：`d8e0a3c`。
-- `pytest`：544 passed、21 skipped、2 xfailed。
+- 執行時間：`2026-09-03 15:17:50 CST`。
+- Git commit：`4632bc9`。
+- `pytest`：550 passed、21 skipped、2 xfailed。
 - `pip check`：No broken requirements found。
 - `pip-audit --local`：No known vulnerabilities found。
 - `bandit -lll -r src`：0 個 High severity finding。
-- `sbom.cdx.json` SHA-256：`836c1033acf0416a31bbd0dca1eb93f8e0d2753f4d0c85a95e802d6919b05651`。
+- `sbom.cdx.json` SHA-256：`76608fa4b1769b2c824275683682738283cc29beb1978bfea948ccef1a999a55`。
 <!-- AUTO-SECURITY-RESULTS:END -->
 
 ## 最新簡報交付

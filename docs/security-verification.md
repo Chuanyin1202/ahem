@@ -6,7 +6,7 @@
 
 ## 自動化結果
 
-- pytest：544 passed、21 skipped、2 xfailed。
+- pytest：550 passed、21 skipped、2 xfailed。
 - pip check：No broken requirements found。
 - pip-audit：No known vulnerabilities found。
 - Bandit（High gate）：0 High。
@@ -22,6 +22,7 @@ Skipped 項目需要私人 real-holdout 資料或真實 Discord／API 環境；P
 - Spectator production 預設綁定 loopback，缺少強 Token 時拒絕啟動。
 - Viewer／Operator 權限分離，未授權回 401、非信任 Origin 回 403。
 - URL fragment Token 只用於一次交換短效 HttpOnly／SameSite Cookie；事件端點拒絕 query-string Token，竄改與過期 Cookie 回 401。
+- 已納入上游 `237e945` 的未授權 `/phase`、`/end` 回歸案例；遭拒請求不會改變階段或觸發會議收尾。
 - Viewer 事件會隱去姓名、逐字稿、會議文件與本機路徑。
 - CSP、no-referrer、nosniff、frame deny 及 Permissions-Policy 已加入。
 - 會議目錄與檔案權限分別為 0700／0600。

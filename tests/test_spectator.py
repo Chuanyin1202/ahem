@@ -281,6 +281,33 @@ def test_post_phase_invalid_returns_400_and_leaves_session_unchanged():
     asyncio.run(body())
 
 
+def test_replay_phase_change_reuses_meeting_metadata_and_notifies_subscribers():
+    async def body():
+        original = Event("meeting", 0.0, {
+            "topic": "回放測試", "duration_min": 12, "participants": ["甲"],
+            "phase": "發散期",
+        })
+        session = spectator.ReplaySession([original])
+        await session.replay(speed=1_000_000)
+        received = []
+        session.subscribers.append(received.append)
+        client = TestClient(TestServer(spectator._build_app(session)))
+        await client.start_server()
+        try:
+            response = await client.post("/phase", json={"phase": "呻吟區"})
+            assert response.status == 200
+            assert session.phase == "呻吟區"
+            assert received[-1].kind == "meeting"
+            assert received[-1].data == {
+                "topic": "回放測試", "duration_min": 12, "participants": ["甲"],
+                "phase": "呻吟區",
+            }
+        finally:
+            await client.close()
+
+    asyncio.run(body())
+
+
 def test_offer_drops_oldest_when_queue_full():
     async def body():
         queue: asyncio.Queue = asyncio.Queue(maxsize=1)

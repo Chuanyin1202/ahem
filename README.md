@@ -88,11 +88,13 @@ PYTHONPATH=src .venv/bin/python -m meeting_host.spectator --replay examples/synt
 .venv/bin/python -m pytest tests/ -q
 ```
 
-要一次完成測試、相依檢查、漏洞掃描與 Bandit 高風險掃描，並將非敏感摘要同步到團隊進度文件：
+要一次完成秘密外洩檢查、測試、相依檢查、漏洞掃描與 Bandit 高風險掃描，並將非敏感摘要同步到團隊進度文件：
 
 ```bash
 scripts/security-check.sh
 ```
+
+只檢查 Git 追蹤檔是否誤放高可信秘密或金鑰檔，可執行 `make secrets`；掃描結果不會印出秘密值。
 
 真實 Demo 啟動前，先執行不洩漏秘密值的安全預檢：
 

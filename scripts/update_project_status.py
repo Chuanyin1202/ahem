@@ -48,6 +48,7 @@ def render_results(report: dict[str, object], commit: str, sbom_hash: str) -> st
                 f"{pytest['passed']} passed、{pytest['skipped']} skipped、"
                 f"{pytest['xfailed']} xfailed。"
             ),
+            f"- 秘密掃描：{report['secret_scan']}。",
             f"- `pip check`：{report['pip_check']}。",
             f"- `pip-audit --local`：{report['pip_audit']}。",
             f"- `bandit -lll -r src`：{report['bandit']}。",

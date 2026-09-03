@@ -6,7 +6,7 @@
 
 ## 自動化結果
 
-- pytest：521 passed、25 skipped、2 xfailed。
+- pytest：531 passed、25 skipped、2 xfailed。
 - pip check：No broken requirements found。
 - pip-audit：No known vulnerabilities found。
 - Bandit（High gate）：0 High。
@@ -21,6 +21,7 @@ Skipped 項目需要真實 Discord／API／Playwright 環境；本次未使用�
 - CryptoError 日誌不含 voice secret 或封包內容。
 - Spectator production 預設綁定 loopback，缺少強 Token 時拒絕啟動。
 - Viewer／Operator 權限分離，未授權回 401、非信任 Origin 回 403。
+- URL fragment Token 只用於一次交換短效 HttpOnly／SameSite Cookie；事件端點拒絕 query-string Token，竄改與過期 Cookie 回 401。
 - Viewer 事件會隱去姓名、逐字稿、會議文件與本機路徑。
 - CSP、no-referrer、nosniff、frame deny 及 Permissions-Policy 已加入。
 - 會議目錄與檔案權限分別為 0700／0600。
@@ -28,6 +29,8 @@ Skipped 項目需要真實 Discord／API／Playwright 環境；本次未使用�
 - 解密要求 Operator 與用途，稽核不記錄明文身分。
 - 嚴格模式未取得同意時，外部 AI 資料流 fail closed。
 - 保存工具預設 dry-run，僅處理白名單內的到期會議產物。
+- `meeting_host.preflight` 能在不輸出秘密值的前提下，阻擋共用 Token、缺少 Keychain KEK、公開監聽、未加密儲存、錯誤目錄權限與不安全 LAN Cookie。
+- 已使用臨時隨機 Token 與測試 KEK 在 loopback 模式驗證預檢邏輯，結果為 `READY`；臨時值未寫入檔案或輸出。真實主機缺少 KEK／Token 時會正確顯示 `BLOCKED`。
 
 ## 現場仍需人工驗證
 
@@ -36,3 +39,5 @@ Skipped 項目需要真實 Discord／API／Playwright 環境；本次未使用�
 - macOS Keychain KEK 存取權限。
 - 主持人完成隱私告知，所有新加入者均明確同意。
 - Demo 後核對保存期限與備份清除。
+
+目前主機尚未建立 Ahem Keychain KEK，也未注入 Viewer／Operator、Discord、ElevenLabs、OpenAI 憑證；這些屬於外部整合前置條件，不以合成測試取代。

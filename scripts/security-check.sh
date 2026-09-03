@@ -18,6 +18,7 @@ pytest_output="$run_dir/pytest.txt"
 "$python_bin" -m pytest -q | tee "$pytest_output"
 "$python_bin" -m pip check
 "$python_bin" -m pip_audit --local
+"$python_bin" -m pip_audit --local --format cyclonedx-json --output sbom.cdx.json
 "$python_bin" -m bandit -q -lll -r src
 
 summary="$(tail -n 1 "$pytest_output")"

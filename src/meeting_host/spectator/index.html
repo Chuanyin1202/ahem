@@ -325,10 +325,9 @@
 </div>
 
 <script>
-  // Token 從 URL fragment 讀取；fragment 不會進入 HTTP access log。清除網址後，
-  // Token 只保留在這個分頁的記憶體中。
+  // Token 只從 URL fragment 讀取（fragment 不會送進 HTTP access log），接著立刻
+  // 交換成短效 HttpOnly Cookie。完成交換後會清除網址與 JS 記憶體中的 Token。
   var securityToken = new URLSearchParams(location.hash.replace(/^#/, "")).get("token") || "";
-  history.replaceState(null, "", location.pathname);
 (function () {
   "use strict";
 
@@ -577,7 +576,7 @@
       el("phase-menu").hidden = true;
       fetch("/phase", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + securityToken },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phase: item.dataset.phase }),
       }).catch(function (err) { console.error("切換階段失敗", err); });
     });
@@ -988,7 +987,7 @@
     clearTimeout(endTimer);
     endArmed = false;
     endBtn.textContent = "結束中…";
-    fetch("/end", { method: "POST", headers: { "Authorization": "Bearer " + securityToken } }).then(function (r) {
+    fetch("/end", { method: "POST" }).then(function (r) {
       if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || "結束失敗"); });
     }).catch(function (err) {
       console.error("結束會議失敗", err);
@@ -1262,23 +1261,48 @@
     "queued", "spoken", "failed", "dropped", "share", "minutes", "glossary", "hearing",
     "phase", "phase_suggestion", "partial"];
 
-  var source = new EventSource("/events?token=" + encodeURIComponent(securityToken));
-  source.addEventListener("snapshot", function (e) {
-    var events = JSON.parse(e.data);
-    resetForSnapshot();
-    events.forEach(handleEvent);
-    renderStats();
-    renderJudgments();
-    renderShare();
-    renderTimeline();
-    renderTop();
-    renderAlerts();
+  function connectEvents() {
+    var source = new EventSource("/events");
+    source.addEventListener("snapshot", function (e) {
+      var events = JSON.parse(e.data);
+      resetForSnapshot();
+      events.forEach(handleEvent);
+      renderStats();
+      renderJudgments();
+      renderShare();
+      renderTimeline();
+      renderTop();
+      renderAlerts();
+    });
+    KINDS.forEach(function (kind) {
+      source.addEventListener(kind, function (e) { handleEvent(JSON.parse(e.data)); });
+    });
+    source.onerror = function () { setConnectionLost(true); };
+    source.onopen = function () { setConnectionLost(false); };
+  }
+
+  function establishSession() {
+    if (!securityToken) {
+      history.replaceState(null, "", location.pathname);
+      return Promise.reject(new Error("缺少 Viewer／Operator Token"));
+    }
+    return fetch("/session", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + securityToken },
+    }).then(function (response) {
+      if (!response.ok) throw new Error("Token 驗證失敗");
+      securityToken = "";
+      history.replaceState(null, "", location.pathname);
+      connectEvents();
+    });
+  }
+
+  establishSession().catch(function (err) {
+    securityToken = "";
+    history.replaceState(null, "", location.pathname);
+    console.error("建立安全工作階段失敗", err);
+    setConnectionLost(true);
   });
-  KINDS.forEach(function (kind) {
-    source.addEventListener(kind, function (e) { handleEvent(JSON.parse(e.data)); });
-  });
-  source.onerror = function () { setConnectionLost(true); };
-  source.onopen = function () { setConnectionLost(false); };
 
   renderTop();
   renderStats();

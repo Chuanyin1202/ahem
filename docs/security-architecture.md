@@ -46,5 +46,21 @@ security add-generic-password -U -s ahem.envelope-kek -a "$USER" -w '<上一行�
 ## Token
 
 `AHEM_VIEWER_TOKEN` 與 `AHEM_OPERATOR_TOKEN` 必須不同且至少 32 字元，以秘密管理器
-注入。觀看頁以 `https://入口/#token=<短效 token>` 開啟；fragment 不會進入 HTTP
-access log，載入後會立即從網址移除。
+注入。觀看頁以 `https://入口/#token=<token>` 開啟；fragment 不會進入 HTTP access
+log。頁面會透過 `POST /session` 將 Token 一次交換成一小時、帶簽章的 HttpOnly／
+SameSite Cookie，隨即清除網址與 JavaScript 記憶體中的 Token。`/events` 不再接受
+query-string Token，Cookie 遭竄改或過期時會回 401。LAN／HTTPS 模式必須設定
+`AHEM_COOKIE_SECURE=1`。
+
+## Demo 安全預檢
+
+啟動真實服務前先執行：
+
+```bash
+PYTHONPATH=src .venv/bin/python -m meeting_host.preflight --mode local
+# 經 HTTPS 反向代理提供第二台裝置時：
+PYTHONPATH=src .venv/bin/python -m meeting_host.preflight --mode lan --host 127.0.0.1
+```
+
+工具只顯示通過、警告或阻擋原因，不會顯示 Token 值。只有結果為 `READY` 才能進入
+Demo；`BLOCKED` 時先修正 Token 分離、加密儲存、資料夾權限、監聽位址或 HTTPS Cookie。

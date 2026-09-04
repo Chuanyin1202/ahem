@@ -213,15 +213,66 @@ def test_short_lived_session_rejects_tampering_and_expiry():
     assert security.session_role(value, now=1061) is None
 
 
-def test_security_env_rejects_missing_short_or_shared_tokens(monkeypatch):
-    monkeypatch.delenv("AHEM_VIEWER_TOKEN", raising=False)
-    monkeypatch.delenv("AHEM_OPERATOR_TOKEN", raising=False)
+def test_security_env_generates_ephemeral_tokens_when_unconfigured():
+    security = spectator.SpectatorSecurity.from_env({})
+    assert len(security.viewer_token) >= 32
+    assert len(security.operator_token) >= 32
+    assert security.viewer_token != security.operator_token
+    assert security.show_bootstrap_tokens is True
+
+
+def test_security_env_supports_legacy_token_without_sharing_roles():
+    legacy = "legacy-operator-token-that-is-long-enough"
+    security = spectator.SpectatorSecurity.from_env({"AHEM_SPECTATOR_TOKEN": legacy})
+    assert security.operator_token == legacy
+    assert security.viewer_token != legacy
+    assert security.show_bootstrap_tokens is True
+
+
+def test_security_env_rejects_partial_short_or_shared_tokens():
     with pytest.raises(RuntimeError):
-        spectator.SpectatorSecurity.from_env()
-    monkeypatch.setenv("AHEM_VIEWER_TOKEN", "x" * 32)
-    monkeypatch.setenv("AHEM_OPERATOR_TOKEN", "x" * 32)
+        spectator.SpectatorSecurity.from_env({"AHEM_VIEWER_TOKEN": "v" * 32})
     with pytest.raises(RuntimeError):
-        spectator.SpectatorSecurity.from_env()
+        spectator.SpectatorSecurity.from_env({
+            "AHEM_VIEWER_TOKEN": "x" * 32,
+            "AHEM_OPERATOR_TOKEN": "x" * 32,
+        })
+
+
+def test_full_viewer_content_requires_explicit_demo_acknowledgement():
+    env = {
+        "AHEM_VIEWER_TOKEN": "v" * 32,
+        "AHEM_OPERATOR_TOKEN": "o" * 32,
+        "AHEM_VIEWER_CONTENT": "full",
+    }
+    with pytest.raises(RuntimeError, match="AHEM_DEMO_PUBLIC_TRANSCRIPT"):
+        spectator.SpectatorSecurity.from_env(env)
+    env["AHEM_DEMO_PUBLIC_TRANSCRIPT"] = "1"
+    assert spectator.SpectatorSecurity.from_env(env).redact_viewer is False
+
+
+def test_explicit_demo_viewer_receives_full_non_sensitive_script():
+    async def body():
+        session = FakeSession()
+        session.emit("transcript", {"speaker": "Demo P01", "text": "合成示範逐字稿"})
+        security = spectator.SpectatorSecurity(
+            "v" * 32, "o" * 32, redact_viewer=False)
+        server = TestServer(spectator._build_app(session, security))
+        client = TestClient(server)
+        await client.start_server()
+        try:
+            response = await client.get(
+                "/events", headers={"Authorization": "Bearer " + "v" * 32})
+            assert response.status == 200
+            name, data = await asyncio.wait_for(
+                _read_sse_message(response.content), timeout=2)
+            assert name == "snapshot"
+            assert data[0]["data"]["text"] == "合成示範逐字稿"
+            response.close()
+        finally:
+            await client.close()
+
+    asyncio.run(body())
 
 
 def test_security_rejects_unsafe_origins_and_session_ttl():

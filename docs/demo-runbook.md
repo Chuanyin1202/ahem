@@ -11,10 +11,11 @@ PYTHONPATH=src .venv/bin/python -c "from meeting_host import live, phase, style;
 PYTHONPATH=src .venv/bin/python -m meeting_host.preflight --mode local
 ```
 
-- 預檢必須顯示 `READY`；它只檢查秘密是否存在與長度，不會輸出值。不要用 `grep`、shell trace 或截圖顯示 `.env`。
+- 預檢必須顯示 `READY`；它只檢查秘密是否存在與長度，不會輸出值。Raspberry Pi 上的 KEK 來自 systemd credential 或 0600 Linux secret file。不要用 `grep`、shell trace 或截圖顯示 `.env`。
 - Discord：bot 已在授權測試伺服器裡，對指定語音頻道有連線與發言權限；頻道 ID 由 Operator 現場確認。
 - 投影：優先在同一台主機開觀戰畫面。跨裝置展示必須先完成 Caddy HTTPS／防火牆設定與現場網路驗收。
 - Viewer 與 Operator 使用不同且至少 32 字元的 Token；Token 只能放在網址 fragment 做一次性交換，不能放 query string。
+- 給評審的公開連結預設只有去識別狀態。若要展示完整逐字稿，必須使用無真實個資的 demo 腳本，並同時設 `AHEM_VIEWER_CONTENT=full` 與 `AHEM_DEMO_PUBLIC_TRANSCRIPT=1`。
 
 ## 開始
 

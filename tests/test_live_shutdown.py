@@ -566,7 +566,8 @@ def test_shutdown_delivers_minutes_event_to_connected_sse_client(tmp_path, monke
     async def go():
         session = _make_session()
         port = _free_port()
-        serve_task = asyncio.create_task(spectator.serve(session, port))
+        security = spectator.SpectatorSecurity("v" * 32, "o" * 32)
+        serve_task = asyncio.create_task(spectator.serve(session, port, security=security))
         async with aiohttp.ClientSession() as cs:
             for _ in range(100):  # 等伺服器起來
                 try:
@@ -575,7 +576,10 @@ def test_shutdown_delivers_minutes_event_to_connected_sse_client(tmp_path, monke
                     break
                 except aiohttp.ClientError:
                     await asyncio.sleep(0.05)
-            resp = await cs.get(f"http://127.0.0.1:{port}/events")
+            resp = await cs.get(
+                f"http://127.0.0.1:{port}/events",
+                headers={"Authorization": "Bearer " + "o" * 32},
+            )
             assert resp.status == 200
             lines: list[bytes] = []
 
@@ -806,8 +810,10 @@ def test_double_post_end_still_exits_cleanly():
         deadline = time.perf_counter() + 0.5
         while True:
             try:
-                req = urllib.request.Request(f"http://127.0.0.1:{port}/end", data=b"",
-                                              method="POST")
+                req = urllib.request.Request(
+                    f"http://127.0.0.1:{port}/end", data=b"", method="POST",
+                    headers={"Authorization": "Bearer " + "o" * 32},
+                )
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     statuses.append(resp.status)
             except (urllib.error.URLError, OSError) as e:
@@ -902,8 +908,10 @@ def test_double_post_end_still_exits_cleanly_real_discord():
         deadline = time.perf_counter() + 0.5
         while True:
             try:
-                req = urllib.request.Request(f"http://127.0.0.1:{port}/end", data=b"",
-                                              method="POST")
+                req = urllib.request.Request(
+                    f"http://127.0.0.1:{port}/end", data=b"", method="POST",
+                    headers={"Authorization": "Bearer " + "o" * 32},
+                )
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     statuses.append(resp.status)
             except (urllib.error.URLError, OSError) as e:

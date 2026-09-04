@@ -8,6 +8,7 @@ import json
 import os
 import secrets
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -61,17 +62,54 @@ class KeychainKEK:
     service = "ahem.envelope-kek"
 
     def load(self) -> bytes:
-        if os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get("AHEM_TEST_KEK_B64"):
-            raw = base64.b64decode(os.environ["AHEM_TEST_KEK_B64"], validate=True)
-        else:
-            result = subprocess.run(
-                ["security", "find-generic-password", "-s", self.service, "-w"],
-                check=True, capture_output=True, text=True,
-            )
-            raw = base64.b64decode(result.stdout.strip(), validate=True)
+        result = subprocess.run(
+            ["security", "find-generic-password", "-s", self.service, "-w"],
+            check=True, capture_output=True, text=True,
+        )
+        raw = base64.b64decode(result.stdout.strip(), validate=True)
         if len(raw) != 32:
             raise ValueError("Ahem KEK 必須是 32 bytes")
         return raw
+
+
+class FileKEK:
+    """Linux 從 systemd credential 或 container secret 檔案讀取 KEK。"""
+
+    def __init__(self, path: Path):
+        self.path = Path(path)
+
+    def load(self) -> bytes:
+        if not self.path.is_absolute():
+            raise ValueError("AHEM_KEK_FILE 必須是絕對路徑")
+        if self.path.is_symlink() or not self.path.is_file():
+            raise ValueError("KEK 路徑必須是存在的一般檔案，不可為符號連結")
+        mode = self.path.stat().st_mode & 0o777
+        if mode & 0o077:
+            raise PermissionError(f"KEK 檔案權限過寬：{mode:04o}，必須為 0600 或更嚴格")
+        raw = base64.b64decode(self.path.read_text(encoding="ascii").strip(), validate=True)
+        if len(raw) != 32:
+            raise ValueError("Ahem KEK 必須是 32 bytes")
+        return raw
+
+
+def load_kek(env: dict[str, str] | None = None) -> bytes:
+    """依平台選擇 KEK provider；測試由呼叫端明確注入 loader。"""
+    env = dict(os.environ if env is None else env)
+    configured = env.get("AHEM_KEK_FILE", "").strip()
+    credential_dir = env.get("CREDENTIALS_DIRECTORY", "").strip()
+    if configured:
+        return FileKEK(Path(configured)).load()
+    if credential_dir:
+        return FileKEK(Path(credential_dir) / "ahem-kek").load()
+    if sys.platform == "darwin":
+        return KeychainKEK().load()
+    container_secret = Path("/run/secrets/ahem_kek")
+    if container_secret.is_file():
+        return FileKEK(container_secret).load()
+    raise RuntimeError(
+        "Linux 需以 AHEM_KEK_FILE、systemd LoadCredential=ahem-kek 或 "
+        "/run/secrets/ahem_kek 提供 KEK"
+    )
 
 
 class EnvelopeStore:
@@ -132,7 +170,7 @@ def write_protected_text(path: Path, text: str, *, artifact_type: str) -> Path:
     if os.environ.get("AHEM_SECURE_STORAGE") != "1":
         return secure_write_text(path, text)
     meeting_id = os.environ.get("AHEM_MEETING_ID") or path.name.split(".")[0]
-    store = EnvelopeStore(KeychainKEK().load())
+    store = EnvelopeStore(load_kek())
     encrypted_path = path.with_name(path.name + ".ahem")
     blob = store.encrypt_text(text, meeting_id=meeting_id, artifact_type=artifact_type)
     return secure_write_text(encrypted_path, blob.decode())

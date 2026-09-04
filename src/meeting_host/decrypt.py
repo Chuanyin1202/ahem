@@ -5,7 +5,7 @@ import argparse
 import json
 from pathlib import Path
 
-from .security import EnvelopeStore, KeychainKEK, audit_record, secure_write_text
+from .security import EnvelopeStore, audit_record, load_kek, secure_write_text
 
 
 def main() -> None:
@@ -21,7 +21,7 @@ def main() -> None:
     artifact_type = payload["artifact_type"]
     outcome = "denied"
     try:
-        plaintext = EnvelopeStore(KeychainKEK().load()).decrypt_text(
+        plaintext = EnvelopeStore(load_kek()).decrypt_text(
             args.artifact.read_bytes(), meeting_id=meeting_id, artifact_type=artifact_type,
             purpose=args.purpose, operator=args.operator)
         outcome = "allowed"

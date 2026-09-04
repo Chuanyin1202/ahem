@@ -12,7 +12,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from .security import KeychainKEK
+from .security import load_kek
 
 
 @dataclasses.dataclass(frozen=True)
@@ -68,14 +68,14 @@ def run_checks(*, mode: str, host: str, port: int, directory: Path,
         else "AHEM_SECURE_STORAGE 必須設為 1",
     ))
     try:
-        kek = (keychain_loader or KeychainKEK().load)()
+        kek = (keychain_loader or (lambda: load_kek(env)))()
         keychain_ok = len(kek) == 32
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
         keychain_ok = False
     checks.append(Check(
         "key_encryption_key", "pass" if keychain_ok else "fail",
-        "Keychain KEK 可用且長度合格" if keychain_ok
-        else "找不到可用的 32-byte Keychain KEK",
+        "KEK provider 可用且長度合格" if keychain_ok
+        else "找不到可用的 32-byte KEK（macOS Keychain 或 Linux secret file）",
     ))
     checks.append(Check(
         "external_search",

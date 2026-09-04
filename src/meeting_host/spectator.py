@@ -49,6 +49,8 @@ class SpectatorSecurity:
     trusted_origins: tuple[str, ...] = ()
     session_ttl_seconds: int = 3600
     cookie_name: str = "ahem_session"
+    redact_viewer: bool = True
+    show_bootstrap_tokens: bool = False
 
     def __post_init__(self) -> None:
         if (len(self.viewer_token) < 32 or len(self.operator_token) < 32
@@ -64,18 +66,40 @@ class SpectatorSecurity:
                 raise ValueError(f"不安全的 trusted origin：{origin!r}")
 
     @classmethod
-    def from_env(cls) -> "SpectatorSecurity":
-        viewer = os.environ.get("AHEM_VIEWER_TOKEN", "")
-        operator = os.environ.get("AHEM_OPERATOR_TOKEN", "")
+    def from_env(cls, env: dict[str, str] | None = None) -> "SpectatorSecurity":
+        env = dict(os.environ if env is None else env)
+        viewer = env.get("AHEM_VIEWER_TOKEN", "")
+        operator = env.get("AHEM_OPERATOR_TOKEN", "")
+        bootstrap = False
+        if bool(viewer) != bool(operator):
+            raise RuntimeError("AHEM_VIEWER_TOKEN 與 AHEM_OPERATOR_TOKEN 必須同時設定")
+        if not viewer:
+            legacy = env.get("AHEM_SPECTATOR_TOKEN", "").strip()
+            if legacy:
+                operator = (legacy if len(legacy) >= 32 else
+                            hashlib.sha256(f"operator\0{legacy}".encode()).hexdigest())
+                viewer = hashlib.sha256(f"viewer\0{legacy}".encode()).hexdigest()
+            else:
+                viewer, operator = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+            bootstrap = True
         if len(viewer) < 32 or len(operator) < 32 or hmac.compare_digest(viewer, operator):
             raise RuntimeError(
                 "請由秘密管理器提供不同且至少 32 字元的 AHEM_VIEWER_TOKEN 與 "
                 "AHEM_OPERATOR_TOKEN"
             )
         origins = tuple(origin.strip().rstrip("/") for origin in
-                        os.environ.get("AHEM_TRUSTED_ORIGINS", "").split(",")
+                        env.get("AHEM_TRUSTED_ORIGINS", "").split(",")
                         if origin.strip())
-        return cls(viewer, operator, origins)
+        viewer_content = env.get("AHEM_VIEWER_CONTENT", "redacted").strip().lower()
+        if viewer_content not in {"redacted", "full"}:
+            raise RuntimeError("AHEM_VIEWER_CONTENT 只支援 redacted 或 full")
+        if viewer_content == "full" and env.get("AHEM_DEMO_PUBLIC_TRANSCRIPT") != "1":
+            raise RuntimeError(
+                "Viewer 完整內容只限已確認為非機密示範資料；"
+                "需明確設定 AHEM_DEMO_PUBLIC_TRANSCRIPT=1"
+            )
+        return cls(viewer, operator, origins, redact_viewer=viewer_content != "full",
+                   show_bootstrap_tokens=bootstrap)
 
     def _token_role(self, token: str) -> str | None:
         if token and hmac.compare_digest(token, self.operator_token):
@@ -318,7 +342,8 @@ async def _phase_handler(request: web.Request) -> web.Response:
 async def _events_handler(request: web.Request) -> web.StreamResponse:
     session: SessionLike = request.app[SESSION_KEY]
     security: SpectatorSecurity | None = request.app.get(SECURITY_KEY)
-    viewer_only = security is not None and not security.is_operator(request)
+    viewer_only = (security is not None and security.redact_viewer
+                   and not security.is_operator(request))
     resp = web.StreamResponse(status=200, headers={
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
@@ -397,8 +422,7 @@ def _build_app(session: SessionLike, security: SpectatorSecurity | None = None) 
 async def serve(session: SessionLike, port: int, host: str = "127.0.0.1",
                 security: SpectatorSecurity | None = None) -> None:
     """啟動觀戰 UI 伺服器；掛著跑直到被取消（`main_async` 的 `asyncio.gather` 收 Ctrl-C）。"""
-    # 舊有整合測試以真實 socket 驗 shutdown，沒有秘密注入；production 一律 fail closed。
-    if security is None and not os.environ.get("PYTEST_CURRENT_TEST"):
+    if security is None:
         security = SpectatorSecurity.from_env()
     app = _build_app(session, security)
     # shutdown_timeout：`live.shutdown()` cancel 掉這個 task 時會跑 `runner.cleanup()`，
@@ -411,6 +435,10 @@ async def serve(session: SessionLike, port: int, host: str = "127.0.0.1",
     site = web.TCPSite(runner, host, port)
     await site.start()
     print(f"觀戰 UI 已安全啟動：http://{host}:{port}（需要短效 Token）")
+    if security.show_bootstrap_tokens:
+        visible_host = "127.0.0.1" if host in {"0.0.0.0", "::"} else host
+        print(f"Viewer 一次性啟動網址：http://{visible_host}:{port}/#token={security.viewer_token}")
+        print(f"Operator 一次性啟動網址：http://{visible_host}:{port}/#token={security.operator_token}")
     try:
         await asyncio.Event().wait()
     finally:

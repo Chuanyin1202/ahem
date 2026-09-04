@@ -1,3 +1,4 @@
+import base64
 import stat
 
 from meeting_host.preflight import run_checks, summary
@@ -55,3 +56,18 @@ def test_lan_preflight_requires_https_origin_and_secure_cookie(tmp_path):
                                directory=directory, env=env,
                                keychain_loader=lambda: b"k" * 32))
     assert ready["ready"] is True
+
+
+def test_preflight_loads_linux_kek_file_without_test_environment_bypass(tmp_path):
+    directory = tmp_path / "meetings"
+    directory.mkdir(mode=0o700)
+    directory.chmod(0o700)
+    kek_path = tmp_path / "ahem-kek"
+    kek_path.write_text(base64.b64encode(b"k" * 32).decode(), encoding="ascii")
+    kek_path.chmod(0o600)
+    env = _secure_env() | {"AHEM_KEK_FILE": str(kek_path)}
+    result = summary(run_checks(mode="local", host="127.0.0.1", port=0,
+                                directory=directory, env=env))
+    assert result["ready"] is True
+    assert next(item for item in result["checks"]
+                if item["name"] == "key_encryption_key")["status"] == "pass"

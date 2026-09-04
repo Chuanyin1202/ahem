@@ -5,7 +5,8 @@
 - 使用獨立 AP、有線網路或同機投影。
 - 確認 `lsof -nP -iTCP:8765 -sTCP:LISTEN` 只顯示 `127.0.0.1`。
 - Viewer／Operator Token 由秘密管理器注入，彼此不同且至少 32 字元。
-- 確認 Keychain KEK 存在；設定 `AHEM_DISABLE_WEB_SEARCH=1`。
+- macOS 確認 Keychain KEK 存在；Raspberry Pi/Linux 確認 systemd credential
+  `ahem-kek` 或 `AHEM_KEK_FILE` 已指向 0600 秘密檔；設定 `AHEM_DISABLE_WEB_SEARCH=1`。
 - 朗讀隱私告知並取得所有參與者同意。
 - 執行預檢；結果必須為 `READY`：
 
@@ -30,6 +31,8 @@ PYTHONPATH=src python -m meeting_host.live \
 - Viewer Cookie 無法呼叫 `/phase`、`/end`；竄改或過期 Cookie 回 401。
 - `meetings/` 為 0700；檔案為 0600，嚴格模式只有 `.ahem` 密文。
 - 修改密文任一位元後無法解密。
+- 真實會議 Viewer 保持 `redacted`；僅非機密 demo 資料可啟用
+  `AHEM_VIEWER_CONTENT=full` 與 `AHEM_DEMO_PUBLIC_TRANSCRIPT=1`。
 
 ## 展示後
 

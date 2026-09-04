@@ -119,7 +119,9 @@ async def main_async(args: argparse.Namespace) -> None:
 
     if args.spectator_port:
         from meeting_host import spectator
-        tasks.append(asyncio.create_task(spectator.serve(session, args.spectator_port)))
+        security = spectator.SpectatorSecurity("v" * 32, "o" * 32)
+        tasks.append(asyncio.create_task(
+            spectator.serve(session, args.spectator_port, security=security)))
 
     print("議題：測試（harness 驅動，無 Discord／LLM）")
     print("READY", flush=True)  # 測試端等這一行出現才送訊號，不用固定 sleep 猜時機

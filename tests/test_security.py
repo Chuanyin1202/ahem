@@ -7,6 +7,7 @@ import pytest
 from meeting_host.security import (
     ConsentPolicy,
     EnvelopeStore,
+    FileKEK,
     audit_record,
     secure_write_text,
     redact_event_for_viewer,
@@ -73,3 +74,22 @@ def test_viewer_dlp_removes_identity_transcript_and_paths():
     assert safe["data"]["text"] == "[已隱去]"
     assert safe["data"]["participants"] == ["P01", "P02"]
     assert "minutes_path" not in safe["data"]
+
+
+def test_linux_file_kek_requires_private_absolute_regular_file(tmp_path):
+    path = tmp_path / "ahem-kek"
+    path.write_text(base64.b64encode(b"k" * 32).decode(), encoding="ascii")
+    path.chmod(0o600)
+    assert FileKEK(path).load() == b"k" * 32
+
+    path.chmod(0o640)
+    with pytest.raises(PermissionError, match="0600"):
+        FileKEK(path).load()
+
+
+def test_file_kek_rejects_wrong_length(tmp_path):
+    path = tmp_path / "ahem-kek"
+    path.write_text(base64.b64encode(b"short").decode(), encoding="ascii")
+    path.chmod(0o600)
+    with pytest.raises(ValueError, match="32 bytes"):
+        FileKEK(path).load()

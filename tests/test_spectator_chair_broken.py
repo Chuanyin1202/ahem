@@ -41,20 +41,15 @@ RECOVERED = Path(__file__).parent / "fixtures" / "chair_recovered_alerts.events.
 SINGLE_FAILURE_LINES = 4
 
 
-OPERATOR_TOKEN = "layout-test-token"
-
-
 def _render(events: list):
     """把事件灌進 ReplaySession、開瀏覽器跑真的前端 JS，回傳告示區的狀態。"""
     async def body():
         session = spectator.ReplaySession(events)
-        server = TestServer(spectator._build_app(session, OPERATOR_TOKEN))
+        server = TestServer(spectator._build_app(session))
         await server.start_server()
         try:
             await session.replay(speed=1_000_000)
-            # 用操作者網址開：結束鈕只對帶權杖的人顯示（見 test_spectator_auth.py），
-            # 而這條測的是「告示不把右欄兩顆按鈕擠掉」的版面問題。
-            url = str(server.make_url("/")) + "?k=" + OPERATOR_TOKEN
+            url = str(server.make_url("/"))
 
             def check() -> tuple[bool, str, list[str], bool, bool]:
                 with sync_playwright() as p:

@@ -14,7 +14,7 @@ import json
 import os
 import signal
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -25,6 +25,7 @@ from .discord_source import MeetingBot
 from .events import Event
 from .hearing import HearingMonitor
 from .phrasing import PHRASE_KINDS, PhraseBank, generate_patterns, greeting_text
+from .security import ConsentPolicy, prepare_private_dir, write_protected_text
 from .speaker import ESCALATE_SECONDS, Chair, Earcon, Intervention, build_voice
 from .state import MeetingState
 from .stt import STTPool
@@ -417,7 +418,10 @@ class Session:
     def __init__(self, st: MeetingState, phase: str = "發散期",
                  cancel: Callable[[], object] | None = None,
                  phrase_bank: PhraseBank | None = None,
-                 auto_phase: str | None = None):
+                 auto_phase: str | None = None,
+                 clock: Callable[[], float] = time.perf_counter,
+                 sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+                 wall_clock: Callable[[], float] = time.time):
         self.st = st
         self.phase = phase
         # 階段自動判斷：None＝關（預設，行為與從前完全相同）、"suggest"＝只建議、
@@ -434,10 +438,12 @@ class Session:
         # 收尾是否已經啟動。request_end() 與 shutdown() 都會設；設了之後
         # request_end() 不再送第二次 cancel（見該方法的 docstring）。
         self.ending = False
-        self.t0 = time.perf_counter()
+        self.clock = clock
+        self.sleep = sleep
+        self.t0 = self.clock()
         # perf_counter 沒有掛鐘對應，t=0（now=0）那一刻的真實時間另外記一次 wall
         # clock，只給觀戰 UI 用（把逐字稿的相對秒換算成真實時鐘時間，見 emit_meeting）。
-        self.wall_start = time.time()
+        self.wall_start = wall_clock()
         self.done: set[tuple[str, str | None]] = set()
         self.log: list[str] = []
         self.chair: Chair | None = None  # bot 進頻道後由 start_chair 填入
@@ -475,7 +481,7 @@ class Session:
 
     @property
     def now(self) -> float:
-        return time.perf_counter() - self.t0
+        return self.clock() - self.t0
 
     def _log(self, line: str) -> None:
         print(line)
@@ -655,7 +661,7 @@ class Session:
         （真人一直沒有音訊也要在有限時間內問候），順便當一層備援。
         """
         while not gate.greeted:
-            await asyncio.sleep(HELLO_POLL_SECONDS)
+            await self.sleep(HELLO_POLL_SECONDS)
             self.maybe_greet_hello(gate)
 
     async def consume(self, pool: STTPool) -> None:
@@ -766,7 +772,7 @@ class Session:
     async def watch_fast(self, hello_gate: "HelloGate | None" = None) -> None:
         """快路：規則、零延遲，每秒檢查。"""
         while True:
-            await asyncio.sleep(1.0)
+            await self.sleep(1.0)
             self._fast_tick(hello_gate)
 
     async def _run_slow_score(self, last_n: int) -> int:
@@ -856,7 +862,7 @@ class Session:
         """慢路：LLM 評分，背景持續跑，不阻塞任何東西。"""
         last_n = 0
         while True:
-            await asyncio.sleep(TICK)
+            await self.sleep(TICK)
             if self.chair is None:
                 continue
             last_n = await self._run_slow_score(last_n)
@@ -879,7 +885,7 @@ class Session:
         from . import phase as ph
         det = ph.PhaseDetector(current=self.phase)
         while True:
-            await asyncio.sleep(ph.PHASE_TICK_SECONDS)
+            await self.sleep(ph.PHASE_TICK_SECONDS)
             if self.chair is None or ph.judgeable(self.st, self.now) is not None:
                 continue
             if det.current != self.phase:      # 人手動切了，偵測器跟著對齊
@@ -920,7 +926,7 @@ class Session:
                 return
             await asyncio.to_thread(self.phrase_bank.refill, kind)
         while self.phrase_bank.can_generate():
-            await asyncio.sleep(PHRASING_POLL_SECONDS)
+            await self.sleep(PHRASING_POLL_SECONDS)
             for kind in PHRASE_KINDS:
                 if not self.phrase_bank.can_generate():
                     break
@@ -971,7 +977,7 @@ class Session:
         seen: set[tuple[str, float, str]] = set()
         last_run = 0.0
         while True:
-            await asyncio.sleep(GLOSSARY_POLL_SECONDS)
+            await self.sleep(GLOSSARY_POLL_SECONDS)
             try:
                 snapshot = list(self.st.utterances)  # 同一個 event loop，複製期間不會被改
                 batch = [u for u in snapshot if (u.speaker, u.start, u.text) not in seen]
@@ -1019,6 +1025,13 @@ def install_shutdown_signal_handlers(main_task: asyncio.Task) -> None:
 
 async def main_async(args) -> None:
     load_dotenv(Path(__file__).parent.parent.parent / ".env")
+
+    ConsentPolicy(
+        granted=bool(getattr(args, "consent", False)),
+        privacy_mode=getattr(args, "privacy_mode", "development"),
+    ).require("ElevenLabs/OpenAI")
+    if getattr(args, "privacy_mode", "development") == "strict":
+        os.environ["AHEM_SECURE_STORAGE"] = "1"
 
     main_task = asyncio.current_task()
     install_shutdown_signal_handlers(main_task)
@@ -1075,9 +1088,10 @@ async def main_async(args) -> None:
 
     async def start_chair():
         while getattr(bot, "output", None) is None:  # 等 bot 進頻道
-            await asyncio.sleep(0.5)
+            await session.sleep(0.5)
         nonlocal chair
         chair = Chair(st, bot.output, voice, earcon,
+                      clock=session.clock, sleep=session.sleep,
                       revision=lambda: session.revision, on_spoken=on_spoken, on_failed=on_failed,
                       on_escalate=on_escalate, on_dropped=session.on_dropped)
         session.chair = chair
@@ -1113,19 +1127,19 @@ async def main_async(args) -> None:
     if args.spectator_port:
         serve = _try_import_spectator_serve()
         if serve is not None:
-            # 權杖在這裡就先算好（而不是讓 serve() 自己產）：bot 進頻道時要把
-            # 參與者網址貼進 Discord，不能等 serve() 產完才知道那串是什麼。
-            from .spectator import resolve_tokens
-            op_token, view_token = resolve_tokens(args.spectator_token or None,
-                                                   args.view_token or None)
+            # Resolve one security object before Discord joins so the viewer
+            # notice and the HTTP server always use the same bootstrap token.
+            from .spectator import SpectatorSecurity
+            spectator_security = SpectatorSecurity.from_env(
+                require_configured=(getattr(args, "privacy_mode", "development") == "strict"))
             tasks.append(asyncio.create_task(
-                serve(session, args.spectator_port, op_token, view_token, args.public_read)))
-            base = os.environ.get("AHEM_PUBLIC_URL", "").rstrip("/") \
-                or f"http://localhost:{args.spectator_port}"
+                serve(session, args.spectator_port, security=spectator_security)))
+            base = (os.environ.get("AHEM_PUBLIC_URL", "").rstrip("/")
+                    or f"http://localhost:{args.spectator_port}")
             bot.join_notice = (
-                "會議開始，這是本場的觀戰畫面（只有這個頻道看得到）：\n"
-                + (base if args.public_read else f"{base}/?k={view_token}")
-                + "\n畫面會即時顯示逐字稿、主席開口與忍住的紀錄。")
+                "會議開始，這是本場的唯讀觀戰畫面：\n"
+                f"{base}/#token={spectator_security.viewer_token}\n"
+                "畫面會即時顯示經隱私處理的會議事件。")
 
     _applied = _style.apply(args.style)
     print(f"議題：{args.topic}（預計 {args.duration} 分鐘，階段：{args.phase}）")
@@ -1224,8 +1238,8 @@ async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task])
     _drain_chair(session)
     session.ending = True  # 擋掉收尾期間再進來的 POST /end（訊號路徑不經過 request_end）
     events_path = summary(session)
-    await _post_minutes_to_channel(session, bot)
     try:
+        await _post_minutes_to_channel(session, bot)
         await _flush_spectator(session)
         for t in tasks:
             if not t.done():
@@ -1248,22 +1262,17 @@ async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task])
 
 
 async def _post_minutes_to_channel(session: Session, bot: MeetingBot) -> None:
-    """把 `summary()` 剛寫好的會議記錄當附件貼回該場會議的 Discord 頻道。
-
-    擺在 `summary()` 之後、cancel tasks 之前——這時 bot 還活著（`bot.close()`
-    在整個 `finally` 的最後才跑），而檔案已經寫出去了。**這一步失敗絕不能影響
-    收尾**：內容取自剛 emit 的 `minutes` 事件（不重讀檔），`post_minutes` 自己
-    包了逾時與 try/except，這裡再擋一層例外。
-    """
-    minutes = next((e for e in reversed(session.events) if e.kind == "minutes"), None)
+    """Best-effort delivery of the generated minutes to the meeting channel."""
+    minutes = next((event for event in reversed(session.events)
+                    if event.kind == "minutes"), None)
     if minutes is None:
         return
-    md = minutes.data.get("minutes_md") or ""
-    name = Path(minutes.data.get("minutes_path") or "minutes.md").name
+    markdown = minutes.data.get("minutes_md") or ""
+    filename = Path(minutes.data.get("minutes_path") or "minutes.md").name
     try:
-        await bot.post_minutes(md, name)
-    except Exception as e:  # noqa: BLE001 - 貼訊息不能賠掉收尾
-        print(f"    ⚠️ 會議記錄沒貼成 Discord（{type(e).__name__}: {e}）——檔案已寫出，不影響")
+        await bot.post_minutes(markdown, filename)
+    except Exception as exc:  # noqa: BLE001 - delivery must never break shutdown
+        print(f"    ⚠️ 會議記錄沒貼成 Discord（{type(exc).__name__}: {exc}）——檔案已寫出，不影響")
 
 
 def _try_import_spectator_serve():
@@ -1293,6 +1302,8 @@ def _try_write_minutes(session: Session, out_dir: Path) -> tuple[Path, Path] | N
 def _read_md(path: Path) -> str:
     """讀回剛寫出的 md。理論上必定存在（上一行才寫的），但這是 shutdown 路徑——
     真的讀不到也只該讓 `minutes` 事件少一份內容，不能賠掉整個收尾。"""
+    if path.name.endswith(".ahem"):
+        return ""  # 嚴格模式不把解密後全文重新送進 SSE。
     try:
         return path.read_text(encoding="utf-8")
     except OSError as e:
@@ -1331,10 +1342,10 @@ def _write_events_jsonl(s: Session, events_path: Path | None) -> None:
     """
     if events_path is None:
         return
-    with events_path.open("w", encoding="utf-8") as f:
-        for event in s.events:
-            f.write(json.dumps(dataclasses.asdict(event), ensure_ascii=False) + "\n")
-    print(f"事件紀錄：{events_path}")
+    contents = "".join(
+        json.dumps(dataclasses.asdict(event), ensure_ascii=False) + "\n" for event in s.events)
+    written = write_protected_text(events_path, contents, artifact_type="events")
+    print(f"事件紀錄：{written}")
 
 
 def summary(s: Session) -> Path:
@@ -1349,10 +1360,10 @@ def summary(s: Session) -> Path:
         print(f"- {p}：發言 {s.st.spoke_seconds(p) / 60:.1f} 分鐘"
               f"（佔 {s.st.share(p, s.now):.0%}）")
     out_dir = Path("meetings")
-    out_dir.mkdir(exist_ok=True)
+    prepare_private_dir(out_dir)
     ts = int(time.time())
     out = out_dir / f"meeting-{ts}.log"
-    out.write_text("\n".join(s.log), encoding="utf-8")
+    out = write_protected_text(out, "\n".join(s.log), artifact_type="transcript_log")
     print(f"\n逐字稿與介入紀錄：{out}")
 
     events_out = out_dir / f"meeting-{ts}.events.jsonl"
@@ -1377,16 +1388,10 @@ def main() -> None:
     ap.add_argument("--no-llm", action="store_true", help="只跑快路")
     ap.add_argument("--say-hello", action="store_true", help="進頻道後主席先開口問候")
     ap.add_argument("--spectator-port", type=int, default=0, help="觀戰 UI 監聽埠（0＝不開）")
-    ap.add_argument("--spectator-token", default="",
-                    help="操作者權杖（讀＋切階段＋結束會議）。留空＝讀環境變數 "
-                         "AHEM_SPECTATOR_TOKEN，再沒有就每次啟動隨機產生一組並印出來")
-    ap.add_argument("--view-token", default="",
-                    help="參與者權杖（只能讀）。留空＝讀環境變數 AHEM_VIEW_TOKEN，"
-                         "再沒有就每次啟動隨機產生一組並印出來。把那個網址貼進該場"
-                         "會議的 Discord 文字聊天，存取範圍就等於進得了那個頻道的人")
-    ap.add_argument("--public-read", action="store_true",
-                    help="讀取端完全不設防（demo 現場用：評審不在 Discord 頻道裡，"
-                         "拿不到參與者權杖）。寫入端不受影響，仍要操作者權杖")
+    ap.add_argument("--privacy-mode", choices=["strict", "development"], default="strict",
+                    help="strict 要求參與者同意並使用安全儲存")
+    ap.add_argument("--consent", action="store_true",
+                    help="確認參與者已知情同意音訊轉錄與 AI 處理")
     try:
         asyncio.run(main_async(ap.parse_args()))
     except KeyboardInterrupt:

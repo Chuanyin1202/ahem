@@ -53,8 +53,9 @@ Discord 語音（每人一軌）
 
 ```bash
 git clone https://github.com/Chuanyin1202/ahem.git && cd ahem
-python -m venv .venv && .venv/bin/pip install -r requirements.txt
-cp .env.example .env        # 填入 ELEVENLABS_API_KEY、OPENAI_API_KEY、DISCORD_BOT_TOKEN
+python -m venv .venv
+. .venv/bin/activate && sh scripts/install-secure.sh
+# 正式 Demo 請由 Keychain／秘密管理器注入 API key 與短效 Viewer／Operator Token。
 ```
 
 改用已實聽確認的 Azure 台灣主席聲音：
@@ -75,6 +76,17 @@ AZURE_TTS_USAGE_FILE=meetings/azure_tts_usage.json
 兩者均使用相同的 `+12%` 語速。如需進階指定其他 Azure 聲線，可另設
 `AZURE_TTS_VOICE`，其優先權高於性別預設。
 
+ElevenLabs 也可切換男女聲；Voice ID 必須使用帳戶中已獲授權的聲音，不提交到 Git：
+
+```dotenv
+AHEM_TTS_PROVIDER=elevenlabs
+ELEVENLABS_TTS_GENDER=male
+ELEVENLABS_TTS_MALE_VOICE_ID=<你的 ElevenLabs 男聲 Voice ID>
+ELEVENLABS_TTS_FEMALE_VOICE_ID=<你的 ElevenLabs 女聲 Voice ID>
+ELEVENLABS_TTS_MODEL=eleven_v3_conversational
+ELEVENLABS_TTS_LANGUAGE=zh
+```
+
 這只替換主席的 TTS；即時逐字稿仍由 ElevenLabs Scribe 處理，所以 `ELEVENLABS_API_KEY` 仍須保留。Azure 口說層會把獨立的 `API` 念成已確認的「誒批哀」，並把「收斂」固定成台灣華語 `ㄕㄡ ㄌㄧㄢˋ`；觀戰畫面、事件檔與會後記錄保留原始文字，不會出現發音用的同音字。
 
 Azure `Free F0` 每月額度由 Azure 端強制；Ahem 另在本機保守記帳。預設於 80%、90%、95% 寫出警告，並在 475,000 字元（免費額度的 95%）硬停，保留 5% 緩衝避免不同計量口徑造成超額。使用量記錄在 `meetings/azure_tts_usage.json`，每個 UTC 月自動歸零。Cost Management 預算只能對費用發通知，不能取代這個字元硬上限。
@@ -84,27 +96,21 @@ Azure `Free F0` 每月額度由 Azure 端強制；Ahem 另在本機保守記帳�
 ```bash
 PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
     --topic "黑客松籌備" --duration 30 --say-hello --spectator-port 8765 \
+    --privacy-mode strict --consent \
     [--channel <頻道 ID>] [--keyterms 詞1 詞2] [--phase 發散期|呻吟區|收斂期] [--auto-phase suggest|apply] [--style strict|gentle|efficient] [--no-llm]
 ```
 
-觀戰畫面在 `http://localhost:8765`。`Ctrl-C` 結束會議並寫出記錄到 `meetings/`。
+觀戰畫面在 `http://localhost:8765/#token=<短效 Viewer 或 Operator Token>`。
+`Ctrl-C` 結束會議並將加密記錄寫入 `meetings/`。
 
-權杖分兩級，啟動時各印一個網址：
+> **安全預設**：觀戰服務只綁定 `127.0.0.1`；事件需要 Viewer Token，
+> `POST /phase` 與 `POST /end` 需要 Operator Token。遠端展示請依
+> [`docs/security-architecture.md`](docs/security-architecture.md) 使用 HTTPS 反向代理。
 
-| | 能做什麼 | 從哪裡來 |
-|---|---|---|
-| **參與者** | 讀（逐字稿、主席判斷、總結） | `--view-token` ／ `AHEM_VIEW_TOKEN`，留空就隨機產生 |
-| **操作者** | 讀 ＋ 切階段 ＋ 結束會議 | `--spectator-token` ／ `AHEM_SPECTATOR_TOKEN`，留空就隨機產生 |
+元件、時序、資料流、信任邊界、Raspberry Pi systemd 部署、失敗模式與驗收清單見
+[`docs/system-architecture.md`](docs/system-architecture.md)。
 
-**預設是私密的**：`GET /events` 要帶其中一組（放在 query string `?k=`，因為 SSE 的 `EventSource` 不能設自訂 header）。逐字稿、主席判斷、會議總結全從那條出去，鎖住它就等於鎖住所有真實內容；`GET /` 那份空殼 HTML 不鎖，否則重新整理會壞（前端把權杖存在 sessionStorage 並刻意從網址列抹掉——畫面會投影）。`POST /phase` 與 `POST /end` 只認操作者權杖，帶 `X-Ahem-Token` header。
-
-bot 進語音頻道後會**自動把參與者網址貼進該頻道自己的文字聊天**，看得到的人就等於進得了那個語音頻道的人——存取範圍直接借用 Discord 既有的成員資格，不必自己蓋帳號系統。權杖跟著行程活，會議結束就失效。網址的網域從 `AHEM_PUBLIC_URL` 來，沒設就用 `http://localhost:<port>`。
-
-會議結束時，同一個頻道還會收到**會議記錄的 md 附件**（用附件是因為 Discord 單則訊息有 2000 字元上限，總結常常超過）。這兩件事都是 best-effort：Discord 那側失敗（缺權限、頻道不支援文字聊天）只會印一行警告，不影響會議與收尾。
-
-`--public-read` 讓讀取端完全不設防，給 demo 現場用（評審不在 Discord 頻道裡，拿不到參與者權杖）。寫入端不受這個旗標影響。
-
-> **網路暴露**：觀戰服務綁定 `0.0.0.0`。掛在公開網域（反向代理、tunnel）後面時，讀取端靠上面那組權杖擋著；開了 `--public-read` 就等於完整逐字稿對全世界公開，只在 demo 那種刻意公開的場合用。
+此控制也涵蓋上游 `237e945` 修正的未授權 `/phase`、`/end` 風險；本分支進一步保護讀取端，不採用公開逐字稿或 query-string 權杖。
 
 不用 Discord 也能看畫面——回放任何一份事件檔：
 
@@ -118,7 +124,43 @@ PYTHONPATH=src .venv/bin/python -m meeting_host.spectator --replay examples/synt
 .venv/bin/python -m pytest tests/ -q
 ```
 
-沒有真實會議資料時是 494 passed、23 skipped、2 xfailed：17 個 skip 是需要真實錄音的回歸測試，資料放進 `experiments/holdout/` 後自動啟用（見[資料政策](#資料政策)）；另 6 個需要 `playwright`。
+要一次完成秘密外洩檢查、測試、相依檢查、漏洞掃描與 Bandit 高風險掃描，並將非敏感摘要同步到團隊進度文件：
+
+```bash
+scripts/security-check.sh
+```
+
+只檢查 Git 追蹤檔是否誤放高可信秘密或金鑰檔，可執行 `make secrets`；掃描結果不會印出秘密值。
+
+真實 Demo 啟動前，先執行不洩漏秘密值的安全預檢：
+
+```bash
+PYTHONPATH=src .venv/bin/python -m meeting_host.preflight --mode local
+```
+
+前端整合測試需安裝 Playwright；安裝後不再以 skipped 略過觀戰 UI：
+
+```bash
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m playwright install chromium
+make eval-ui
+```
+
+可重複驗證入口：`make eval-regression` 跑離線狀態／時序／封包回歸，
+`make eval-ui` 跑 Chromium UI，`make eval-quality EVENTS=... LABELS=...` 執行至少五輪
+模型品質重評；`make eval-realtime` 必須明確提供真實 Discord 授權環境才會執行。
+
+產生不連外的虛構中文重疊音軌（僅供 STT 壓力測試，不是品質驗收）：
+
+```bash
+make eval-audio SCENARIO=examples/synthetic-audio-scenario.json OUTPUT=experiments/audio/demo.wav
+```
+
+工具使用本機 `say` 或 `espeak`，輸出 16kHz mono WAV 與不含逐句文字的 manifest。
+
+最新完成項目、待驗收項目與證據統一記錄在 [`PROJECT_STATUS.md`](PROJECT_STATUS.md)。
+
+沒有真實會議資料時，需真實錄音或瀏覽器的測試會明確標示 skipped，已知限制則維持 xfailed；最新實際數量與掃描證據以 [`PROJECT_STATUS.md`](PROJECT_STATUS.md) 為準。真實資料放進 `experiments/holdout/` 後，相關回歸測試會自動啟用（見[資料政策](#資料政策)）。
 
 ## 做到哪裡
 

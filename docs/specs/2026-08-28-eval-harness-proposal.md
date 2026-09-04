@@ -1,6 +1,6 @@
 # 不靠真人的迭代測試台（v2，依審查修訂）
 
-> **狀態：部分實作**。已實作：回歸 harness（`tests/harness/`）、窗口計分（`experiments/score_run.py`，第二個參數是 `labels.json`，不是本文寫的 `scenario.yaml`）、重評工具（`experiments/rescore_slow_path.py`）、real-holdout 資料集流程。未實作：`make eval-*` 目標（repo 沒有 Makefile）、虛擬時鐘全面注入、LLM 回應快取、L2 合成音訊。
+> **狀態：核心離線工具已實作（2026-09-03 更新）**。已有回歸 harness、窗口計分、重評工具、real-holdout 流程，以及 `make eval-regression`／`eval-ui`／`eval-quality`／`eval-realtime`。Playwright／Chromium 已列入開發與 CI；`Chair`、`Session` 與 `Voice` 的讀時鐘、async 等待及網路 timeout 可由同一個 `VirtualClock` 驅動，Output 以 FakePlayer frame ledger 驗證。L2 已有本機 TTS 多人時間軸／重疊音軌生成器與 synthetic manifest，但仍不可取代真人短句 corpus。Regression 採固定 stub，不另外落地 LLM 回應快取，避免在磁碟保存可能引用逐字稿的模型輸出；`eval-quality` 固定禁用快取並至少跑五輪。
 
 > 2026-08-28。v1 主張「錄 STT 事件重播就能抓到今天四種 bug」經審查**不成立**：四個 bug 分屬三種問題
 >（狀態／時序、音訊幀完整性、程序生命週期），要三種 oracle。v2 改成「先有 oracle 與時鐘契約，再談錄放」。

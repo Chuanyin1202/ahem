@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Ahem retention cleanup hourly
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=1h
+Persistent=true
+Unit=ahem-retention.service
+
+[Install]
+WantedBy=timers.target

@@ -32,18 +32,23 @@ LABELS = {"strict": "嚴格主席", "gentle": "溫和引導", "efficient": "效�
 # fast_path。新增跨模組的鍵時把它加進這裡，不要在 apply() 裡用 try/except 亂猜。
 _MODULE = {"NONE_VETO": slow_path}
 
+_STYLE_KEYS = {key for values in STYLES.values() for key in values}
+_BASE_DEFAULTS = {key: getattr(_MODULE.get(key, fast_path), key) for key in _STYLE_KEYS}
+
 
 def defaults() -> dict[str, float]:
-    keys = {k for v in STYLES.values() for k in v}
-    return {k: getattr(_MODULE.get(k, fast_path), k) for k in keys}
+    """回傳目前實際生效的門檻，供狀態頁與測試檢查。"""
+    return {key: getattr(_MODULE.get(key, fast_path), key) for key in _STYLE_KEYS}
 
 
 def apply(name: str | None) -> dict[str, float]:
-    """套用檔位，回傳實際生效的值。`None` 不動任何東西。"""
+    """套用檔位並回傳其設定值；每次先回復基準值，避免前一檔位殘留。"""
     if name is None:
         return {}
     if name not in STYLES:
         raise ValueError(f"未知的風格檔位：{name!r}，可用：{sorted(STYLES)}")
+    for key, value in _BASE_DEFAULTS.items():
+        setattr(_MODULE.get(key, fast_path), key, value)
     applied = {}
     for k, v in STYLES[name].items():
         mod = _MODULE.get(k, fast_path)

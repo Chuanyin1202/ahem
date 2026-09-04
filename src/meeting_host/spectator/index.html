@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ahem 觀戰畫面</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
   /* ── 版面與色票逐值抄自 docs/design/spectator-v2/Main.dc.html（定稿「陶土 · 極簡」）──
      這份實作的驗收標準是「與設計稿逐項數值一致」，不是「看起來像」。改任何一個
@@ -326,6 +325,9 @@
 </div>
 
 <script>
+  // Token 只從 URL fragment 讀取（fragment 不會送進 HTTP access log），接著立刻
+  // 交換成短效 HttpOnly Cookie。完成交換後會清除網址與 JS 記憶體中的 Token。
+  var securityToken = new URLSearchParams(location.hash.replace(/^#/, "")).get("token") || "";
 (function () {
   "use strict";
 
@@ -447,7 +449,6 @@
     share: {},
     serverNow: 0,
     connectionLost: false,
-    needToken: false,
     ended: false,
     minutes: null,          // minutes 事件的 payload（兩份 md 全文＋四路徑）
 
@@ -545,8 +546,6 @@
     statusEl.classList.toggle("switchable", !!m && !state.ended);
     if (state.ended) {
       statusEl.textContent = "會議已結束";
-    } else if (state.needToken) {
-      statusEl.textContent = "需要權杖才能觀看";
     } else if (state.connectionLost) {
       statusEl.textContent = "連線中斷";
     } else if (!m) {
@@ -563,36 +562,10 @@
     });
   }
 
-  // ── 操作權杖 ──
-  // 伺服器啟動時印出的 ?k=… 才能 POST /phase 與 /end；沒有權杖的人是唯讀觀眾。
-  // 讀完立刻用 replaceState 把 k 從網址列抹掉：demo 時這個畫面會投影出去，
-  // token 留在網址列等於公開。之後靠 sessionStorage 撐過重新整理。
-  var authToken = (function () {
-    var q = new URLSearchParams(location.search).get("k");
-    if (q) {
-      try { sessionStorage.setItem("ahem-token", q); } catch (e) { /* 隱私模式 */ }
-      var clean = location.pathname + location.hash;
-      history.replaceState(null, "", clean);
-      return q;
-    }
-    try { return sessionStorage.getItem("ahem-token") || ""; } catch (e) { return ""; }
-  })();
-  function canOperate() { return !!authToken; }
-  function authHeaders(extra) {
-    var h = extra || {};
-    if (authToken) h["X-Ahem-Token"] = authToken;
-    return h;
-  }
-  // 唯讀觀眾不顯示會誤導的操作項——按了只會拿到 403。
-  if (!canOperate()) {
-    el("btn-end").hidden = true;
-    el("status").style.cursor = "default";
-  }
-
   // 階段切換：點狀態列開選單。POST /phase 後伺服器會重送 meeting 事件，
   // 這裡不做本地樂觀高亮，等事件回來再 renderTop()（單一事實來源）。
   el("status").addEventListener("click", function (e) {
-    if (!state.meeting || state.ended || !canOperate()) return;
+    if (!state.meeting || state.ended) return;
     e.stopPropagation();
     el("phase-menu").hidden = !el("phase-menu").hidden;
   });
@@ -603,7 +576,7 @@
       el("phase-menu").hidden = true;
       fetch("/phase", {
         method: "POST",
-        headers: authHeaders({ "Content-Type": "application/json" }),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phase: item.dataset.phase }),
       }).catch(function (err) { console.error("切換階段失敗", err); });
     });
@@ -1014,7 +987,7 @@
     clearTimeout(endTimer);
     endArmed = false;
     endBtn.textContent = "結束中…";
-    fetch("/end", { method: "POST", headers: authHeaders() }).then(function (r) {
+    fetch("/end", { method: "POST" }).then(function (r) {
       if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || "結束失敗"); });
     }).catch(function (err) {
       console.error("結束會議失敗", err);
@@ -1288,24 +1261,8 @@
     "queued", "spoken", "failed", "dropped", "share", "minutes", "glossary", "hearing",
     "phase", "phase_suggestion", "partial"];
 
-  // SSE 不能設自訂 header，權杖只能放在 query string（見 spectator.py TOKEN_QUERY）。
-  // 沒有權杖時先問 /health（公開）：伺服器若不是 --public-read，直接顯示「需要權杖」，
-  // 不要盲連再顯示「連線中斷」——那兩件事的處置完全不同。
-  var source = null;
-  function connect() {
-    source = new EventSource("/events" + (authToken ? "?k=" + encodeURIComponent(authToken) : ""));
-    wireSource();
-  }
-  if (authToken) {
-    connect();
-  } else {
-    fetch("/health").then(function (r) { return r.json(); }).then(function (d) {
-      if (d.public_read) { connect(); return; }
-      state.needToken = true;
-      renderTop();
-    }).catch(function () { connect(); });
-  }
-  function wireSource() {
+  function connectEvents() {
+    var source = new EventSource("/events");
     source.addEventListener("snapshot", function (e) {
       var events = JSON.parse(e.data);
       resetForSnapshot();
@@ -1323,6 +1280,27 @@
     source.onerror = function () { setConnectionLost(true); };
     source.onopen = function () { setConnectionLost(false); };
   }
+
+  function establishSession() {
+    var headers = {};
+    if (securityToken) headers.Authorization = "Bearer " + securityToken;
+    return fetch("/session", {
+      method: "POST",
+      headers: headers,
+    }).then(function (response) {
+      if (!response.ok) throw new Error("Token 驗證失敗");
+      securityToken = "";
+      history.replaceState(null, "", location.pathname);
+      connectEvents();
+    });
+  }
+
+  establishSession().catch(function (err) {
+    securityToken = "";
+    history.replaceState(null, "", location.pathname);
+    console.error("建立安全工作階段失敗", err);
+    setConnectionLost(true);
+  });
 
   renderTop();
   renderStats();

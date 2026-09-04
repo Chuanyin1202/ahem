@@ -1,5 +1,6 @@
 # 金鑰與環境
 .env
+.security-run/
 .env.*
 !.env.example
 

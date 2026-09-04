@@ -65,22 +65,11 @@ PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
     [--channel <id>] [--keyterms term1 term2] [--phase 發散期|呻吟區|收斂期] [--auto-phase suggest|apply] [--style strict|gentle|efficient] [--no-llm]
 ```
 
-The spectator view is at `http://localhost:8765`. `Ctrl-C` ends the meeting and writes the records to `meetings/`.
+The spectator view is at `http://localhost:8765/#token=<short-lived viewer or operator token>`. `Ctrl-C` ends the meeting and writes encrypted records to `meetings/`.
 
-There are two tiers of token, and startup prints a URL for each:
+> **Secure default**: the spectator server binds only to `127.0.0.1`; `/events` requires a Viewer token, while `POST /phase` and `POST /end` require an Operator token. The URL fragment is exchanged once for a signed, short-lived HttpOnly cookie and is removed immediately. Query-string tokens are rejected.
 
-| | Can do | Where it comes from |
-|---|---|---|
-| **Participant** | read (transcript, chair judgements, minutes) | `--view-token` / `AHEM_VIEW_TOKEN`, random per start if unset |
-| **Operator** | read + switch phase + end the meeting | `--spectator-token` / `AHEM_SPECTATOR_TOKEN`, random per start if unset |
-
-**Reads are private by default**: `GET /events` requires either token, passed in the query string as `?k=` (SSE's `EventSource` cannot set custom headers). Everything real — transcript, chair judgements, minutes — leaves through that one endpoint, so gating it gates the content. `GET /` is deliberately left open: it is an empty shell, and gating it would break refresh, because the page stores the token in `sessionStorage` and strips it from the address bar (the screen gets projected). `POST /phase` and `POST /end` accept only the operator token, via the `X-Ahem-Token` header.
-
-How the participant token reaches people is up to you. Pasting the URL into the meeting's own Discord text chat scopes access to whoever can reach that channel — borrowing Discord's existing membership instead of building an account system. Tokens live with the process and die when the meeting ends.
-
-`--public-read` removes the read gate entirely, for a demo where the audience is not in the Discord channel. Writes are unaffected.
-
-> **Network exposure**: the server binds `0.0.0.0`. Behind a public domain (reverse proxy, tunnel), reads are gated by the tokens above; `--public-read` makes the full transcript world-readable, so use it only when that is the intent.
+Remote display requires the HTTPS reverse proxy, trusted-origin allowlist, and firewall boundary documented in [`docs/security-architecture.md`](docs/security-architecture.md). This includes the upstream `237e945` fix for unauthorised `/phase` and `/end` calls and additionally protects read access.
 
 The view also works without Discord, replaying any event log:
 
@@ -94,7 +83,15 @@ Tests:
 .venv/bin/python -m pytest tests/ -q
 ```
 
-Without real meeting data this is 494 passed, 23 skipped, 2 xfailed: 17 skips are regressions that replay a real recording and enable themselves once data is placed under `experiments/holdout/` (see [Data policy](#data-policy)); the other 6 need `playwright`.
+Run `make security` for the full local gate, or `make secrets` for the tracked-file secret check only. The scanner reports path, line, and finding type without echoing the matched value.
+
+Install `requirements-dev.txt` and Playwright Chromium to run the browser integration suite. Tests that need private holdout data or explicitly authorised real Discord/API access remain skipped; current counts and scan evidence are recorded in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
+
+Generate an offline synthetic Chinese overlap track for STT stress testing (not a human-meeting quality claim):
+
+```bash
+make eval-audio SCENARIO=examples/synthetic-audio-scenario.json OUTPUT=experiments/audio/demo.wav
+```
 
 ## Where it stands
 

@@ -211,12 +211,6 @@ def _spawn_live(extra_args: list[str] | None = None, **popen_kwargs) -> subproce
     )
 
 
-# POST /phase、/end 要帶的操作權杖（`serve()` 沒指定就隨機產生，測試端釘一組才知道要帶什麼）
-_TOKEN = "shutdown-test-token"
-# 讀取端（GET /events）現在也要權杖，走真實 serve()／driver 的測試得自己釘一組
-_VIEW_TOKEN = "shutdown-test-view-token"
-
-
 def _spawn_driver(extra_args: list[str] | None = None, **popen_kwargs) -> subprocess.Popen:
     """起 `tests/harness/live_shutdown_driver.py`——本檔預設會跑的那組用這個，
     不連 Discord、不打 LLM／TTS。"""
@@ -572,8 +566,8 @@ def test_shutdown_delivers_minutes_event_to_connected_sse_client(tmp_path, monke
     async def go():
         session = _make_session()
         port = _free_port()
-        serve_task = asyncio.create_task(
-            spectator.serve(session, port, _TOKEN, _VIEW_TOKEN))
+        security = spectator.SpectatorSecurity("v" * 32, "o" * 32)
+        serve_task = asyncio.create_task(spectator.serve(session, port, security=security))
         async with aiohttp.ClientSession() as cs:
             for _ in range(100):  # 等伺服器起來
                 try:
@@ -582,7 +576,10 @@ def test_shutdown_delivers_minutes_event_to_connected_sse_client(tmp_path, monke
                     break
                 except aiohttp.ClientError:
                     await asyncio.sleep(0.05)
-            resp = await cs.get(f"http://127.0.0.1:{port}/events?k={_VIEW_TOKEN}")
+            resp = await cs.get(
+                f"http://127.0.0.1:{port}/events",
+                headers={"Authorization": "Bearer " + "o" * 32},
+            )
             assert resp.status == 200
             lines: list[bytes] = []
 
@@ -804,9 +801,7 @@ def test_double_post_end_still_exits_cleanly():
     冒煙守門（returncode 與檔案），確認整條路徑沒有回歸。
     """
     port = _free_port()
-    proc = _spawn_driver(extra_args=["--spectator-port", str(port),
-                                     "--spectator-token", _TOKEN,
-                                    "--view-token", _VIEW_TOKEN])
+    proc = _spawn_driver(extra_args=["--spectator-port", str(port)])
     statuses = []
     out = ""
     try:
@@ -815,9 +810,10 @@ def test_double_post_end_still_exits_cleanly():
         deadline = time.perf_counter() + 0.5
         while True:
             try:
-                req = urllib.request.Request(f"http://127.0.0.1:{port}/end", data=b"",
-                                              method="POST",
-                                              headers={"X-Ahem-Token": _TOKEN})
+                req = urllib.request.Request(
+                    f"http://127.0.0.1:{port}/end", data=b"", method="POST",
+                    headers={"Authorization": "Bearer " + "o" * 32},
+                )
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     statuses.append(resp.status)
             except (urllib.error.URLError, OSError) as e:
@@ -897,9 +893,7 @@ def test_double_post_end_still_exits_cleanly_real_discord():
     冒煙守門（returncode 與檔案），確認整條路徑沒有回歸。
     """
     port = _free_port()
-    proc = _spawn_live(extra_args=["--spectator-port", str(port),
-                                   "--spectator-token", _TOKEN,
-                                    "--view-token", _VIEW_TOKEN])
+    proc = _spawn_live(extra_args=["--spectator-port", str(port)])
     statuses = []
     try:
         for _ in range(300):  # 等觀戰 UI 起來（bot 登入要幾秒）
@@ -914,9 +908,10 @@ def test_double_post_end_still_exits_cleanly_real_discord():
         deadline = time.perf_counter() + 0.5
         while True:
             try:
-                req = urllib.request.Request(f"http://127.0.0.1:{port}/end", data=b"",
-                                              method="POST",
-                                              headers={"X-Ahem-Token": _TOKEN})
+                req = urllib.request.Request(
+                    f"http://127.0.0.1:{port}/end", data=b"", method="POST",
+                    headers={"Authorization": "Bearer " + "o" * 32},
+                )
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     statuses.append(resp.status)
             except (urllib.error.URLError, OSError) as e:
@@ -952,9 +947,7 @@ def test_double_sigterm_during_flush_exits_without_traceback_real_discord():
     離開碼結束，而且事件紀錄照樣寫得出去。
     """
     port = _free_port()
-    proc = _spawn_live(extra_args=["--spectator-port", str(port),
-                                   "--spectator-token", _TOKEN,
-                                    "--view-token", _VIEW_TOKEN])
+    proc = _spawn_live(extra_args=["--spectator-port", str(port)])
     sock = None
     try:
         for _ in range(300):
@@ -967,8 +960,8 @@ def test_double_sigterm_during_flush_exits_without_traceback_real_discord():
             pytest.fail("觀戰 UI 沒起來")
 
         sock = socket.create_connection(("127.0.0.1", port), timeout=5)
-        sock.sendall(f"GET /events?k={_VIEW_TOKEN} HTTP/1.1\r\nHost: localhost\r\n"
-                     "Accept: text/event-stream\r\n\r\n".encode())
+        sock.sendall(b"GET /events HTTP/1.1\r\nHost: localhost\r\n"
+                     b"Accept: text/event-stream\r\n\r\n")
         time.sleep(1)  # 讓 SSE handler 註冊成 subscriber
 
         proc.send_signal(signal.SIGTERM)

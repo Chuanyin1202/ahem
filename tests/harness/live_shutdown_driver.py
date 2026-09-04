@@ -80,10 +80,6 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap = argparse.ArgumentParser()
     ap.add_argument("--spectator-port", type=int, default=0,
                      help="開觀戰 UI（0＝不開，跟 production 的 --spectator-port 同語意）")
-    ap.add_argument("--spectator-token", default="",
-                     help="釘住操作者權杖，讓測試端知道要帶什麼 header（production 同名參數）")
-    ap.add_argument("--view-token", default="",
-                     help="釘住參與者權杖，讓測試端連得上 /events（production 同名參數）")
     ap.add_argument("--slow-flush-seconds", type=float, default=0.0,
                      help="把 live._flush_spectator 換成只會睡這麼久的版本"
                           "（0＝不換，用 production 版本）")
@@ -123,9 +119,9 @@ async def main_async(args: argparse.Namespace) -> None:
 
     if args.spectator_port:
         from meeting_host import spectator
+        security = spectator.SpectatorSecurity("v" * 32, "o" * 32)
         tasks.append(asyncio.create_task(
-            spectator.serve(session, args.spectator_port, args.spectator_token or None,
-                            args.view_token or None)))
+            spectator.serve(session, args.spectator_port, security=security)))
 
     print("議題：測試（harness 驅動，無 Discord／LLM）")
     print("READY", flush=True)  # 測試端等這一行出現才送訊號，不用固定 sleep 猜時機

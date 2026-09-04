@@ -1,27 +1,21 @@
 # Demo 現場流程（Runbook）
 
-> 目標：現場任何人照這份就能開會，出事時知道下一步。所有指令以 Pi5 上的路徑為準。
+> 目標：現場任何人照這份就能開會，出事時知道下一步。本頁只提供操作流程；資安驗收以 [`demo-security-runbook.md`](demo-security-runbook.md) 為準。
 
 ## 會前（前一晚 ＋ 當天早上各跑一次）
 
 ```bash
 ssh pi5
 cd ~/meeting-host-agent
-grep -c '=' .env                              # 應為 3：ELEVENLABS_API_KEY、OPENAI_API_KEY、DISCORD_BOT_TOKEN
 PYTHONPATH=src .venv/bin/python -c "from meeting_host import live, phase, style; print('載入 OK')"
-# ElevenLabs：這把 key 還有額度嗎（需要 user_read 權限的 key）
-K=$(grep '^ELEVENLABS_API_KEY=' .env | cut -d= -f2-); curl -s -H "xi-api-key: $K" https://api.elevenlabs.io/v1/user/subscription | grep -o '"character_count":[0-9]*,"character_limit":[0-9]*'
+PYTHONPATH=src .venv/bin/python -m meeting_host.preflight --mode local
 ```
 
-- Discord：bot 已在伺服器裡、對語音頻道有連線與發言權限；記下頻道 ID（Meeting Room：`1542595146527412357`，**開會前再確認一次**）。
-- 投影：觀戰畫面 `https://ahem.eighti.app`（Cloudflare Tunnel 指到 Pi5 的 `localhost:8765`），用 1440×900 以上的解析度；瀏覽器先開好、確認能連。後端沒起時這個網址回 502，那是正常的。
-  - 手機開會變成橫向捲動（版面最小寬度 1200px），要給評審掃碼看就先知道這件事。
-- 網路：Pi5 與投影電腦同一網段（或走 tunnel 對外）。
-- 權杖：啟動會印兩個網址。**操作者**那個給自己（可切階段、可結束會議），**參與者**那個只能讀。
-  - 畫面會投影，所以前端讀完 `?k=` 就把它從網址列抹掉，權杖不會出現在螢幕上。
-  - 想固定就先 `export AHEM_SPECTATOR_TOKEN=<操作者>` 與 `export AHEM_VIEW_TOKEN=<參與者>` 再啟動，網址才能事先收藏。
-  - **預設是私密的**：沒帶權杖的人開網址只會看到「需要權杖才能觀看」。真實會議把參與者網址貼進該場會議的 Discord 文字聊天即可，範圍自然等於進得了那個頻道的人。
-  - **demo 現場評審不在 Discord 頻道裡**，要讓他們自己掃碼看就得加 `--public-read`——那等於完整逐字稿對外公開，只在 demo 用，彩排真實內容時不要加。
+- 預檢必須顯示 `READY`；它只檢查秘密是否存在與長度，不會輸出值。Raspberry Pi 上的 KEK 來自 systemd credential 或 0600 Linux secret file。不要用 `grep`、shell trace 或截圖顯示 `.env`。
+- Discord：bot 已在授權測試伺服器裡，對指定語音頻道有連線與發言權限；開會前由 Operator 再確認頻道 ID。
+- 投影：觀戰畫面 `https://ahem.eighti.app`（Cloudflare Tunnel 指到 Pi5 `localhost:8765`）。後端未啟動時回 502 是預期現象；開會前必須確認 HTTPS、trusted origin 與防火牆。手機畫面會橫向捲動（最小寬度 1200px）。
+- Viewer 與 Operator 使用不同且至少 32 字元的 Token；Token 只能放在網址 fragment 做一次性交換，不能放 query string。
+- 給評審的公開連結預設只有去識別狀態。若要展示完整逐字稿，必須使用無真實個資的 demo 腳本，並同時設 `AHEM_VIEWER_CONTENT=full` 與 `AHEM_DEMO_PUBLIC_TRANSCRIPT=1`。
 
 ## 開始
 
@@ -29,12 +23,14 @@ K=$(grep '^ELEVENLABS_API_KEY=' .env | cut -d= -f2-); curl -s -H "xi-api-key: $K
 cd ~/meeting-host-agent
 PYTHONPATH=src nohup .venv/bin/python -u -m meeting_host.live \
     --topic "<題目>" --duration <分鐘> --say-hello --spectator-port 8765 \
-    --channel 1542595146527412357 --auto-phase suggest \
+    --channel <授權測試頻道 ID> --auto-phase suggest \
+    --privacy-mode strict --consent \
     > live-$(date +%m%d-%H%M).out 2>&1 < /dev/null &
 tail -f live-*.out        # 看到「已登入」「加入語音頻道」「觀戰 UI：http://…」才算起來
 ```
 
-- **demo 現場要讓評審自己開連結就加 `--public-read`**：讀取端不設防，寫入端仍要操作者權杖。真實會議不要加。
+本機 Viewer 開啟 `http://127.0.0.1:8765/#token=<Viewer Token>`；Operator 改用 Operator Token。交換成功後 fragment 會被清除，之後使用短效 HttpOnly Cookie。不可把完整網址貼進聊天、Issue 或投影畫面。
+
 - `--auto-phase suggest`：階段只在狀態列括號提示，切換由人在畫面點選單。不放心就拿掉。
 - `--style strict|gentle|efficient`：主持風格檔位，未調校，只在想展示「同一場會議不同風格」時用。
 - 與會者先進頻道再起 bot 也可以；bot 會等第一個真人的音訊通了才問候。
@@ -50,7 +46,7 @@ tail -f live-*.out        # 看到「已登入」「加入語音頻道」「觀�
 
 | 狀況 | 怎麼看 | 怎麼辦 |
 |---|---|---|
-| 主席不講話、右欄有「主席講不出話」告示 | log 出現 `TTS HTTP 401 … quota_exceeded` | ElevenLabs 額度用完。**換另一個帳號的 key**：改 `.env` 的 `ELEVENLABS_API_KEY`，`kill -TERM` 後重新啟動（會議狀態在記憶體，重啟等於新開一場；先前的記錄已寫在 `meetings/`） |
+| 主席不講話、右欄有「主席講不出話」告示 | log 出現 TTS 授權或額度錯誤，但不含秘密 | 停止 Demo；由憑證持有人在不投影的受控終端更新秘密，再重新預檢與啟動。不要在現場聊天或 Issue 傳遞 key |
 | 左欄「主席聽不到」告示 | log 有 STT 斷線／`hearing` 事件 | 同上，STT 與 TTS 共用同一把 key |
 | 主席重複打斷同一人 | 觀戰畫面連續同型介入 | 手動把階段切到「拉鋸」（該階段主席最克制）；或 `kill -TERM` 重啟並加 `--style gentle` |
 | 觀戰畫面不更新 | 頁面「連線中斷」 | 重新整理；bot 還活著就會重送全量 snapshot |
@@ -72,3 +68,5 @@ ls -t meetings/ | head -4   # meeting-<秒>.events.jsonl / .host.md / .minutes.m
 
 - 現場不改 prompt、不改門檻常數、不裝套件。
 - 不做本地備援；假設雲端與網路正常，額度靠兩個帳號輪替。
+- 不停用 production 安全模式、不共用 Viewer／Operator Token、不用 HTTP 對外公開觀戰服務。
+- 不展示 `.env`、Keychain、完整逐字稿、原始音訊或含 Token 的網址。

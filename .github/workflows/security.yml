@@ -1,0 +1,55 @@
+name: Security gates
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "codex/**"
+    paths-ignore:
+      - "**/*.md"
+      - "sbom.cdx.json"
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - run: python scripts/check_no_secrets.py
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+      - run: python -m pip install --upgrade pip
+      - run: sh scripts/install-secure.sh
+      - run: python -m pip install bandit pip-audit -r requirements-dev.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Run the unified security gate
+        run: AHEM_PYTHON=python scripts/security-check.sh
+      - name: Publish PR verification summary
+        if: success()
+        run: cat .security-run/pr-evidence.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: ahem-verification-evidence
+          path: |
+            .security-run/pr-evidence.md
+            .security-run/pytest.txt
+            .security-run/summary.json
+            sbom.cdx.json
+          if-no-files-found: warn

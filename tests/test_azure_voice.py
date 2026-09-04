@@ -1,4 +1,6 @@
 import asyncio
+import json
+import stat
 
 import pytest
 
@@ -22,6 +24,28 @@ def test_build_voice_keeps_elevenlabs_as_default():
     voice = build_voice({"ELEVENLABS_API_KEY": "eleven-key"})
     assert type(voice) is Voice
     assert voice.api_key == "eleven-key"
+
+
+def test_build_voice_selects_elevenlabs_gender_profiles():
+    voice = build_voice({
+        "ELEVENLABS_API_KEY": "eleven-key",
+        "ELEVENLABS_TTS_GENDER": "male",
+        "ELEVENLABS_TTS_MALE_VOICE_ID": "male_voice_123",
+        "ELEVENLABS_TTS_MODEL": "eleven_v3_conversational",
+        "ELEVENLABS_TTS_LANGUAGE": "zh",
+    })
+    assert type(voice) is Voice
+    assert voice.voice_id == "male_voice_123"
+    assert voice.model_id == "eleven_v3_conversational"
+    assert voice.language_code == "zh"
+
+
+def test_build_voice_requires_configured_elevenlabs_male_voice():
+    with pytest.raises(ValueError, match="MALE_VOICE_ID"):
+        build_voice({
+            "ELEVENLABS_API_KEY": "eleven-key",
+            "ELEVENLABS_TTS_GENDER": "male",
+        })
 
 
 def test_build_voice_selects_confirmed_azure_defaults():
@@ -133,6 +157,17 @@ def test_azure_usage_budget_warns_once_and_persists(tmp_path, caplog):
     assert '"characters": 86' in state
     assert '"warned": [' in state
     assert caplog.text.count("免費額度提醒") == 1
+    assert stat.S_IMODE((tmp_path / "usage.json").stat().st_mode) == 0o600
+    assert stat.S_IMODE(tmp_path.stat().st_mode) == 0o700
+
+
+def test_azure_usage_budget_fails_closed_when_state_is_corrupt(tmp_path):
+    path = tmp_path / "usage.json"
+    path.write_text("not-json", encoding="utf-8")
+    budget = AzureUsageBudget(path, monthly_limit=100)
+    with pytest.raises(VoiceError, match="為避免超額已停止"):
+        budget.reserve("字")
+    assert path.read_text(encoding="utf-8") == "not-json"
 
 
 def test_azure_usage_budget_blocks_before_safety_limit(tmp_path):

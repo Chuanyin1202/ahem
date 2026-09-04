@@ -13,32 +13,190 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import dataclasses
+import hashlib
 import json
+import hmac
 import os
 import secrets
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol
+from urllib.parse import urlsplit
 
 from aiohttp import web
 
 from .events import Event
+from .security import redact_event_for_viewer
 
 INDEX_HTML_PATH = Path(__file__).parent / "spectator" / "index.html"
 PING_INTERVAL = 15.0
 QUEUE_MAXSIZE = 200
 SESSION_KEY: web.AppKey[Any] = web.AppKey("session")
-TOKEN_KEY: web.AppKey[Any] = web.AppKey("token")
-VIEW_TOKEN_KEY: web.AppKey[Any] = web.AppKey("view_token")
-PUBLIC_READ_KEY: web.AppKey[Any] = web.AppKey("public_read")
-# 兩個會改變狀態的端點（POST /phase、POST /end）要帶的 header。
-TOKEN_HEADER = "X-Ahem-Token"
-# 讀取端（GET /events）改帶 query string：SSE 走 `EventSource`，瀏覽器不讓它設
-# 自訂 header，只能把權杖放在網址裡。
-TOKEN_QUERY = "k"
+SECURITY_KEY: web.AppKey[Any] = web.AppKey("security")
 # 同 live.py `--phase` 的 choices／live.Session 建構子預設值——階段只能是這三個。
 VALID_PHASES = ("發散期", "呻吟區", "收斂期")
+
+
+@dataclasses.dataclass(frozen=True)
+class SpectatorSecurity:
+    """觀戰服務的最小權限設定；Token 只能由執行環境的秘密管理器注入。"""
+
+    viewer_token: str
+    operator_token: str
+    trusted_origins: tuple[str, ...] = ()
+    session_ttl_seconds: int = 3600
+    cookie_name: str = "ahem_session"
+    redact_viewer: bool = True
+    show_bootstrap_tokens: bool = False
+
+    def __post_init__(self) -> None:
+        if (len(self.viewer_token) < 32 or len(self.operator_token) < 32
+                or hmac.compare_digest(self.viewer_token, self.operator_token)):
+            raise ValueError("Viewer／Operator Token 必須不同且至少 32 字元")
+        if not 60 <= self.session_ttl_seconds <= 86_400:
+            raise ValueError("短效工作階段期限必須介於 60 秒與 24 小時")
+        for origin in self.trusted_origins:
+            parsed = urlsplit(origin)
+            if (parsed.scheme not in {"http", "https"} or not parsed.netloc
+                    or parsed.path not in {"", "/"} or parsed.query or parsed.fragment
+                    or parsed.username or parsed.password or "*" in origin
+                    or (parsed.scheme == "http" and parsed.hostname not in
+                        {"localhost", "127.0.0.1", "::1"})):
+                raise ValueError(f"不安全的 trusted origin：{origin!r}")
+
+    @classmethod
+    def from_env(cls, env: dict[str, str] | None = None, *,
+                 require_configured: bool = False) -> "SpectatorSecurity":
+        env = dict(os.environ if env is None else env)
+        viewer = env.get("AHEM_VIEWER_TOKEN", "").strip()
+        operator = env.get("AHEM_OPERATOR_TOKEN", "").strip()
+        bootstrap = False
+        if bool(viewer) != bool(operator):
+            raise RuntimeError("AHEM_VIEWER_TOKEN 與 AHEM_OPERATOR_TOKEN 必須同時設定")
+        if not viewer:
+            legacy = env.get("AHEM_SPECTATOR_TOKEN", "").strip()
+            if require_configured:
+                raise RuntimeError(
+                    "production strict 模式必須由秘密管理器提供 AHEM_VIEWER_TOKEN 與 "
+                    "AHEM_OPERATOR_TOKEN；AHEM_SPECTATOR_TOKEN 只供開發遷移"
+                )
+            if legacy:
+                if len(legacy) < 32:
+                    raise RuntimeError("AHEM_SPECTATOR_TOKEN 至少需要 32 字元")
+                operator = legacy
+                viewer = hashlib.sha256(f"viewer\0{legacy}".encode()).hexdigest()
+            else:
+                viewer, operator = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+            bootstrap = True
+        if len(viewer) < 32 or len(operator) < 32 or hmac.compare_digest(viewer, operator):
+            raise RuntimeError(
+                "請由秘密管理器提供不同且至少 32 字元的 AHEM_VIEWER_TOKEN 與 "
+                "AHEM_OPERATOR_TOKEN"
+            )
+        origins = tuple(origin.strip().rstrip("/") for origin in
+                        env.get("AHEM_TRUSTED_ORIGINS", "").split(",")
+                        if origin.strip())
+        viewer_content = env.get("AHEM_VIEWER_CONTENT", "redacted").strip().lower()
+        if viewer_content not in {"redacted", "full"}:
+            raise RuntimeError("AHEM_VIEWER_CONTENT 只支援 redacted 或 full")
+        if viewer_content == "full" and env.get("AHEM_DEMO_PUBLIC_TRANSCRIPT") != "1":
+            raise RuntimeError(
+                "Viewer 完整內容只限已確認為非機密示範資料；"
+                "需明確設定 AHEM_DEMO_PUBLIC_TRANSCRIPT=1"
+            )
+        return cls(viewer, operator, origins, redact_viewer=viewer_content != "full",
+                   show_bootstrap_tokens=bootstrap)
+
+    def _token_role(self, token: str) -> str | None:
+        if token and hmac.compare_digest(token, self.operator_token):
+            return "operator"
+        if token and hmac.compare_digest(token, self.viewer_token):
+            return "viewer"
+        return None
+
+    def _signing_key(self) -> bytes:
+        material = f"{self.viewer_token}\0{self.operator_token}".encode()
+        return hashlib.sha256(material).digest()
+
+    def issue_session(self, token: str, *, now: int | None = None) -> tuple[str, str]:
+        """把長效 Token 換成一小時短效 Cookie；Cookie 不含原始 Token。"""
+        role = self._token_role(token)
+        if role is None:
+            raise PermissionError("invalid token")
+        expires = (int(time.time()) if now is None else now) + self.session_ttl_seconds
+        nonce = secrets.token_urlsafe(12)
+        payload = f"{role}.{expires}.{nonce}"
+        signature = hmac.new(self._signing_key(), payload.encode(), hashlib.sha256).digest()
+        encoded_signature = base64.urlsafe_b64encode(signature).decode().rstrip("=")
+        return f"{payload}.{encoded_signature}", role
+
+    def session_role(self, value: str, *, now: int | None = None) -> str | None:
+        try:
+            role, expires_text, nonce, signature = value.split(".", 3)
+            expires = int(expires_text)
+        except (TypeError, ValueError):
+            return None
+        if role not in {"viewer", "operator"} or not nonce:
+            return None
+        if expires < (int(time.time()) if now is None else now):
+            return None
+        payload = f"{role}.{expires}.{nonce}"
+        expected = base64.urlsafe_b64encode(
+            hmac.new(self._signing_key(), payload.encode(), hashlib.sha256).digest()
+        ).decode().rstrip("=")
+        return role if hmac.compare_digest(signature, expected) else None
+
+    def request_role(self, request: web.Request) -> str | None:
+        auth = request.headers.get("Authorization", "")
+        token = auth.removeprefix("Bearer ") if auth.startswith("Bearer ") else ""
+        role = self._token_role(token)
+        if role is not None:
+            return role
+        return self.session_role(request.cookies.get(self.cookie_name, ""))
+
+    def authorized(self, request: web.Request, *, operator: bool = False) -> bool:
+        role = self.request_role(request)
+        return role == "operator" if operator else role in {"viewer", "operator"}
+
+    def is_operator(self, request: web.Request) -> bool:
+        return self.request_role(request) == "operator"
+
+
+def _security_headers(response: web.StreamResponse) -> None:
+    response.headers.update({
+        "Content-Security-Policy": (
+            "default-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'self'; "
+            "object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; "
+            "style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
+        ),
+        "Referrer-Policy": "no-referrer",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        "Cache-Control": "no-store",
+    })
+
+
+@web.middleware
+async def _security_middleware(request: web.Request, handler):
+    security: SpectatorSecurity | None = request.app.get(SECURITY_KEY)
+    if security is not None:
+        operator = request.path in {"/phase", "/end"}
+        if request.path in {"/events", "/phase", "/end"} and not security.authorized(
+                request, operator=operator):
+            return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+        if request.method not in {"GET", "HEAD", "OPTIONS"}:
+            origin = request.headers.get("Origin")
+            # 本機直連仍是同源請求；反向代理入口則必須明列。
+            same_origin = origin == str(request.url.origin()) if origin else True
+            if origin and not same_origin and origin not in security.trusted_origins:
+                return web.json_response({"ok": False, "error": "untrusted origin"}, status=403)
+    response = await handler(request)
+    _security_headers(response)
+    return response
 
 
 class SessionLike(Protocol):
@@ -141,13 +299,32 @@ async def _index_handler(request: web.Request) -> web.Response:
 
 
 async def _health_handler(request: web.Request) -> web.Response:
-    session: SessionLike = request.app[SESSION_KEY]
-    # `public_read` 回報的是「讀取端現在到底開不開放」，不是單看 --public-read 旗標：
-    # 沒有設定參與者權杖時（單元測試、回放模式）本來就不設防，前端要據此決定
-    # 「直接連」還是「顯示需要權杖」，只看旗標會讓不設防的伺服器被誤判成要權杖。
-    open_read = bool(request.app[PUBLIC_READ_KEY]) or request.app[VIEW_TOKEN_KEY] is None
-    return web.json_response({"ok": True, "events": len(session.events),
-                              "public_read": open_read})
+    return web.json_response({"ok": True})
+
+
+async def _session_handler(request: web.Request) -> web.Response:
+    """以一次性的 Authorization header 換短效 HttpOnly Cookie，避免 Token 出現在 URL。"""
+    security: SpectatorSecurity | None = request.app.get(SECURITY_KEY)
+    if security is None:
+        return web.json_response({"ok": True, "role": "development"})
+    auth = request.headers.get("Authorization", "")
+    token = auth.removeprefix("Bearer ") if auth.startswith("Bearer ") else ""
+    try:
+        session_value, role = security.issue_session(token)
+    except PermissionError:
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    response = web.json_response({"ok": True, "role": role,
+                                  "expires_in": security.session_ttl_seconds})
+    response.set_cookie(
+        security.cookie_name,
+        session_value,
+        max_age=security.session_ttl_seconds,
+        httponly=True,
+        secure=request.secure or os.environ.get("AHEM_COOKIE_SECURE") == "1",
+        samesite="Strict",
+        path="/",
+    )
+    return response
 
 
 async def _phase_handler(request: web.Request) -> web.Response:
@@ -156,8 +333,6 @@ async def _phase_handler(request: web.Request) -> web.Response:
     `session.phase` 是慢路 prompt 真正吃的欄位（`live.py` `_run_slow_score` 傳
     `self.phase`），所以這裡改了會**真的**影響下一次 LLM 評分，不只是畫面顯示。
     """
-    if not _authorised(request):
-        return web.json_response({"ok": False, "error": "forbidden"}, status=403)
     session: SessionLike = request.app[SESSION_KEY]
     try:
         payload = await request.json()
@@ -176,9 +351,10 @@ async def _phase_handler(request: web.Request) -> web.Response:
 
 
 async def _events_handler(request: web.Request) -> web.StreamResponse:
-    if not _read_authorised(request):
-        return web.json_response({"ok": False, "error": "forbidden"}, status=403)
     session: SessionLike = request.app[SESSION_KEY]
+    security: SpectatorSecurity | None = request.app.get(SECURITY_KEY)
+    viewer_only = (security is not None and security.redact_viewer
+                   and not security.is_operator(request))
     resp = web.StreamResponse(status=200, headers={
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
@@ -196,6 +372,8 @@ async def _events_handler(request: web.Request) -> web.StreamResponse:
     # 中間有事件進來也不會漏，因為訂閱是在讀完 snapshot 之後才註冊，
     # 但 snapshot 本身已經涵蓋讀取當下 session.events 的內容。
     snapshot = [dataclasses.asdict(e) for e in session.events]
+    if viewer_only:
+        snapshot = [redact_event_for_viewer(e) for e in snapshot]
     await resp.write(_sse_message("snapshot", snapshot))
 
     session.subscribers.append(on_event)
@@ -208,7 +386,10 @@ async def _events_handler(request: web.Request) -> web.StreamResponse:
                 await resp.write(b": ping\n\n")
                 stream.mark_idle_if_drained()  # 沒事件可寫＝已經寫乾淨了
                 continue
-            await resp.write(_sse_message(event.kind, dataclasses.asdict(event)))
+            payload = dataclasses.asdict(event)
+            if viewer_only:
+                payload = redact_event_for_viewer(payload)
+            await resp.write(_sse_message(event.kind, payload))
             stream.mark_idle_if_drained()  # write 回來了才算送出，flush_streams 等的就是這個
     except (asyncio.CancelledError, ConnectionResetError, ConnectionAbortedError):
         pass
@@ -229,8 +410,6 @@ async def _end_handler(request: web.Request) -> web.Response:
     連按兩次都是 200，但只有第一次真的送出取消。第二次送取消會打斷正在跑的
     `live.shutdown()`——`bot.close()` 與 events.jsonl 正好在那時候要做完。
     """
-    if not _authorised(request):
-        return web.json_response({"ok": False, "error": "forbidden"}, status=403)
     session: SessionLike = request.app[SESSION_KEY]
     if not session.request_end():
         return web.json_response(
@@ -238,92 +417,25 @@ async def _end_handler(request: web.Request) -> web.Response:
     return web.json_response({"ok": True})
 
 
-def _authorised(request: web.Request) -> bool:
-    """POST 端點的守門：只有操作者權杖過得了。`token=None` ⇒ 不設防
-    （單元測試與回放模式）。
-
-    刻意不做「來源是本機就放行」：cloudflared 是在同一台機器上連 `localhost:<port>`，
-    過 tunnel 的請求來源 IP 全部是 127.0.0.1——那條捷徑等於把整個網際網路
-    當成本機放行。要擋就只能靠這個 header。
-    """
-    token = request.app[TOKEN_KEY]
-    if token is None:
-        return True
-    given = request.headers.get(TOKEN_HEADER, "")
-    return secrets.compare_digest(given, token)
-
-
-def _read_authorised(request: web.Request) -> bool:
-    """`GET /events` 的守門——逐字稿、主席判斷、會議總結全從這條出去，
-    鎖住這一個端點就等於鎖住所有真實內容。
-
-    `GET /` 刻意不鎖：那份 HTML 是純空殼，不含任何會議資料，鎖它只會讓
-    重新整理壞掉（前端把權杖存在 sessionStorage、並刻意從網址列抹掉，
-    重新整理時瀏覽器送出的網址上沒有權杖）。
-
-    參與者權杖與操作者權杖都放行——操作者本來就看得到全部。
-    `public_read=True`（`--public-read`，demo 用）時完全不設防。
-    """
-    if request.app[PUBLIC_READ_KEY]:
-        return True
-    view_token = request.app[VIEW_TOKEN_KEY]
-    if view_token is None:
-        return True  # 沒設參與者權杖 ⇒ 不設防（單元測試、回放模式）
-    given = request.query.get(TOKEN_QUERY, "") or request.headers.get(TOKEN_HEADER, "")
-    if secrets.compare_digest(given, view_token):
-        return True
-    operator = request.app[TOKEN_KEY]
-    return operator is not None and secrets.compare_digest(given, operator)
-
-
-def _build_app(session: SessionLike, token: str | None = None,
-                view_token: str | None = None, public_read: bool = False) -> web.Application:
-    app = web.Application()
+def _build_app(session: SessionLike, security: SpectatorSecurity | None = None) -> web.Application:
+    app = web.Application(middlewares=[_security_middleware])
     app[SESSION_KEY] = session
-    app[TOKEN_KEY] = token
-    app[VIEW_TOKEN_KEY] = view_token
-    app[PUBLIC_READ_KEY] = public_read
+    app[SECURITY_KEY] = security
     app.router.add_get("/", _index_handler)
     app.router.add_get("/health", _health_handler)
+    app.router.add_post("/session", _session_handler)
     app.router.add_get("/events", _events_handler)
     app.router.add_post("/phase", _phase_handler)
     app.router.add_post("/end", _end_handler)
     return app
 
 
-def resolve_tokens(token: str | None = None,
-                    view_token: str | None = None) -> tuple[str, str]:
-    """兩級權杖的唯一決定點：明確給的 > 環境變數 > 隨機產生。回傳（操作者, 參與者）。
-
-    抽出來是因為 `live.py` 要在起 `serve()` 之前就知道參與者權杖——bot 進頻道時
-    要把那個網址貼進 Discord，不能等 `serve()` 自己產完才知道。
-    """
-    return (token or os.environ.get("AHEM_SPECTATOR_TOKEN") or secrets.token_urlsafe(12),
-            view_token or os.environ.get("AHEM_VIEW_TOKEN") or secrets.token_urlsafe(12))
-
-
-async def serve(session: SessionLike, port: int, token: str | None = None,
-                view_token: str | None = None, public_read: bool = False) -> None:
-    """啟動觀戰 UI 伺服器；掛著跑直到被取消（`main_async` 的 `asyncio.gather` 收 Ctrl-C）。
-
-    兩級權杖，沒給就現場各產一組：
-
-    - **操作者**（`token`／`AHEM_SPECTATOR_TOKEN`）：讀 ＋ 切階段 ＋ 結束會議
-    - **參與者**（`view_token`／`AHEM_VIEW_TOKEN`）：只能讀
-
-    預設**私密**：`GET /events` 要帶其中一組（query string `?k=`，因為 SSE 的
-    `EventSource` 不能設自訂 header）。逐字稿、主席判斷、會議總結全從那條出去，
-    所以鎖住它就等於鎖住所有真實內容；`GET /` 那份空殼 HTML 不鎖（見
-    `_read_authorised`）。
-
-    參與者權杖的投放方式刻意留給呼叫端決定——把網址貼進該場會議的 Discord
-    文字聊天，存取範圍就自然等於「進得了這個頻道的人」，不必自己蓋帳號系統。
-
-    `public_read=True`（`--public-read`）時讀取端完全不設防，給 demo 現場用：
-    評審不在 Discord 頻道裡，拿不到參與者權杖。寫入端不受這個旗標影響。
-    """
-    token, view_token = resolve_tokens(token, view_token)
-    app = _build_app(session, token, view_token, public_read)
+async def serve(session: SessionLike, port: int, host: str = "127.0.0.1",
+                security: SpectatorSecurity | None = None) -> None:
+    """啟動觀戰 UI 伺服器；掛著跑直到被取消（`main_async` 的 `asyncio.gather` 收 Ctrl-C）。"""
+    if security is None:
+        security = SpectatorSecurity.from_env()
+    app = _build_app(session, security)
     # shutdown_timeout：`live.shutdown()` cancel 掉這個 task 時會跑 `runner.cleanup()`，
     # 它會等所有還開著的連線收尾。SSE 連線本質上「永遠沒收完」，用預設的 60 秒
     # 會讓整個收尾卡住（實測：一個觀戰分頁連著時，cancel → task 收尾要 121 秒，
@@ -331,13 +443,13 @@ async def serve(session: SessionLike, port: int, token: str | None = None,
     # 這裡沒有必要再等 client 優雅斷線——直接砍掉連線即可。
     runner = web.AppRunner(app, shutdown_timeout=1.0)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", port)
+    site = web.TCPSite(runner, host, port)
     await site.start()
-    if public_read:
-        print(f"觀戰 UI（公開唯讀，--public-read）：http://localhost:{port}")
-    else:
-        print(f"觀戰 UI（參與者，可讀）：http://localhost:{port}/?k={view_token}")
-    print(f"觀戰 UI（操作者，可讀＋可控）：http://localhost:{port}/?k={token}")
+    print(f"觀戰 UI 已安全啟動：http://{host}:{port}（需要短效 Token）")
+    if security.show_bootstrap_tokens:
+        visible_host = "127.0.0.1" if host in {"0.0.0.0", "::"} else host
+        print(f"Viewer 一次性啟動網址：http://{visible_host}:{port}/#token={security.viewer_token}")
+        print(f"Operator 一次性啟動網址：http://{visible_host}:{port}/#token={security.operator_token}")
     try:
         await asyncio.Event().wait()
     finally:
@@ -355,6 +467,10 @@ class ReplaySession:
         self.subscribers: list[Callable[[Event], None]] = []
         self.phase = VALID_PHASES[0]
         self._all_events = events
+        first_meeting = next((event for event in events if event.kind == "meeting"), None)
+        self._meeting_data = dict(first_meeting.data) if first_meeting else {
+            "topic": "回放", "duration_min": 0, "participants": []
+        }
 
     def request_end(self) -> bool:
         """回放模式沒有進行中的會議可以結束——回 False，讓 `POST /end` 回 409 而不是
@@ -362,10 +478,12 @@ class ReplaySession:
         return False
 
     def emit_meeting(self) -> None:
-        """no-op：回放沒有真正的 MeetingState 可以重建 meeting 事件的其他欄位
-        （topic/duration_min/participants），POST /phase 在回放模式下只更新
-        `self.phase` 供之後讀取，不會讓已連線的頁面立即看到新階段高亮——
-        這是回放模式的已知限制，不是要修的 bug（見 T-H 工單）。"""
+        """沿用事件檔中的會議資料重送狀態，讓手動切換在回放 UI 立即生效。"""
+        data = {**self._meeting_data, "phase": self.phase}
+        event = Event("meeting", self.events[-1].t if self.events else 0.0, data)
+        self.events.append(event)
+        for subscriber in list(self.subscribers):
+            subscriber(event)
 
     async def replay(self, speed: float = 1.0) -> None:
         loop = asyncio.get_event_loop()
@@ -376,6 +494,12 @@ class ReplaySession:
             if target > elapsed:
                 await asyncio.sleep(target - elapsed)
             self.events.append(event)
+            if event.kind == "meeting":
+                self._meeting_data = dict(event.data)
+                if event.data.get("phase") in VALID_PHASES:
+                    self.phase = event.data["phase"]
+            elif event.kind == "phase" and event.data.get("phase") in VALID_PHASES:
+                self.phase = event.data["phase"]
             for sub in list(self.subscribers):
                 try:
                     sub(event)
@@ -396,11 +520,9 @@ def _load_events(path: Path) -> list[Event]:
     return events
 
 
-async def _replay_main(path: Path, port: int, speed: float,
-                        public_read: bool = False) -> None:
+async def _replay_main(path: Path, port: int, speed: float) -> None:
     session = ReplaySession(_load_events(path))
-    await asyncio.gather(serve(session, port, public_read=public_read),
-                          session.replay(speed))
+    await asyncio.gather(serve(session, port), session.replay(speed))
 
 
 def main() -> None:
@@ -408,10 +530,8 @@ def main() -> None:
     ap.add_argument("--replay", required=True, help="events.jsonl 檔案路徑")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--speed", type=float, default=1.0, help="回放倍速")
-    ap.add_argument("--public-read", action="store_true",
-                     help="讀取端不設防（demo 彩排用，同 live 的同名旗標）")
     args = ap.parse_args()
-    asyncio.run(_replay_main(Path(args.replay), args.port, args.speed, args.public_read))
+    asyncio.run(_replay_main(Path(args.replay), args.port, args.speed))
 
 
 if __name__ == "__main__":

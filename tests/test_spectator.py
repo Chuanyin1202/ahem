@@ -13,7 +13,9 @@
     重複呼叫冪等（第二次仍 200）；回放模式（`ReplaySession`）回 409、不 500
 """
 import asyncio
+from http.cookies import SimpleCookie
 import json
+import pytest
 
 from aiohttp.test_utils import TestClient, TestServer
 
@@ -77,8 +79,7 @@ def test_health_and_index_and_sse_snapshot_then_live_event():
             resp = await client.get("/health")
             assert resp.status == 200
             body_json = await resp.json()
-            # public_read=True：這個 app 沒設參與者權杖，讀取端本來就不設防
-            assert body_json == {"ok": True, "events": 1, "public_read": True}
+            assert body_json == {"ok": True}
 
             # (b) /
             resp = await client.get("/")
@@ -118,6 +119,192 @@ def test_health_and_index_and_sse_snapshot_then_live_event():
             await client.close()
 
     asyncio.run(body())
+
+
+def test_security_separates_viewer_and_operator_permissions():
+    async def body():
+        session = FakeSession()
+        security = spectator.SpectatorSecurity("v" * 32, "o" * 32, ("https://demo.local",))
+        server = TestServer(spectator._build_app(session, security))
+        client = TestClient(server)
+        await client.start_server()
+        try:
+            assert (await client.get("/events")).status == 401
+            viewer = {"Authorization": "Bearer " + "v" * 32}
+            operator = {"Authorization": "Bearer " + "o" * 32,
+                        "Origin": "https://demo.local"}
+            assert (await client.post("/phase", headers=viewer,
+                                      json={"phase": "呻吟區"})).status == 401
+            assert (await client.post("/phase", headers=operator,
+                                      json={"phase": "呻吟區"})).status == 200
+            denied = await client.post(
+                "/end", headers={"Authorization": "Bearer " + "o" * 32,
+                                 "Origin": "https://evil.example"})
+            assert denied.status == 403
+            health = await client.get("/health")
+            assert health.status == 200
+            assert "Content-Security-Policy" in health.headers
+        finally:
+            await client.close()
+
+    asyncio.run(body())
+
+
+def test_security_exchanges_fragment_token_for_short_lived_http_only_cookie():
+    async def body():
+        session = FakeSession()
+        security = spectator.SpectatorSecurity("v" * 32, "o" * 32,
+                                               ("https://demo.local",))
+        server = TestServer(spectator._build_app(session, security))
+        client = TestClient(server)
+        await client.start_server()
+        try:
+            # 靜態 UI 可載入，但資料端點不能用 query string Token 繞過 Cookie 交換。
+            assert (await client.get("/")).status == 200
+            assert (await client.get("/events?token=" + "v" * 32)).status == 401
+
+            viewer_login = await client.post(
+                "/session",
+                headers={"Authorization": "Bearer " + "v" * 32,
+                         "Origin": "https://demo.local"},
+            )
+            assert viewer_login.status == 200
+            assert (await viewer_login.json())["role"] == "viewer"
+            set_cookie = viewer_login.headers["Set-Cookie"]
+            assert "HttpOnly" in set_cookie
+            assert "SameSite=Strict" in set_cookie
+            parsed = SimpleCookie()
+            parsed.load(set_cookie)
+            cookie = f"{security.cookie_name}={parsed[security.cookie_name].value}"
+
+            denied = await client.post(
+                "/phase",
+                headers={"Cookie": cookie, "Origin": "https://demo.local"},
+                json={"phase": "呻吟區"},
+            )
+            assert denied.status == 401
+
+            operator_login = await client.post(
+                "/session",
+                headers={"Authorization": "Bearer " + "o" * 32,
+                         "Origin": "https://demo.local"},
+            )
+            parsed = SimpleCookie()
+            parsed.load(operator_login.headers["Set-Cookie"])
+            operator_cookie = f"{security.cookie_name}={parsed[security.cookie_name].value}"
+            allowed = await client.post(
+                "/phase",
+                headers={"Cookie": operator_cookie, "Origin": "https://demo.local"},
+                json={"phase": "呻吟區"},
+            )
+            assert allowed.status == 200
+        finally:
+            await client.close()
+
+    asyncio.run(body())
+
+
+def test_short_lived_session_rejects_tampering_and_expiry():
+    security = spectator.SpectatorSecurity("v" * 32, "o" * 32, session_ttl_seconds=60)
+    value, role = security.issue_session("v" * 32, now=1000)
+    assert role == "viewer"
+    assert security.session_role(value, now=1059) == "viewer"
+    assert security.session_role(value + "x", now=1059) is None
+    assert security.session_role(value, now=1061) is None
+
+
+def test_security_env_generates_ephemeral_tokens_when_unconfigured():
+    security = spectator.SpectatorSecurity.from_env({})
+    assert len(security.viewer_token) >= 32
+    assert len(security.operator_token) >= 32
+    assert security.viewer_token != security.operator_token
+    assert security.show_bootstrap_tokens is True
+
+
+def test_security_env_supports_legacy_token_without_sharing_roles():
+    legacy = "legacy-operator-token-that-is-long-enough"
+    security = spectator.SpectatorSecurity.from_env({"AHEM_SPECTATOR_TOKEN": legacy})
+    assert security.operator_token == legacy
+    assert security.viewer_token != legacy
+    assert security.show_bootstrap_tokens is True
+
+
+def test_security_env_rejects_bootstrap_and_legacy_in_production():
+    with pytest.raises(RuntimeError, match="production strict"):
+        spectator.SpectatorSecurity.from_env({}, require_configured=True)
+    with pytest.raises(RuntimeError, match="production strict"):
+        spectator.SpectatorSecurity.from_env(
+            {"AHEM_SPECTATOR_TOKEN": "l" * 40}, require_configured=True)
+
+
+def test_security_env_rejects_short_legacy_token():
+    with pytest.raises(RuntimeError, match="至少需要 32"):
+        spectator.SpectatorSecurity.from_env({"AHEM_SPECTATOR_TOKEN": "short"})
+
+
+def test_security_env_rejects_partial_short_or_shared_tokens():
+    with pytest.raises(RuntimeError):
+        spectator.SpectatorSecurity.from_env({"AHEM_VIEWER_TOKEN": "v" * 32})
+    with pytest.raises(RuntimeError):
+        spectator.SpectatorSecurity.from_env({
+            "AHEM_VIEWER_TOKEN": "x" * 32,
+            "AHEM_OPERATOR_TOKEN": "x" * 32,
+        })
+
+
+def test_security_env_rejects_non_loopback_http_trusted_origin():
+    with pytest.raises(ValueError, match="trusted origin"):
+        spectator.SpectatorSecurity.from_env({
+            "AHEM_VIEWER_TOKEN": "v" * 32,
+            "AHEM_OPERATOR_TOKEN": "o" * 32,
+            "AHEM_TRUSTED_ORIGINS": "http://demo.example.com",
+        })
+
+
+def test_full_viewer_content_requires_explicit_demo_acknowledgement():
+    env = {
+        "AHEM_VIEWER_TOKEN": "v" * 32,
+        "AHEM_OPERATOR_TOKEN": "o" * 32,
+        "AHEM_VIEWER_CONTENT": "full",
+    }
+    with pytest.raises(RuntimeError, match="AHEM_DEMO_PUBLIC_TRANSCRIPT"):
+        spectator.SpectatorSecurity.from_env(env)
+    env["AHEM_DEMO_PUBLIC_TRANSCRIPT"] = "1"
+    assert spectator.SpectatorSecurity.from_env(env).redact_viewer is False
+
+
+def test_explicit_demo_viewer_receives_full_non_sensitive_script():
+    async def body():
+        session = FakeSession()
+        session.emit("transcript", {"speaker": "Demo P01", "text": "合成示範逐字稿"})
+        security = spectator.SpectatorSecurity(
+            "v" * 32, "o" * 32, redact_viewer=False)
+        server = TestServer(spectator._build_app(session, security))
+        client = TestClient(server)
+        await client.start_server()
+        try:
+            response = await client.get(
+                "/events", headers={"Authorization": "Bearer " + "v" * 32})
+            assert response.status == 200
+            name, data = await asyncio.wait_for(
+                _read_sse_message(response.content), timeout=2)
+            assert name == "snapshot"
+            assert data[0]["data"]["text"] == "合成示範逐字稿"
+            response.close()
+        finally:
+            await client.close()
+
+    asyncio.run(body())
+
+
+def test_security_rejects_unsafe_origins_and_session_ttl():
+    with pytest.raises(ValueError):
+        spectator.SpectatorSecurity("v" * 32, "o" * 32, ("https://*.example",))
+    with pytest.raises(ValueError):
+        spectator.SpectatorSecurity("v" * 32, "o" * 32,
+                                    ("https://demo.local/path",))
+    with pytest.raises(ValueError):
+        spectator.SpectatorSecurity("v" * 32, "o" * 32, session_ttl_seconds=30)
 
 
 def test_post_phase_valid_updates_session_and_notifies_subscribers():
@@ -161,6 +348,33 @@ def test_post_phase_invalid_returns_400_and_leaves_session_unchanged():
 
             resp = await client.post("/phase", data="not json")
             assert resp.status == 400
+        finally:
+            await client.close()
+
+    asyncio.run(body())
+
+
+def test_replay_phase_change_reuses_meeting_metadata_and_notifies_subscribers():
+    async def body():
+        original = Event("meeting", 0.0, {
+            "topic": "回放測試", "duration_min": 12, "participants": ["甲"],
+            "phase": "發散期",
+        })
+        session = spectator.ReplaySession([original])
+        await session.replay(speed=1_000_000)
+        received = []
+        session.subscribers.append(received.append)
+        client = TestClient(TestServer(spectator._build_app(session)))
+        await client.start_server()
+        try:
+            response = await client.post("/phase", json={"phase": "呻吟區"})
+            assert response.status == 200
+            assert session.phase == "呻吟區"
+            assert received[-1].kind == "meeting"
+            assert received[-1].data == {
+                "topic": "回放測試", "duration_min": 12, "participants": ["甲"],
+                "phase": "呻吟區",
+            }
         finally:
             await client.close()
 

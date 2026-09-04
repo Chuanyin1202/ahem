@@ -1,0 +1,17 @@
+[Unit]
+Description=Purge expired encrypted Ahem meeting artifacts
+
+[Service]
+Type=oneshot
+User=ahem
+Group=ahem
+WorkingDirectory=/var/lib/ahem
+Environment=PYTHONPATH=/opt/ahem/src
+ExecStart=/opt/ahem/.venv/bin/python -m meeting_host.retention --directory /var/lib/ahem/meetings --ttl-hours 24 --apply
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ahem/meetings

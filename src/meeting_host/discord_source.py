@@ -218,10 +218,8 @@ def patch_packet_resilience() -> None:
                     )
         except CryptoError:
             reader_mod.log.error("CryptoError decoding packet data")
-            reader_mod.log.debug(
-                "CryptoError details:\n  data=%s\n  secret_key=%s",
-                packet_data, self.voice_client.secret_key,
-            )
+            # 加密封包與 voice secret 不得進入任何層級的日誌。
+            reader_mod.log.debug("CryptoError details: packet_len=%s", len(packet_data))
             return
         except Exception:
             if self._is_ip_discovery_packet(packet_data):
@@ -229,7 +227,7 @@ def patch_packet_resilience() -> None:
                 return
 
             reader_mod.log.exception("Error unpacking packet")
-            reader_mod.log.debug("Packet data: len=%s data=%s", len(packet_data), packet_data)
+            reader_mod.log.debug("Packet data rejected: len=%s", len(packet_data))
         finally:
             if self.error:
                 self.stop()

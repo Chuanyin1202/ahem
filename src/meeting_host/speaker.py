@@ -17,7 +17,7 @@ import queue
 import re
 import time
 import wave
-from collections.abc import AsyncIterator, Callable, Mapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -25,6 +25,7 @@ import aiohttp
 import discord
 
 from .audio import DISCORD_RATE, FRAME_BYTES, SAMPLE_WIDTH, Framer, Upsampler
+from .security import prepare_private_dir, secure_write_text
 
 _EOS = object()  # 一句講完的哨兵
 SILENCE_FRAME = b"\x00" * FRAME_BYTES
@@ -41,6 +42,10 @@ TICK = 0.1
 
 VOICE_ID = "EXAVITQu4vr4xnSDxMaL"  # Sarah：verified zh、成熟穩定。之後要換只改這裡
 TTS_MODEL = "eleven_v3_conversational"  # 為對話代理的自然對話最佳化，中文聽感明顯較佳（使用者實聽選定）
+ELEVENLABS_TTS_LANGUAGE = "zh"
+_ELEVENLABS_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
+_ELEVENLABS_MODEL_RE = re.compile(r"^[A-Za-z0-9_.-]{3,128}$")
+_LANGUAGE_RE = re.compile(r"^[a-z]{2,3}(?:-[A-Z]{2})?$")
 # 換自 eleven_flash_v2_5。當初選 flash 是為了延遲，但那個理由不成立——同音色同句實測
 # 首位元組 0.23s vs flash 的 0.19s，差 40ms 聽不出來；總生成 1.43s 產出 9.4s 語音
 # （即時的 6.6 倍），串流播放不會追不上。v3 不支援 SSML <break>，但主席話術全是純文字，
@@ -80,7 +85,7 @@ class AzureUsageBudget:
             raise ValueError("AZURE_TTS_HARD_STOP_PERCENT 必須介於 1 到 100")
         if any(not 1 <= value <= hard_stop_percent for value in warning_percents):
             raise ValueError("AZURE_TTS_WARNING_PERCENTS 必須介於 1 到硬停百分比")
-        self.path = path
+        self.path = Path(path)
         self.monthly_limit = monthly_limit
         self.hard_stop_percent = hard_stop_percent
         self.warning_percents = tuple(sorted(set(warning_percents)))
@@ -93,15 +98,20 @@ class AzureUsageBudget:
         """預留本次字元；失敗也不回補，以免低估 Azure 實際計量。"""
         month = time.strftime("%Y-%m", time.gmtime())
         amount = len(text)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        prepare_private_dir(self.path.parent)
         lock_path = self.path.with_suffix(self.path.suffix + ".lock")
         with lock_path.open("a+", encoding="utf-8") as lock:
+            lock_path.chmod(0o600)
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
             try:
                 try:
                     state = json.loads(self.path.read_text(encoding="utf-8"))
-                except (FileNotFoundError, json.JSONDecodeError, OSError):
+                except FileNotFoundError:
                     state = {}
+                except (json.JSONDecodeError, OSError) as exc:
+                    raise VoiceError(
+                        f"Azure TTS 額度記錄無法讀取，為避免超額已停止：{self.path}"
+                    ) from exc
                 if state.get("month") != month:
                     state = {"month": month, "characters": 0, "warned": []}
                 used = int(state.get("characters", 0))
@@ -120,10 +130,8 @@ class AzureUsageBudget:
                             f"{projected:,}", f"{self.monthly_limit:,}", percent)
                         warned.add(threshold)
                 state.update(characters=projected, warned=sorted(warned))
-                temp = self.path.with_suffix(self.path.suffix + ".tmp")
-                temp.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n",
-                                encoding="utf-8")
-                temp.replace(self.path)
+                secure_write_text(
+                    self.path, json.dumps(state, ensure_ascii=False, indent=2) + "\n")
                 return projected
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
@@ -214,16 +222,25 @@ class Voice:
     """文字 → 48k 立體聲 PCM 串流。逾時是必要的：TTS 卡住時主席不能無限期沉默。"""
 
     def __init__(self, api_key: str, voice_id: str = VOICE_ID, *,
-                 first_byte_timeout: float = 3.0, total_timeout: float = 15.0):
+                 model_id: str = TTS_MODEL,
+                 language_code: str = ELEVENLABS_TTS_LANGUAGE,
+                 first_byte_timeout: float = 3.0, total_timeout: float = 15.0,
+                 clock: Callable[[], float] = time.perf_counter,
+                 sleep: Callable[[float], Awaitable[None]] = asyncio.sleep):
         self.api_key = api_key
         self.voice_id = voice_id
+        self.model_id = model_id
+        self.language_code = language_code
         self.first_byte_timeout = first_byte_timeout
         self.total_timeout = total_timeout
+        self.clock = clock
+        self.sleep = sleep
 
     async def _raw_stream(self, text: str) -> AsyncIterator[bytes]:
         """ElevenLabs HTTP stream：raw s16le mono @ TTS_RATE。測試以假的覆蓋。"""
         url = TTS_URL.format(voice_id=self.voice_id, rate=TTS_RATE)
-        body = {"text": text, "model_id": TTS_MODEL, "language_code": "zh"}
+        body = {"text": text, "model_id": self.model_id,
+                "language_code": self.language_code}
         async with aiohttp.ClientSession() as s:
             async with s.post(url, json=body, headers={"xi-api-key": self.api_key}) as r:
                 if r.status != 200:
@@ -233,13 +250,35 @@ class Voice:
 
     async def synth(self, text: str) -> AsyncIterator[bytes]:
         up = Upsampler(TTS_RATE)
-        t0 = time.perf_counter()
+        t0 = self.clock()
         it = self._raw_stream(text).__aiter__()
         first = True
         while True:
-            budget = self.first_byte_timeout if first else max(0.0, self.total_timeout - (time.perf_counter() - t0))
+            budget = self.first_byte_timeout if first else max(
+                0.0, self.total_timeout - (self.clock() - t0)
+            )
             try:
-                chunk = await asyncio.wait_for(it.__anext__(), timeout=budget)
+                if budget <= 0:
+                    raise asyncio.TimeoutError
+                next_chunk = asyncio.create_task(it.__anext__())
+                timeout = asyncio.create_task(self.sleep(budget))
+                try:
+                    done, _ = await asyncio.wait(
+                        {next_chunk, timeout}, return_when=asyncio.FIRST_COMPLETED
+                    )
+                    if next_chunk in done:
+                        timeout.cancel()
+                        await asyncio.gather(timeout, return_exceptions=True)
+                        chunk = await next_chunk
+                    else:
+                        next_chunk.cancel()
+                        await asyncio.gather(next_chunk, return_exceptions=True)
+                        raise asyncio.TimeoutError
+                except asyncio.CancelledError:
+                    next_chunk.cancel()
+                    timeout.cancel()
+                    await asyncio.gather(next_chunk, timeout, return_exceptions=True)
+                    raise
             except StopAsyncIteration:
                 return
             except asyncio.TimeoutError as e:
@@ -311,7 +350,27 @@ def build_voice(environ: Mapping[str, str] | None = None) -> Voice:
     env = os.environ if environ is None else environ
     provider = env.get("AHEM_TTS_PROVIDER", "elevenlabs").strip().lower()
     if provider == "elevenlabs":
-        return Voice(env["ELEVENLABS_API_KEY"])
+        gender = env.get("ELEVENLABS_TTS_GENDER", "female").strip().lower()
+        if gender not in {"female", "male"}:
+            raise ValueError("ELEVENLABS_TTS_GENDER 只支援 female 或 male")
+        voice_id = env.get("ELEVENLABS_TTS_VOICE_ID", "").strip()
+        if not voice_id:
+            voice_id = env.get(f"ELEVENLABS_TTS_{gender.upper()}_VOICE_ID", "").strip()
+        if not voice_id and gender == "female":
+            voice_id = VOICE_ID
+        if not voice_id:
+            raise ValueError("選擇 ElevenLabs 男聲時必須設定 ELEVENLABS_TTS_MALE_VOICE_ID")
+        model_id = env.get("ELEVENLABS_TTS_MODEL", TTS_MODEL).strip()
+        language_code = env.get(
+            "ELEVENLABS_TTS_LANGUAGE", ELEVENLABS_TTS_LANGUAGE).strip()
+        if not _ELEVENLABS_ID_RE.fullmatch(voice_id):
+            raise ValueError("ElevenLabs Voice ID 格式不正確")
+        if not _ELEVENLABS_MODEL_RE.fullmatch(model_id):
+            raise ValueError("ElevenLabs model ID 格式不正確")
+        if not _LANGUAGE_RE.fullmatch(language_code):
+            raise ValueError("ElevenLabs language code 格式不正確")
+        return Voice(env["ELEVENLABS_API_KEY"], voice_id,
+                     model_id=model_id, language_code=language_code)
     if provider == "azure":
         gender = env.get("AZURE_TTS_GENDER", "female").strip().lower()
         if gender not in AZURE_TTS_VOICES:
@@ -360,12 +419,13 @@ class Chair:
 
     def __init__(self, state, output: Output, voice: Voice, earcon: Earcon, *,
                  clock: Callable[[], float] = time.perf_counter,
+                 sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
                  revision: Callable[[], int] = lambda: 0,
                  on_spoken: Callable | None = None, on_failed: Callable | None = None,
                  on_escalate: Callable[["Intervention"], "Intervention | None"] | None = None,
                  on_dropped: Callable[["Intervention", str], None] | None = None):
         self.state, self.output, self.voice, self.earcon = state, output, voice, earcon
-        self.clock, self.revision = clock, revision
+        self.clock, self.sleep, self.revision = clock, sleep, revision
         self.on_spoken = on_spoken or (lambda iv, at: None)
         self.on_failed = on_failed or (lambda iv, reason: None)
         self.on_escalate = on_escalate or (lambda iv: iv)  # 預設：升級時文字原封不動重播
@@ -432,7 +492,7 @@ class Chair:
     async def run(self) -> None:
         while True:
             await self.tick()
-            await asyncio.sleep(TICK)
+            await self.sleep(TICK)
 
     # ── 狀態機 ──
     async def tick(self) -> None:
@@ -529,7 +589,7 @@ class Chair:
                 if hard:
                     gap = EARCON_GATE - (self.clock() - t0)
                     if gap > 0:
-                        await asyncio.sleep(gap)
+                        await self.sleep(gap)
                 prebuffered = True
                 for f in frames:
                     self.output.enqueue(f)
@@ -538,7 +598,7 @@ class Chair:
                 if hard and not prebuffered:
                     gap = EARCON_GATE - (self.clock() - t0)
                     if gap > 0:
-                        await asyncio.sleep(gap)
+                        await self.sleep(gap)
                     prebuffered = True
                 self.output.enqueue(f)
             # 「有沒有出聲」交給 tick() 看 output.first_audible_at 判斷（見上）——

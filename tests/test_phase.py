@@ -197,3 +197,23 @@ def test_style_none_changes_nothing_and_named_style_sets_only_its_keys(monkeypat
     import pytest
     with pytest.raises(ValueError):
         style.apply("angry")
+
+
+def test_style_switch_does_not_keep_previous_profile_values():
+    from meeting_host import style, fast_path
+    before = style.defaults()
+    try:
+        style.apply("efficient")
+        assert fast_path.AGENDA_WARN_RATIO == 1.0 / 4.0
+        style.apply("strict")
+        assert fast_path.AGENDA_WARN_RATIO == style._BASE_DEFAULTS["AGENDA_WARN_RATIO"]
+    finally:
+        for key, value in before.items():
+            setattr(fast_path, key, value)
+
+
+def test_style_profiles_are_ordered_from_strict_to_gentle():
+    from meeting_host import style
+    for key in ("OVERTIME_SECONDS", "NEGLECTED_SECONDS", "COOLDOWN_SECONDS", "SILENCE_SECONDS"):
+        assert style.STYLES["strict"][key] <= style.STYLES["efficient"][key]
+        assert style.STYLES["efficient"][key] <= style.STYLES["gentle"][key]

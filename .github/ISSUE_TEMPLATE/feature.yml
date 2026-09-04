@@ -1,0 +1,41 @@
+name: 功能／協作提案
+description: 提出可獨立驗收的小型改善。
+title: "[Proposal] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解決的問題
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 建議範圍與不包含項目
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 完成定義與驗收方式
+      description: 請列出可重現的測試或證據。
+    validations:
+      required: true
+  - type: dropdown
+    id: external
+    attributes:
+      label: 是否需要外部環境
+      options:
+        - 不需要，可離線完成
+        - 需要 Discord／API 測試環境
+        - 需要現場網路或真人會議
+        - 需要上游維護者決定
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 資料邊界
+      options:
+        - label: 提案不要求把 Token、個資或真實逐字稿提交到公開 Repo
+          required: true

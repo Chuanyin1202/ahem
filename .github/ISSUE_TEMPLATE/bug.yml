@@ -1,0 +1,44 @@
+name: Bug 回報
+description: 回報可重現的功能問題；禁止附上秘密或真實逐字稿。
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: 請只提供去識別資訊。安全漏洞請使用 Private Vulnerability Reporting。
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 問題與影響
+      description: 實際發生什麼、影響哪個流程？
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 最小重現步驟
+      description: 使用合成資料或去識別資料；不要貼 Token、API Key、音訊或逐字稿。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 預期行為
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit SHA
+      placeholder: 例如 a1a6ce4
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: 提交前確認
+      options:
+        - label: 本回報不含秘密、個資或可識別的真實會議內容
+          required: true
+        - label: 這不是需要私密處理的安全漏洞
+          required: true

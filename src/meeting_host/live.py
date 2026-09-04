@@ -1113,9 +1113,19 @@ async def main_async(args) -> None:
     if args.spectator_port:
         serve = _try_import_spectator_serve()
         if serve is not None:
+            # 權杖在這裡就先算好（而不是讓 serve() 自己產）：bot 進頻道時要把
+            # 參與者網址貼進 Discord，不能等 serve() 產完才知道那串是什麼。
+            from .spectator import resolve_tokens
+            op_token, view_token = resolve_tokens(args.spectator_token or None,
+                                                   args.view_token or None)
             tasks.append(asyncio.create_task(
-                serve(session, args.spectator_port, args.spectator_token or None,
-                      args.view_token or None, args.public_read)))
+                serve(session, args.spectator_port, op_token, view_token, args.public_read)))
+            base = os.environ.get("AHEM_PUBLIC_URL", "").rstrip("/") \
+                or f"http://localhost:{args.spectator_port}"
+            bot.join_notice = (
+                "會議開始，這是本場的觀戰畫面（只有這個頻道看得到）：\n"
+                + (base if args.public_read else f"{base}/?k={view_token}")
+                + "\n畫面會即時顯示逐字稿、主席開口與忍住的紀錄。")
 
     _applied = _style.apply(args.style)
     print(f"議題：{args.topic}（預計 {args.duration} 分鐘，階段：{args.phase}）")
@@ -1214,6 +1224,7 @@ async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task])
     _drain_chair(session)
     session.ending = True  # 擋掉收尾期間再進來的 POST /end（訊號路徑不經過 request_end）
     events_path = summary(session)
+    await _post_minutes_to_channel(session, bot)
     try:
         await _flush_spectator(session)
         for t in tasks:
@@ -1234,6 +1245,25 @@ async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task])
             print("    ⚠️ bot.close() 逾時（10 秒），放棄等待")
         except asyncio.CancelledError:
             pass  # 又被打斷：close 已經送出去了，不再等
+
+
+async def _post_minutes_to_channel(session: Session, bot: MeetingBot) -> None:
+    """把 `summary()` 剛寫好的會議記錄當附件貼回該場會議的 Discord 頻道。
+
+    擺在 `summary()` 之後、cancel tasks 之前——這時 bot 還活著（`bot.close()`
+    在整個 `finally` 的最後才跑），而檔案已經寫出去了。**這一步失敗絕不能影響
+    收尾**：內容取自剛 emit 的 `minutes` 事件（不重讀檔），`post_minutes` 自己
+    包了逾時與 try/except，這裡再擋一層例外。
+    """
+    minutes = next((e for e in reversed(session.events) if e.kind == "minutes"), None)
+    if minutes is None:
+        return
+    md = minutes.data.get("minutes_md") or ""
+    name = Path(minutes.data.get("minutes_path") or "minutes.md").name
+    try:
+        await bot.post_minutes(md, name)
+    except Exception as e:  # noqa: BLE001 - 貼訊息不能賠掉收尾
+        print(f"    ⚠️ 會議記錄沒貼成 Discord（{type(e).__name__}: {e}）——檔案已寫出，不影響")
 
 
 def _try_import_spectator_serve():

@@ -98,7 +98,9 @@ PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
 
 **預設是私密的**：`GET /events` 要帶其中一組（放在 query string `?k=`，因為 SSE 的 `EventSource` 不能設自訂 header）。逐字稿、主席判斷、會議總結全從那條出去，鎖住它就等於鎖住所有真實內容；`GET /` 那份空殼 HTML 不鎖，否則重新整理會壞（前端把權杖存在 sessionStorage 並刻意從網址列抹掉——畫面會投影）。`POST /phase` 與 `POST /end` 只認操作者權杖，帶 `X-Ahem-Token` header。
 
-參與者權杖怎麼發由你決定。把網址貼進該場會議的 Discord 文字聊天，存取範圍就自然等於「進得了那個頻道的人」——借用 Discord 既有的成員資格，不必自己蓋帳號系統。權杖跟著行程活，會議結束就失效。
+bot 進語音頻道後會**自動把參與者網址貼進該頻道自己的文字聊天**，看得到的人就等於進得了那個語音頻道的人——存取範圍直接借用 Discord 既有的成員資格，不必自己蓋帳號系統。權杖跟著行程活，會議結束就失效。網址的網域從 `AHEM_PUBLIC_URL` 來，沒設就用 `http://localhost:<port>`。
+
+會議結束時，同一個頻道還會收到**會議記錄的 md 附件**（用附件是因為 Discord 單則訊息有 2000 字元上限，總結常常超過）。這兩件事都是 best-effort：Discord 那側失敗（缺權限、頻道不支援文字聊天）只會印一行警告，不影響會議與收尾。
 
 `--public-read` 讓讀取端完全不設防，給 demo 現場用（評審不在 Discord 頻道裡，拿不到參與者權杖）。寫入端不受這個旗標影響。
 

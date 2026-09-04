@@ -291,6 +291,17 @@ def _build_app(session: SessionLike, token: str | None = None,
     return app
 
 
+def resolve_tokens(token: str | None = None,
+                    view_token: str | None = None) -> tuple[str, str]:
+    """兩級權杖的唯一決定點：明確給的 > 環境變數 > 隨機產生。回傳（操作者, 參與者）。
+
+    抽出來是因為 `live.py` 要在起 `serve()` 之前就知道參與者權杖——bot 進頻道時
+    要把那個網址貼進 Discord，不能等 `serve()` 自己產完才知道。
+    """
+    return (token or os.environ.get("AHEM_SPECTATOR_TOKEN") or secrets.token_urlsafe(12),
+            view_token or os.environ.get("AHEM_VIEW_TOKEN") or secrets.token_urlsafe(12))
+
+
 async def serve(session: SessionLike, port: int, token: str | None = None,
                 view_token: str | None = None, public_read: bool = False) -> None:
     """啟動觀戰 UI 伺服器；掛著跑直到被取消（`main_async` 的 `asyncio.gather` 收 Ctrl-C）。
@@ -311,8 +322,7 @@ async def serve(session: SessionLike, port: int, token: str | None = None,
     `public_read=True`（`--public-read`）時讀取端完全不設防，給 demo 現場用：
     評審不在 Discord 頻道裡，拿不到參與者權杖。寫入端不受這個旗標影響。
     """
-    token = token or os.environ.get("AHEM_SPECTATOR_TOKEN") or secrets.token_urlsafe(12)
-    view_token = view_token or os.environ.get("AHEM_VIEW_TOKEN") or secrets.token_urlsafe(12)
+    token, view_token = resolve_tokens(token, view_token)
     app = _build_app(session, token, view_token, public_read)
     # shutdown_timeout：`live.shutdown()` cancel 掉這個 task 時會跑 `runner.cleanup()`，
     # 它會等所有還開著的連線收尾。SSE 連線本質上「永遠沒收完」，用預設的 60 秒

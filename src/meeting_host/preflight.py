@@ -14,6 +14,8 @@ from urllib.parse import urlsplit
 from collections.abc import Callable
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from .security import load_kek
 
 
@@ -76,8 +78,16 @@ def _service_checks(env: dict[str, str], *, no_llm: bool) -> list[Check]:
             "Azure Speech 憑證、Region、聲線、語速與額度設定合格" if ok
             else "Azure TTS 憑證或 Region／聲線／語速／額度設定不完整"))
     elif provider == "elevenlabs":
-        checks.append(Check("text_to_speech_credentials", "pass",
-                            "ElevenLabs TTS 共用已檢查的 STT 憑證"))
+        gender = env.get("ELEVENLABS_TTS_GENDER", "female").strip().lower()
+        voice_id = env.get("ELEVENLABS_TTS_VOICE_ID", "").strip()
+        if not voice_id:
+            voice_id = env.get(f"ELEVENLABS_TTS_{gender.upper()}_VOICE_ID", "").strip()
+        configured = gender in {"female", "male"} and (
+            gender == "female" or bool(voice_id))
+        checks.append(Check(
+            "text_to_speech_configuration", "pass" if configured else "fail",
+            "ElevenLabs TTS 憑證與聲線設定合格" if configured
+            else "ElevenLabs 男聲需要 ELEVENLABS_TTS_MALE_VOICE_ID，聲別只能是 female 或 male"))
     else:
         checks.append(Check("text_to_speech_credentials", "fail",
                             "AHEM_TTS_PROVIDER 只支援 elevenlabs 或 azure"))
@@ -177,6 +187,9 @@ def summary(checks: list[Check]) -> dict[str, object]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="執行 Ahem Demo 安全預檢（不輸出秘密）")
+    parser.add_argument("--env-file", type=Path,
+                        default=Path(".env"),
+                        help="本機設定檔；既有程序環境變數優先")
     parser.add_argument("--mode", choices=("local", "lan"), default="local")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
@@ -185,6 +198,8 @@ def main() -> None:
     parser.add_argument("--no-llm", action="store_true",
                         help="與 live --no-llm 一致，不要求 OpenAI 憑證")
     args = parser.parse_args()
+    if args.env_file.is_file():
+        load_dotenv(args.env_file, override=False)
     result = summary(run_checks(mode=args.mode, host=args.host, port=args.port,
                                 directory=args.directory, no_llm=args.no_llm))
     if args.json:

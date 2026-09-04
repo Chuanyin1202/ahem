@@ -71,9 +71,10 @@ SameSite Cookie，隨即清除網址與 JavaScript 記憶體中的 Token。`/eve
 query-string Token，Cookie 遭竄改或過期時會回 401。LAN／HTTPS 模式必須設定
 `AHEM_COOKIE_SECURE=1`。
 
-為了舊部署不在合併後直接中斷，只設 `AHEM_SPECTATOR_TOKEN` 時會以單向衍生方式
-產生分離的 Viewer Token；新部署仍應明確設定兩個長 Token。若三者都未設定，
-服務會產生本次進程專用的隨機 Token 並只在啟動終端顯示一次，不再因缺少新變數而中斷。
+開發／回放模式可暫時使用至少 32 字元的 `AHEM_SPECTATOR_TOKEN`，或在完全未設定時
+產生本次進程專用的隨機 Token。`--privacy-mode strict` 一律拒絕 legacy／隨機
+bootstrap，必須由秘密管理器明確注入兩個分離 Token，避免 production 把低熵舊值
+誤當成安全憑證。
 
 Viewer 預設為 `AHEM_VIEWER_CONTENT=redacted`。只有使用事先準備、無真實個資的
 demo 資料時，才可同時設 `AHEM_VIEWER_CONTENT=full` 與
@@ -85,6 +86,7 @@ demo 資料時，才可同時設 `AHEM_VIEWER_CONTENT=full` 與
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m meeting_host.preflight --mode local
+# 也可明確指定設定檔：--env-file /安全路徑/ahem.env
 # 經 HTTPS 反向代理提供第二台裝置時：
 PYTHONPATH=src .venv/bin/python -m meeting_host.preflight --mode lan --host 127.0.0.1
 ```

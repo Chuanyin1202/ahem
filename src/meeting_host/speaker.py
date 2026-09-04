@@ -42,6 +42,10 @@ TICK = 0.1
 
 VOICE_ID = "EXAVITQu4vr4xnSDxMaL"  # Sarah：verified zh、成熟穩定。之後要換只改這裡
 TTS_MODEL = "eleven_v3_conversational"  # 為對話代理的自然對話最佳化，中文聽感明顯較佳（使用者實聽選定）
+ELEVENLABS_TTS_LANGUAGE = "zh"
+_ELEVENLABS_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
+_ELEVENLABS_MODEL_RE = re.compile(r"^[A-Za-z0-9_.-]{3,128}$")
+_LANGUAGE_RE = re.compile(r"^[a-z]{2,3}(?:-[A-Z]{2})?$")
 # 換自 eleven_flash_v2_5。當初選 flash 是為了延遲，但那個理由不成立——同音色同句實測
 # 首位元組 0.23s vs flash 的 0.19s，差 40ms 聽不出來；總生成 1.43s 產出 9.4s 語音
 # （即時的 6.6 倍），串流播放不會追不上。v3 不支援 SSML <break>，但主席話術全是純文字，
@@ -218,11 +222,15 @@ class Voice:
     """文字 → 48k 立體聲 PCM 串流。逾時是必要的：TTS 卡住時主席不能無限期沉默。"""
 
     def __init__(self, api_key: str, voice_id: str = VOICE_ID, *,
+                 model_id: str = TTS_MODEL,
+                 language_code: str = ELEVENLABS_TTS_LANGUAGE,
                  first_byte_timeout: float = 3.0, total_timeout: float = 15.0,
                  clock: Callable[[], float] = time.perf_counter,
                  sleep: Callable[[float], Awaitable[None]] = asyncio.sleep):
         self.api_key = api_key
         self.voice_id = voice_id
+        self.model_id = model_id
+        self.language_code = language_code
         self.first_byte_timeout = first_byte_timeout
         self.total_timeout = total_timeout
         self.clock = clock
@@ -231,7 +239,8 @@ class Voice:
     async def _raw_stream(self, text: str) -> AsyncIterator[bytes]:
         """ElevenLabs HTTP stream：raw s16le mono @ TTS_RATE。測試以假的覆蓋。"""
         url = TTS_URL.format(voice_id=self.voice_id, rate=TTS_RATE)
-        body = {"text": text, "model_id": TTS_MODEL, "language_code": "zh"}
+        body = {"text": text, "model_id": self.model_id,
+                "language_code": self.language_code}
         async with aiohttp.ClientSession() as s:
             async with s.post(url, json=body, headers={"xi-api-key": self.api_key}) as r:
                 if r.status != 200:
@@ -341,7 +350,27 @@ def build_voice(environ: Mapping[str, str] | None = None) -> Voice:
     env = os.environ if environ is None else environ
     provider = env.get("AHEM_TTS_PROVIDER", "elevenlabs").strip().lower()
     if provider == "elevenlabs":
-        return Voice(env["ELEVENLABS_API_KEY"])
+        gender = env.get("ELEVENLABS_TTS_GENDER", "female").strip().lower()
+        if gender not in {"female", "male"}:
+            raise ValueError("ELEVENLABS_TTS_GENDER 只支援 female 或 male")
+        voice_id = env.get("ELEVENLABS_TTS_VOICE_ID", "").strip()
+        if not voice_id:
+            voice_id = env.get(f"ELEVENLABS_TTS_{gender.upper()}_VOICE_ID", "").strip()
+        if not voice_id and gender == "female":
+            voice_id = VOICE_ID
+        if not voice_id:
+            raise ValueError("選擇 ElevenLabs 男聲時必須設定 ELEVENLABS_TTS_MALE_VOICE_ID")
+        model_id = env.get("ELEVENLABS_TTS_MODEL", TTS_MODEL).strip()
+        language_code = env.get(
+            "ELEVENLABS_TTS_LANGUAGE", ELEVENLABS_TTS_LANGUAGE).strip()
+        if not _ELEVENLABS_ID_RE.fullmatch(voice_id):
+            raise ValueError("ElevenLabs Voice ID 格式不正確")
+        if not _ELEVENLABS_MODEL_RE.fullmatch(model_id):
+            raise ValueError("ElevenLabs model ID 格式不正確")
+        if not _LANGUAGE_RE.fullmatch(language_code):
+            raise ValueError("ElevenLabs language code 格式不正確")
+        return Voice(env["ELEVENLABS_API_KEY"], voice_id,
+                     model_id=model_id, language_code=language_code)
     if provider == "azure":
         gender = env.get("AZURE_TTS_GENDER", "female").strip().lower()
         if gender not in AZURE_TTS_VOICES:

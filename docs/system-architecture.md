@@ -87,7 +87,10 @@ Viewer 預設隱去姓名、議題、逐字稿、主席話術、慢路理由、�
 
 ## 8. 語音與額度
 
-`AHEM_TTS_PROVIDER=elevenlabs|azure` 只切換 TTS，STT 仍用 ElevenLabs。Azure 可選 `female` 小辰或 `male` 雲哲，預設語速 `+12%`。發音替換只在 TTS 邊界，UI 與記錄保留原文。
+`AHEM_TTS_PROVIDER=elevenlabs|azure` 只切換 TTS，STT 仍用 ElevenLabs。Azure 可選
+`female` 小辰或 `male` 雲哲，預設語速 `+12%`。ElevenLabs 以
+`ELEVENLABS_TTS_GENDER=female|male` 選擇聲別，實際 Voice ID 由環境秘密設定提供；
+男聲未提供 ID 時會 fail closed。發音替換只在 TTS 邊界，UI 與記錄保留原文。
 
 Azure 本機計量在請求前預留字元，預設 80/90/95% 警告、95% 硬停。狀態檔無法解析時停止 TTS，不歸零後繼續計費。Azure Cost Management 預算通知仍需保留。
 
@@ -108,7 +111,9 @@ systemd 範本使用唯讀系統、專用帳號、`UMask=0077`、限制可寫目
 
 預檢阻擋項：Viewer/Operator Token 不合格、Discord/STT/LLM/TTS 必要憑證缺失、未啟用加密、KEK 不可用、目錄權限錯誤、埠被佔用、對外模式沒有 HTTPS origin 或 Secure Cookie。
 
-SIGINT、SIGTERM 與 Operator `/end` 都走同一優雅關閉路徑。到期清除預設只預覽，需明確加 `--apply`；TTL 必須大於 0。
+SIGINT、SIGTERM 與 Operator `/end` 都走同一優雅關閉路徑。Discord 附件上傳亦位於
+關機保證區內，失敗不會跳過事件落盤與 Bot 關閉；systemd 預留 35 秒停止期限。
+到期清除預設只預覽，需明確加 `--apply`；TTL 必須大於 0。
 
 ## 11. 失敗模式
 

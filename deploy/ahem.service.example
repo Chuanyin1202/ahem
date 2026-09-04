@@ -15,7 +15,7 @@ ExecStartPre=/opt/ahem/.venv/bin/python -m meeting_host.preflight --mode lan --h
 ExecStart=/opt/ahem/.venv/bin/python -u -m meeting_host.live --topic ${AHEM_TOPIC} --duration ${AHEM_DURATION_MIN} --channel ${AHEM_DISCORD_CHANNEL} --say-hello --spectator-port 8765 --privacy-mode strict --consent --auto-phase suggest
 Restart=on-failure
 RestartSec=5
-TimeoutStopSec=15
+TimeoutStopSec=35
 UMask=0077
 
 NoNewPrivileges=true

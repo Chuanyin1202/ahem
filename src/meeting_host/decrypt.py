@@ -2,10 +2,35 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
+import os
+import stat
 from pathlib import Path
 
-from .security import EnvelopeStore, audit_record, load_kek, secure_write_text
+from .security import EnvelopeStore, audit_record, load_kek, prepare_private_dir
+
+
+def append_audit_record(path: Path, record: dict) -> None:
+    """Append one durable audit record without a read-modify-write race."""
+    path = Path(path)
+    prepare_private_dir(path.parent)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags, 0o600)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError("稽核路徑必須是一般檔案")
+        os.fchmod(fd, 0o600)
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        try:
+            payload = (json.dumps(record, ensure_ascii=False) + "\n").encode("utf-8")
+            os.write(fd, payload)
+            os.fsync(fd)
+        finally:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
 
 
 def main() -> None:
@@ -30,8 +55,7 @@ def main() -> None:
         record = audit_record(
             "decrypt", actor="local-operator" if args.operator else "unknown",
             meeting_id=meeting_id, purpose=args.purpose, outcome=outcome)
-        existing = args.audit_file.read_text() if args.audit_file.exists() else ""
-        secure_write_text(args.audit_file, existing + json.dumps(record) + "\n")
+        append_audit_record(args.audit_file, record)
 
 
 if __name__ == "__main__":

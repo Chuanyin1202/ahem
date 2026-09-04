@@ -76,6 +76,17 @@ AZURE_TTS_USAGE_FILE=meetings/azure_tts_usage.json
 兩者均使用相同的 `+12%` 語速。如需進階指定其他 Azure 聲線，可另設
 `AZURE_TTS_VOICE`，其優先權高於性別預設。
 
+ElevenLabs 也可切換男女聲；Voice ID 必須使用帳戶中已獲授權的聲音，不提交到 Git：
+
+```dotenv
+AHEM_TTS_PROVIDER=elevenlabs
+ELEVENLABS_TTS_GENDER=male
+ELEVENLABS_TTS_MALE_VOICE_ID=<你的 ElevenLabs 男聲 Voice ID>
+ELEVENLABS_TTS_FEMALE_VOICE_ID=<你的 ElevenLabs 女聲 Voice ID>
+ELEVENLABS_TTS_MODEL=eleven_v3_conversational
+ELEVENLABS_TTS_LANGUAGE=zh
+```
+
 這只替換主席的 TTS；即時逐字稿仍由 ElevenLabs Scribe 處理，所以 `ELEVENLABS_API_KEY` 仍須保留。Azure 口說層會把獨立的 `API` 念成已確認的「誒批哀」，並把「收斂」固定成台灣華語 `ㄕㄡ ㄌㄧㄢˋ`；觀戰畫面、事件檔與會後記錄保留原始文字，不會出現發音用的同音字。
 
 Azure `Free F0` 每月額度由 Azure 端強制；Ahem 另在本機保守記帳。預設於 80%、90%、95% 寫出警告，並在 475,000 字元（免費額度的 95%）硬停，保留 5% 緩衝避免不同計量口徑造成超額。使用量記錄在 `meetings/azure_tts_usage.json`，每個 UTC 月自動歸零。Cost Management 預算只能對費用發通知，不能取代這個字元硬上限。

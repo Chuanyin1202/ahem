@@ -229,6 +229,19 @@ def test_security_env_supports_legacy_token_without_sharing_roles():
     assert security.show_bootstrap_tokens is True
 
 
+def test_security_env_rejects_bootstrap_and_legacy_in_production():
+    with pytest.raises(RuntimeError, match="production strict"):
+        spectator.SpectatorSecurity.from_env({}, require_configured=True)
+    with pytest.raises(RuntimeError, match="production strict"):
+        spectator.SpectatorSecurity.from_env(
+            {"AHEM_SPECTATOR_TOKEN": "l" * 40}, require_configured=True)
+
+
+def test_security_env_rejects_short_legacy_token():
+    with pytest.raises(RuntimeError, match="至少需要 32"):
+        spectator.SpectatorSecurity.from_env({"AHEM_SPECTATOR_TOKEN": "short"})
+
+
 def test_security_env_rejects_partial_short_or_shared_tokens():
     with pytest.raises(RuntimeError):
         spectator.SpectatorSecurity.from_env({"AHEM_VIEWER_TOKEN": "v" * 32})

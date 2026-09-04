@@ -26,6 +26,28 @@ def test_build_voice_keeps_elevenlabs_as_default():
     assert voice.api_key == "eleven-key"
 
 
+def test_build_voice_selects_elevenlabs_gender_profiles():
+    voice = build_voice({
+        "ELEVENLABS_API_KEY": "eleven-key",
+        "ELEVENLABS_TTS_GENDER": "male",
+        "ELEVENLABS_TTS_MALE_VOICE_ID": "male_voice_123",
+        "ELEVENLABS_TTS_MODEL": "eleven_v3_conversational",
+        "ELEVENLABS_TTS_LANGUAGE": "zh",
+    })
+    assert type(voice) is Voice
+    assert voice.voice_id == "male_voice_123"
+    assert voice.model_id == "eleven_v3_conversational"
+    assert voice.language_code == "zh"
+
+
+def test_build_voice_requires_configured_elevenlabs_male_voice():
+    with pytest.raises(ValueError, match="MALE_VOICE_ID"):
+        build_voice({
+            "ELEVENLABS_API_KEY": "eleven-key",
+            "ELEVENLABS_TTS_GENDER": "male",
+        })
+
+
 def test_build_voice_selects_confirmed_azure_defaults():
     voice = build_voice({
         "AHEM_TTS_PROVIDER": "azure",

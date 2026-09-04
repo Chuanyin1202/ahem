@@ -1130,7 +1130,8 @@ async def main_async(args) -> None:
             # Resolve one security object before Discord joins so the viewer
             # notice and the HTTP server always use the same bootstrap token.
             from .spectator import SpectatorSecurity
-            spectator_security = SpectatorSecurity.from_env()
+            spectator_security = SpectatorSecurity.from_env(
+                require_configured=(getattr(args, "privacy_mode", "development") == "strict"))
             tasks.append(asyncio.create_task(
                 serve(session, args.spectator_port, security=spectator_security)))
             base = (os.environ.get("AHEM_PUBLIC_URL", "").rstrip("/")
@@ -1237,8 +1238,8 @@ async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task])
     _drain_chair(session)
     session.ending = True  # 擋掉收尾期間再進來的 POST /end（訊號路徑不經過 request_end）
     events_path = summary(session)
-    await _post_minutes_to_channel(session, bot)
     try:
+        await _post_minutes_to_channel(session, bot)
         await _flush_spectator(session)
         for t in tasks:
             if not t.done():

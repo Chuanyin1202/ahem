@@ -105,6 +105,21 @@ def test_preflight_rejects_invalid_azure_runtime_settings(tmp_path):
                 if item["name"] == "text_to_speech_configuration")["status"] == "fail"
 
 
+def test_preflight_requires_elevenlabs_male_voice_id(tmp_path):
+    directory = tmp_path / "meetings"
+    directory.mkdir(mode=0o700)
+    env = _secure_env() | {"ELEVENLABS_TTS_GENDER": "male"}
+    result = summary(run_checks(mode="local", host="127.0.0.1", port=0,
+                                directory=directory, env=env,
+                                keychain_loader=lambda: b"k" * 32))
+    assert result["ready"] is False
+    env["ELEVENLABS_TTS_MALE_VOICE_ID"] = "male_voice_123"
+    ready = summary(run_checks(mode="local", host="127.0.0.1", port=0,
+                               directory=directory, env=env,
+                               keychain_loader=lambda: b"k" * 32))
+    assert ready["ready"] is True
+
+
 def test_preflight_loads_linux_kek_file_without_test_environment_bypass(tmp_path):
     directory = tmp_path / "meetings"
     directory.mkdir(mode=0o700)

@@ -68,7 +68,8 @@ class SpectatorSecurity:
                 raise ValueError(f"不安全的 trusted origin：{origin!r}")
 
     @classmethod
-    def from_env(cls, env: dict[str, str] | None = None) -> "SpectatorSecurity":
+    def from_env(cls, env: dict[str, str] | None = None, *,
+                 require_configured: bool = False) -> "SpectatorSecurity":
         env = dict(os.environ if env is None else env)
         viewer = env.get("AHEM_VIEWER_TOKEN", "").strip()
         operator = env.get("AHEM_OPERATOR_TOKEN", "").strip()
@@ -77,9 +78,15 @@ class SpectatorSecurity:
             raise RuntimeError("AHEM_VIEWER_TOKEN 與 AHEM_OPERATOR_TOKEN 必須同時設定")
         if not viewer:
             legacy = env.get("AHEM_SPECTATOR_TOKEN", "").strip()
+            if require_configured:
+                raise RuntimeError(
+                    "production strict 模式必須由秘密管理器提供 AHEM_VIEWER_TOKEN 與 "
+                    "AHEM_OPERATOR_TOKEN；AHEM_SPECTATOR_TOKEN 只供開發遷移"
+                )
             if legacy:
-                operator = (legacy if len(legacy) >= 32 else
-                            hashlib.sha256(f"operator\0{legacy}".encode()).hexdigest())
+                if len(legacy) < 32:
+                    raise RuntimeError("AHEM_SPECTATOR_TOKEN 至少需要 32 字元")
+                operator = legacy
                 viewer = hashlib.sha256(f"viewer\0{legacy}".encode()).hexdigest()
             else:
                 viewer, operator = secrets.token_urlsafe(32), secrets.token_urlsafe(32)

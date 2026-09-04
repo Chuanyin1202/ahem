@@ -1,0 +1,25 @@
+name: Demo team edition
+
+on:
+  pull_request:
+  push:
+    branches:
+      - codex/demo-team-edition
+
+permissions:
+  contents: read
+
+jobs:
+  test-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements.txt
+      - name: Validate team-edition demo
+        run: AHEM_PYTHON=python scripts/demo-team-check.sh

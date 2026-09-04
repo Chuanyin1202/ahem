@@ -1194,6 +1194,11 @@ async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task])
        純同步、不依賴 bot 或其他 task 是否還活著——所以擺在 cancel 之前，
        cancel／gather 出任何意外都不會賠掉這幾個檔案。
     3. `_flush_spectator()`：等已連線的 SSE client 收到剛才那個 `minutes`。
+       接著才 `_post_minutes_to_channel()` 把記錄貼回 Discord——順序是刻意的，
+       兩個理由：貼訊息是網路 I/O（最長 10 秒），排在 flush 之前會吃掉 flush
+       僅有的那個 1 秒窗口；而且它必須待在這個 try 裡面，放在 try 之外的話
+       第二次中斷打在那個 await 上會整個逃出 `shutdown()`，第 6 步的
+       `events.jsonl` 與第 7 步的 `bot.close()` 全被跳過（實測確認過）。
        必須排在第 4 步之前。注意 `main_task.cancel()`（SIGTERM 與 UI 的 POST /end
        都走這條）會讓 `main_async` 裡的 `asyncio.gather(*tasks)` 級聯 cancel 掉
        `serve()`——也就是進到 shutdown 時 `serve()` 其實「已經被要求取消」了。
@@ -1224,9 +1229,9 @@ async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task])
     _drain_chair(session)
     session.ending = True  # 擋掉收尾期間再進來的 POST /end（訊號路徑不經過 request_end）
     events_path = summary(session)
-    await _post_minutes_to_channel(session, bot)
     try:
         await _flush_spectator(session)
+        await _post_minutes_to_channel(session, bot)
         for t in tasks:
             if not t.done():
                 t.cancel()
@@ -1250,10 +1255,15 @@ async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task])
 async def _post_minutes_to_channel(session: Session, bot: MeetingBot) -> None:
     """把 `summary()` 剛寫好的會議記錄當附件貼回該場會議的 Discord 頻道。
 
-    擺在 `summary()` 之後、cancel tasks 之前——這時 bot 還活著（`bot.close()`
-    在整個 `finally` 的最後才跑），而檔案已經寫出去了。**這一步失敗絕不能影響
-    收尾**：內容取自剛 emit 的 `minutes` 事件（不重讀檔），`post_minutes` 自己
-    包了逾時與 try/except，這裡再擋一層例外。
+擺在 `_flush_spectator()` 之後、cancel tasks 之前——這時 bot 還活著
+    （`bot.close()` 在整個 `finally` 的最後才跑），檔案也已經寫出去了。
+
+    ⚠️ 位置有兩個約束，見 `shutdown()` docstring 第 3 步：必須在 flush **之後**
+    （網路 I/O 會吃掉 flush 的 1 秒窗口），且必須在那個 `try` **裡面**
+    （在外面的話第二次中斷會讓 `events.jsonl` 與 `bot.close()` 一起被跳過）。
+
+    **這一步失敗絕不能影響收尾**：內容取自剛 emit 的 `minutes` 事件（不重讀檔），
+    `post_minutes` 自己包了逾時與 try/except，這裡再擋一層例外。
     """
     minutes = next((e for e in reversed(session.events) if e.kind == "minutes"), None)
     if minutes is None:

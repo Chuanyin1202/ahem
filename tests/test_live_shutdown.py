@@ -992,3 +992,40 @@ def test_double_sigterm_during_flush_exits_without_traceback_real_discord():
     assert proc.returncode == 1, f"第二次訊號應以明確離開碼 1 結束，實際 {proc.returncode}"
     assert "事件紀錄：" in out
     _assert_meeting_files_written_and_cleanup(out)
+
+
+def test_second_cancel_during_the_discord_post_still_writes_events_and_closes_bot(
+        tmp_path, monkeypatch):
+    """迴歸：貼會議記錄到 Discord 的那個 await 不能站在 `shutdown()` 的 try 外面。
+
+    2026-09-04 引進「收尾時把記錄貼回頻道」時，那個 `await` 一度放在
+    `try:` 之前。第二次中斷（第二個 SIGTERM／SIGINT）若正好打在它身上，
+    `CancelledError` 會整個逃出 `shutdown()`，於是第 6 步的 `events.jsonl`
+    與第 7 步的 `bot.close()` 全部被跳過——正是 `shutdown()` docstring
+    第 3–7 步「全部在同一個 finally 裡」要防的那件事。實測確認過會賠掉。
+
+    這條測試把中斷精準打在那個 await 上，要求兩件產出都仍然成立。
+    """
+    monkeypatch.chdir(tmp_path)
+    _stub_minutes_llm(monkeypatch)
+
+    async def go():
+        session = _make_session()
+        tasks, bot = await _make_tasks_and_bot(1)
+        bot.channel = object()  # 有頻道才會真的走到貼訊息那條路
+
+        async def cancelled_mid_post(minutes_md, filename):
+            raise asyncio.CancelledError  # ← 第二次中斷打在這裡
+
+        bot.post_minutes = cancelled_mid_post
+        try:
+            await shutdown(session, bot, tasks)
+        except asyncio.CancelledError:
+            pass  # 逃出來本身是允許的；不允許的是產出被賠掉
+        return bot
+
+    bot = asyncio.run(go())
+    written = sorted((tmp_path / "meetings").glob("*.events.jsonl"))
+    assert written, "第二次中斷賠掉了 events.jsonl"
+    assert written[0].stat().st_size > 0, "events.jsonl 是空的"
+    assert bot.close_called, "第二次中斷跳過了 bot.close()"

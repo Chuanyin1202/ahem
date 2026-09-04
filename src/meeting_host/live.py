@@ -25,7 +25,7 @@ from .discord_source import MeetingBot
 from .events import Event
 from .hearing import HearingMonitor
 from .phrasing import PHRASE_KINDS, PhraseBank, generate_patterns, greeting_text
-from .speaker import ESCALATE_SECONDS, Chair, Earcon, Intervention, Voice
+from .speaker import ESCALATE_SECONDS, Chair, Earcon, Intervention, build_voice
 from .state import MeetingState
 from .stt import STTPool
 
@@ -1042,7 +1042,7 @@ async def main_async(args) -> None:
     # 走 `session.note_voice` 而不是直接 emit：同一顆訊號還要餵失聰偵測的臂 (B)，
     # 兩件事綁在一個方法裡才不會之後只改到其中一條（見 Session.note_voice）。
     bot.on_voice_activity = session.note_voice
-    voice = Voice(os.environ["ELEVENLABS_API_KEY"])
+    voice = build_voice()
     earcon = Earcon()  # 缺檔在這裡就炸，不要進了頻道才發現
     chair: Chair | None = None
     # 只有 --say-hello 才需要問候時機的判斷；沒開這個旗標就永遠不建 gate，

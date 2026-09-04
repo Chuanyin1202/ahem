@@ -13,7 +13,7 @@ def test_pr_evidence_contains_reproducible_results_without_secrets():
         report, sha="abc123", system="Linux aarch64", python="3.12.1",
         bypass_matches=0, run_url="https://example.test/actions/runs/1")
     assert "10 passed, 2 skipped, 1 xfailed; exit 0" in evidence
-    assert "PYTEST_CURRENT_TEST search | 0 matches; PASS" in evidence
+    assert "test-framework bypass search | 0 matches; PASS" in evidence
     assert "Linux aarch64" in evidence
     assert "abc123" in evidence
     assert "credentials=" not in evidence

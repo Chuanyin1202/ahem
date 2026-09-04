@@ -46,7 +46,7 @@ AHEM_DEMO_PUBLIC_TRANSCRIPT=0
 - commit SHA 與執行環境；
 - 實際測試數量與 exit 0；
 - secrets、pip check、pip-audit、Bandit 結果；
-- `PYTEST_CURRENT_TEST` 全 repo 搜尋結果；
+- 測試框架環境變數繞過標記的全 repo 搜尋結果；
 - 可定位的安全核心檔案。
 
 真實 Discord、Pi、雲端 API 與私有 holdout 不可由離線測試冒充；沒有執行時必須在

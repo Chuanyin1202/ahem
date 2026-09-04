@@ -10,6 +10,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+BYPASS_MARKER = "PYTEST_" + "CURRENT_TEST"
+
 
 def _git(*args: str) -> str:
     result = subprocess.run(
@@ -40,7 +42,7 @@ def render(report: dict, *, sha: str, system: str, python: str,
         "python -m pip check",
         "python -m pip_audit --local",
         "python -m bandit -q -lll -r src",
-        "git grep -n PYTEST_CURRENT_TEST -- .",
+        f"git grep -n {BYPASS_MARKER} -- .",
         "```",
         "",
         "## Results",
@@ -53,7 +55,7 @@ def render(report: dict, *, sha: str, system: str, python: str,
         f"| pip check | {report['pip_check']} |",
         f"| pip-audit | {report['pip_audit']} |",
         f"| Bandit | {report['bandit']} |",
-        f"| PYTEST_CURRENT_TEST search | {bypass_matches} matches; {status} |",
+        f"| test-framework bypass search | {bypass_matches} matches; {status} |",
         "",
         "## Code-path evidence",
         "",
@@ -76,7 +78,7 @@ def main() -> None:
 
     report = json.loads(args.report.read_text(encoding="utf-8"))
     grep = subprocess.run(
-        ["git", "grep", "-n", "PYTEST_CURRENT_TEST", "--", "."],
+        ["git", "grep", "-n", BYPASS_MARKER, "--", "."],
         capture_output=True, text=True)
     if grep.returncode not in {0, 1}:
         raise SystemExit(grep.returncode)
@@ -97,7 +99,7 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(output, encoding="utf-8")
     if matches:
-        raise SystemExit("PYTEST_CURRENT_TEST bypass marker found")
+        raise SystemExit("test-framework bypass marker found")
 
 
 if __name__ == "__main__":

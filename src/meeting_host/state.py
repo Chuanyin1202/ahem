@@ -10,6 +10,23 @@ from dataclasses import dataclass, field
 # （即使之後又是同一人開口，也算新的一輪，run 重新起算）。
 RUN_GAP_SECONDS = 5.0
 
+# 「正在講話」這個即時旗標多久沒收到新訊號（STT partial）就不再信任，
+# 回頭改看已完成的發言（見 current_run_seconds docstring）。
+#
+# 2026-09-03 真實三人會議實測：有人講完一句「請聽我」之後，STT 187 秒完全沒有
+# 任何事件（不是連線斷掉——`stopped_speaking` 沒被呼叫；也不是他真的一直在講——
+# Discord 音訊封包持續在送，但 ElevenLabs 端沒有回任何 partial 或 commit）。
+# 旗標卡住不放，run 就跟著牆鐘一路長大，主席對著已經沉默 3 分鐘的人說
+# 「你講了 3 分鐘」——使用者在會議現場當場發現這個問題並口頭確認。
+#
+# 45.0 這個值不是為這次事故重新量的，是借用 `hearing.DEAF_VOICED_SECONDS`
+# 同一個數字：兩者都是「有人在對麥克風出聲，但 STT 完全沒有新內容」這同一類
+# 故障的門檻，那個值有實測依據（見該常數 docstring：健康雙人會議 p99=16.1s／
+# max=19.8s，45.0 是 2.3 倍安全邊際）。這裡故意不 import hearing 模組沿用，
+# 兩邊量的東西不同（那邊是「累積出聲秒數」，這裡是單純牆鐘經過時間）——
+# 只是剛好用同一個有依據的數字，之後各自要調整不會互相牽動。
+SPEAKING_STALE_SECONDS = 45.0
+
 
 @dataclass
 class Utterance:
@@ -33,6 +50,10 @@ class MeetingState:
     prior_last: dict[str, float] = field(default_factory=dict)
     # 正在說話的人 → 起始時刻。由 partial 結果驅動，不等 commit
     speaking: dict[str, float] = field(default_factory=dict)
+    # 正在說話的人 → 最後一次收到 partial 訊號的時刻（跟 speaking 的起始時刻分開記，
+    # speaking_now 只在第一次寫入，這個每次都更新）。current_run_seconds 用它判斷
+    # speaking 這個旗標是不是卡住太久沒更新了——見 SPEAKING_STALE_SECONDS。
+    speaking_seen: dict[str, float] = field(default_factory=dict)
     # 聲學層「誰正在出聲」——來自 voice_recv 的封包 0.2s 逾時事件，
     # 跟 STT partial 驅動的 speaking 不同：那個在空 commit 時會卡住，只能給超時規則用
     voice_active: set[str] = field(default_factory=set)
@@ -88,19 +109,32 @@ class MeetingState:
         joined = self.joined_at.get(who)
         return max(0.0, now - joined) if joined is not None else now
 
-    def speaking_now(self, who: str, since: float) -> None:
+    def speaking_now(self, who: str, since: float, seen_at: float | None = None) -> None:
         """某人「正在說話」——由 STT 的 partial 結果驅動，每秒更新。
 
         ⚠️ 這是「發言超時」規則能運作的關鍵：
         STT 只有在說話者停頓後才產生 Utterance，但超時規則要抓的正是
         「講不停的人」——他不停就不會有 Utterance，規則就永遠不會觸發。
         所以必須有一條不依賴 commit 的即時訊號。
+
+        `since`（這一輪開始的時刻）只在第一次寫入不變；`seen_at`（這次呼叫的
+        時刻）每次都更新到 `speaking_seen`——`current_run_seconds` 靠這個分辨
+        「這人真的還在講」跟「旗標卡住沒清掉」（見 SPEAKING_STALE_SECONDS）。
+
+        `seen_at` 留空（呼叫端只給 who／since 兩個參數，既有大量測試都是這樣
+        呼叫）就完全不寫 `speaking_seen`——`current_run_seconds` 看到某人完全
+        沒有 `speaking_seen` 記錄時會直接跳過過期檢查，行為跟這條防護加上去
+        之前一模一樣。只有 `live.py` 接的是真的 STT 事件，每次都會給 `seen_at`，
+        過期防護只在那條真正的生產路徑上生效。
         """
         if who not in self.speaking:
             self.speaking[who] = since
+        if seen_at is not None:
+            self.speaking_seen[who] = seen_at
 
     def stopped_speaking(self, who: str) -> None:
         self.speaking.pop(who, None)
+        self.speaking_seen.pop(who, None)
 
     def voice_started(self, who: str, now: float) -> None:
         self.voice_active.add(who)
@@ -183,11 +217,21 @@ class MeetingState:
         且只算到最後一句結束為止，不能用 now 繼續往後灌水，否則講完話
         沉默下來，run 仍會隨著時間一直長大，最終誤觸發「發言超時」硬打斷。
         兩種情境都透過 `_chain_start` 往前串同一輪的句子。
+
+        「正在說話」這個旗標本身也可能卡住：STT 連線沒斷、也沒有新內容送回來
+        （不是連線層的錯誤，是它就是不回應），`stopped_speaking` 兩個觸發條件
+        （真的講完一句、連線真的斷掉）都不會發生，旗標就永遠不清。太久沒有新
+        訊號（見 SPEAKING_STALE_SECONDS）就不再信任它，回頭看已完成的發言。
         """
         if self.speaking:
             who = min(self.speaking, key=lambda k: self.speaking[k])
             since = self.speaking[who]
-            return who, now - self._chain_start(who, since)
+            last_seen = self.speaking_seen.get(who)
+            if last_seen is None or now - last_seen <= SPEAKING_STALE_SECONDS:
+                return who, now - self._chain_start(who, since)
+            # 卡住的旗標：不 pop（連線可能還活著，之後仍可能正常收到新訊號），
+            # 只是這一次不採信，落到下面「已完成」那支，凍結在最後真的有動靜
+            # 的時刻，不再跟著牆鐘長大。
 
         if not self.utterances:
             return None, 0.0

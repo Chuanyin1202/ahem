@@ -20,12 +20,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from . import fast_path, glossary
+from . import style as _style
 from .discord_source import MeetingBot
 from .events import Event
 from .hearing import HearingMonitor
 from .phrasing import PHRASE_KINDS, PhraseBank, generate_patterns, greeting_text
 from .security import ConsentPolicy, prepare_private_dir, write_protected_text
-from .speaker import ESCALATE_SECONDS, Chair, Earcon, Intervention, Voice
+from .speaker import ESCALATE_SECONDS, Chair, Earcon, Intervention, build_voice
 from .state import MeetingState
 from .stt import STTPool
 
@@ -384,16 +385,32 @@ def resurrect_room_level(iv: Intervention, reason: str, now: float, revision: in
     `iv.created_at` 跨重生不變（`dataclasses.replace` 不動沒指定的欄位）——
     用它幫重生設存活上限，沿用 Chair 既有的 `ESCALATE_SECONDS`（軟插入等不到
     停頓就升級硬打斷的同一個門檻，不另外發明新數字）：換人換不停、真的等不到
-    一次停頓的話，超過這個年紀就不再重生，讓它照 Chair 原本的行為真的作廢
-    ——避免一句可能早就不合時宜的話（例如話題其實已經自己拉回來了）被無限期
-    留著，拖到很久以後才開口。
+    一次停頓的話，超過這個年紀**升級成硬打斷**，不是放棄。
+
+    2026-09-03 三人真實會議實測發現：原本這裡超過年齡上限就 `return None`，
+    交給 Chair 照它原本的行為真的作廢——但 Chair 的作廢路徑只在 revision
+    不符時觸發，走到那條路根本沒機會經過 `Chair.tick()` 自己的
+    `waited >= ESCALATE_SECONDS` 硬打斷判斷（那個判斷比較的是 `_pending_since`，
+    每次重生都被 `request()` 重設成 `now`，在三人以上快速交替時永遠來不及
+    累積滿）。結果是：換人換不停的 room-level 介入，明明是「Chair 該做卻做
+    不到」的情境，反而永遠等不到 Chair 那條硬打斷路徑，只會靜靜作廢——
+    那場會議 11 分鐘起兩次「離題」判定，各自被重生 3～4 次後放棄，全場只有
+    開場問候一句話。
+
+    這裡（`Session.on_dropped` 呼叫端）跟 `Chair.tick()` 是兩套時鐘座標：
+    這裡用 `Session.now`（相對會議起點），`Chair.tick()` 用裸 `perf_counter`
+    （見 `Chair` docstring 的座標警告）——`iv.created_at` 是前者，不能拿去跟
+    `Chair.tick()` 的 `now` 比。升級決定必須留在這個座標系裡做，不能想著
+    「反正 Chair.tick() 也有一個 ESCALATE_SECONDS 判斷，把值傳過去就好」。
     """
     if iv.target is not None:
         return None
     if reason not in _REVISION_STALE_REASONS:
         return None
     if now - iv.created_at >= ESCALATE_SECONDS:
-        return None
+        # 等不到一次停頓插進去，就不再客氣地排隊——直接升級成硬打斷重新排入，
+        # 沿用原本判斷出的話術，只是不再等安靜。
+        return dataclasses.replace(iv, revision=revision, hard=True)
     return dataclasses.replace(iv, revision=revision)
 
 
@@ -662,7 +679,10 @@ class Session:
                 self.on_partial(ev)
                 continue
             if isinstance(ev, Speaking):
-                self.st.speaking_now(ev.speaker, ev.since)
+                # seen_at=self.now：每次真的收到 STT partial 才會走到這裡，
+                # current_run_seconds 靠這個判斷「正在說話」旗標是不是卡住了
+                # 太久沒更新（見 state.SPEAKING_STALE_SECONDS）。
+                self.st.speaking_now(ev.speaker, ev.since, self.now)
                 self.emit("speaking", {"speaker": ev.speaker, "active": True})
                 continue
             if isinstance(ev, SpeakingStopped):
@@ -1035,7 +1055,7 @@ async def main_async(args) -> None:
     # 走 `session.note_voice` 而不是直接 emit：同一顆訊號還要餵失聰偵測的臂 (B)，
     # 兩件事綁在一個方法裡才不會之後只改到其中一條（見 Session.note_voice）。
     bot.on_voice_activity = session.note_voice
-    voice = Voice(os.environ["ELEVENLABS_API_KEY"])
+    voice = build_voice()
     earcon = Earcon()  # 缺檔在這裡就炸，不要進了頻道才發現
     chair: Chair | None = None
     # 只有 --say-hello 才需要問候時機的判斷；沒開這個旗標就永遠不建 gate，
@@ -1109,7 +1129,6 @@ async def main_async(args) -> None:
         if serve is not None:
             tasks.append(asyncio.create_task(serve(session, args.spectator_port)))
 
-    from . import style as _style
     _applied = _style.apply(args.style)
     print(f"議題：{args.topic}（預計 {args.duration} 分鐘，階段：{args.phase}）")
     if _applied:
@@ -1332,8 +1351,9 @@ def main() -> None:
     ap.add_argument("--topic", default="會議")
     ap.add_argument("--duration", type=int, default=30)
     ap.add_argument("--phase", default="發散期", choices=["發散期", "呻吟區", "收斂期"])
-    ap.add_argument("--style", default=None, choices=["strict", "gentle", "efficient"],
-                    help="主持風格檔位（既有快路門檻的組合，未調校；不給就用預設值）")
+    ap.add_argument("--style", default=None, choices=sorted(_style.STYLES),
+                    help="主持風格檔位（快路門檻＋demo 檔位另外關掉慢路否決權，"
+                         "見 style.py；不給就用預設值）")
     ap.add_argument("--auto-phase", default=None, choices=["suggest", "apply"],
                     help="階段自動判斷：suggest 只在觀戰畫面建議，apply 自動套用（--no-llm 時無效）")
     ap.add_argument("--channel", type=int, default=None, help="語音頻道 ID")

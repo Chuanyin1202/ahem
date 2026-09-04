@@ -358,13 +358,16 @@ def test_resurrect_room_level_handles_escalate_stale_revision_reason():
 
 def test_resurrect_room_level_caps_by_age():
     """換人換不停、一直等不到停頓——存活時間一旦達到 ESCALATE_SECONDS（沿用
-    既有門檻，不另外發明新數字）就不再重生，讓它真的作廢（驗收 3：介入太老保護）。"""
+    既有門檻，不另外發明新數字）就升級成硬打斷重生，不再是軟插入等安靜
+    （驗收 3，2026-09-03 修正：原本這裡是回傳 None 真的作廢，但那條路根本
+    不會經過 Chair 自己的硬打斷判斷，三人快速交替會議實測會讓介入永遠沒機會
+    講出口，見 `resurrect_room_level` docstring）。"""
     iv = _room_iv(t=100.0)
     still_fresh = resurrect_room_level(iv, "revision 過期",
                                         now=100.0 + ESCALATE_SECONDS - 0.01, revision=1)
-    assert still_fresh is not None
-    too_old = resurrect_room_level(iv, "revision 過期", now=100.0 + ESCALATE_SECONDS, revision=1)
-    assert too_old is None
+    assert still_fresh is not None and still_fresh.hard is False
+    escalated = resurrect_room_level(iv, "revision 過期", now=100.0 + ESCALATE_SECONDS, revision=1)
+    assert escalated is not None and escalated.hard is True
 
 
 class _RecordingChair:

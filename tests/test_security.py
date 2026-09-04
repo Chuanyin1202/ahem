@@ -9,6 +9,7 @@ from meeting_host.security import (
     EnvelopeStore,
     FileKEK,
     audit_record,
+    load_kek,
     secure_write_text,
     redact_event_for_viewer,
 )
@@ -122,3 +123,10 @@ def test_file_kek_rejects_wrong_length(tmp_path):
     path.chmod(0o600)
     with pytest.raises(ValueError, match="32 bytes"):
         FileKEK(path).load()
+
+
+def test_systemd_credentials_directory_resolves_ahem_kek(tmp_path):
+    credential = tmp_path / "ahem-kek"
+    credential.write_text(base64.b64encode(b"k" * 32).decode(), encoding="ascii")
+    credential.chmod(0o600)
+    assert load_kek({"CREDENTIALS_DIRECTORY": str(tmp_path)}) == b"k" * 32

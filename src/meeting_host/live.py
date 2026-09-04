@@ -1127,7 +1127,18 @@ async def main_async(args) -> None:
     if args.spectator_port:
         serve = _try_import_spectator_serve()
         if serve is not None:
-            tasks.append(asyncio.create_task(serve(session, args.spectator_port)))
+            # Resolve one security object before Discord joins so the viewer
+            # notice and the HTTP server always use the same bootstrap token.
+            from .spectator import SpectatorSecurity
+            spectator_security = SpectatorSecurity.from_env()
+            tasks.append(asyncio.create_task(
+                serve(session, args.spectator_port, security=spectator_security)))
+            base = (os.environ.get("AHEM_PUBLIC_URL", "").rstrip("/")
+                    or f"http://localhost:{args.spectator_port}")
+            bot.join_notice = (
+                "會議開始，這是本場的唯讀觀戰畫面：\n"
+                f"{base}/#token={spectator_security.viewer_token}\n"
+                "畫面會即時顯示經隱私處理的會議事件。")
 
     _applied = _style.apply(args.style)
     print(f"議題：{args.topic}（預計 {args.duration} 分鐘，階段：{args.phase}）")
@@ -1226,6 +1237,7 @@ async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task])
     _drain_chair(session)
     session.ending = True  # 擋掉收尾期間再進來的 POST /end（訊號路徑不經過 request_end）
     events_path = summary(session)
+    await _post_minutes_to_channel(session, bot)
     try:
         await _flush_spectator(session)
         for t in tasks:
@@ -1246,6 +1258,20 @@ async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task])
             print("    ⚠️ bot.close() 逾時（10 秒），放棄等待")
         except asyncio.CancelledError:
             pass  # 又被打斷：close 已經送出去了，不再等
+
+
+async def _post_minutes_to_channel(session: Session, bot: MeetingBot) -> None:
+    """Best-effort delivery of the generated minutes to the meeting channel."""
+    minutes = next((event for event in reversed(session.events)
+                    if event.kind == "minutes"), None)
+    if minutes is None:
+        return
+    markdown = minutes.data.get("minutes_md") or ""
+    filename = Path(minutes.data.get("minutes_path") or "minutes.md").name
+    try:
+        await bot.post_minutes(markdown, filename)
+    except Exception as exc:  # noqa: BLE001 - delivery must never break shutdown
+        print(f"    ⚠️ 會議記錄沒貼成 Discord（{type(exc).__name__}: {exc}）——檔案已寫出，不影響")
 
 
 def _try_import_spectator_serve():

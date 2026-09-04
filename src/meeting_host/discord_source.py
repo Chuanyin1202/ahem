@@ -316,6 +316,10 @@ class MeetingBot(discord.Client):
     # 不要混用：這裡量到的是「麥克風有沒有在送封包」，"speaking" 量到的是「STT
     # 有沒有正在辨識出內容」，兩者時間點與觸發條件都不同。
     on_voice_activity: "Callable[[str, bool], None] | None" = None
+    # 進頻道後要貼進該頻道文字聊天的一則訊息（live.py 放觀戰畫面的參與者網址）。
+    # 發在語音頻道自己的文字聊天裡，看得到的人就等於進得了這個頻道的人——
+    # 存取範圍直接借用 Discord 既有的成員資格，不必自己蓋帳號系統。
+    join_notice: str | None = None
 
     def __init__(self, pool: STTPool, channel_id: int | None = None, state=None):
         # 只用非特權 intent：語音接收靠 voice_states 就夠，
@@ -327,6 +331,7 @@ class MeetingBot(discord.Client):
         self.channel_id = channel_id
         self.state = state
         self.loop_ref: asyncio.AbstractEventLoop | None = None
+        self.channel = None  # 已加入的語音頻道，收尾時要往它的文字聊天送總結
 
     async def on_ready(self) -> None:
         ensure_opus()
@@ -351,6 +356,31 @@ class MeetingBot(discord.Client):
         self.vc = vc
         print(f"    監聽中：{vc.is_listening()}｜頻道內："
               f"{[m.display_name for m in channel.members if not m.bot]}")
+        self.channel = channel
+        await self._post(self.join_notice)
+
+    async def _post(self, content: str | None = None, file=None) -> bool:
+        """往已加入的語音頻道的文字聊天貼一則訊息。**永遠不讓它影響會議**——
+        缺權限、頻道不支援文字聊天、Discord 出錯都只印一行就算了。
+        """
+        if self.channel is None or (content is None and file is None):
+            return False
+        try:
+            await asyncio.wait_for(self.channel.send(content=content, file=file), timeout=10.0)
+            return True
+        except Exception as e:  # noqa: BLE001 - 貼訊息失敗絕不能中斷會議
+            print(f"    ⚠️ 貼到 Discord 失敗（{type(e).__name__}: {e}）——會議不受影響")
+            return False
+
+    async def post_minutes(self, minutes_md: str, filename: str) -> bool:
+        """把會議總結當附件貼回頻道。用附件不用內文：Discord 單則訊息 2000 字元
+        上限，實測總結常常超過（`meetings/` 裡的 minutes.md 有 1.2KB 也有 3.2KB）。
+        """
+        if not minutes_md.strip():
+            return False
+        import io
+        f = discord.File(io.BytesIO(minutes_md.encode("utf-8")), filename=filename)
+        return await self._post("會議結束，這是本場的會議記錄：", file=f)
 
     async def _pick_channel(self):
         if self.channel_id:

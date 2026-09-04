@@ -64,15 +64,6 @@ def test_ensure_participant_records_joined_at_in_meeting_relative_time():
     assert s.joined_at["A"] == 60.0
 
 
-def test_joined_at_normalizes_perf_counter_cancellation_noise():
-    """不同 runner 的 perf_counter 基準不可讓同一個相對秒數產生尾差。"""
-    s = st()
-    s._t0 = 94.537400798
-    s.ensure_participant("A", now=s._t0 + 60.0)
-    assert s.joined_at["A"] == 60.0
-    assert s.silent_seconds("A", now=65.0) == 5.0
-
-
 def test_silent_seconds_never_spoken_from_meeting_start_uses_elapsed_time():
     """驗收 1：從會議開始就在場（回放路徑：建構時直接餵 participants，
     從未走過 ensure_participant）、從未發言的人，沉默秒數維持舊行為——

@@ -49,6 +49,10 @@ TTS_RATE = 24000
 TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream?output_format=pcm_{rate}"
 
 AZURE_TTS_VOICE = "zh-TW-HsiaoChenNeural"
+AZURE_TTS_VOICES = {
+    "female": "zh-TW-HsiaoChenNeural",
+    "male": "zh-TW-YunJheNeural",
+}
 AZURE_TTS_RATE = "+12%"
 AZURE_TTS_MONTHLY_LIMIT = 500_000
 AZURE_TTS_HARD_STOP_PERCENT = 95
@@ -309,6 +313,10 @@ def build_voice(environ: Mapping[str, str] | None = None) -> Voice:
     if provider == "elevenlabs":
         return Voice(env["ELEVENLABS_API_KEY"])
     if provider == "azure":
+        gender = env.get("AZURE_TTS_GENDER", "female").strip().lower()
+        if gender not in AZURE_TTS_VOICES:
+            raise ValueError("AZURE_TTS_GENDER 只支援 female 或 male")
+        voice_id = env.get("AZURE_TTS_VOICE", "").strip() or AZURE_TTS_VOICES[gender]
         warning_percents = tuple(
             int(value.strip())
             for value in env.get("AZURE_TTS_WARNING_PERCENTS", "80,90,95").split(",")
@@ -324,7 +332,7 @@ def build_voice(environ: Mapping[str, str] | None = None) -> Voice:
         return AzureVoice(
             env["AZURE_SPEECH_KEY"],
             region=env["AZURE_SPEECH_REGION"],
-            voice_id=env.get("AZURE_TTS_VOICE", AZURE_TTS_VOICE),
+            voice_id=voice_id,
             rate=env.get("AZURE_TTS_RATE", AZURE_TTS_RATE),
             usage_budget=usage_budget,
         )

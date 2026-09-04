@@ -163,7 +163,10 @@ class MeetingState:
             return
         self.participants.append(name)
         if now is not None:
-            self.joined_at[name] = max(0.0, now - self._t0)
+            # perf_counter 的絕對值通常不小，兩個相近 float 相減會留下約
+            # 1e-14 的抵銷誤差；會議狀態只需要微秒精度，先正規化可避免
+            # 相同事件在不同 runner 上落在門檻兩側。
+            self.joined_at[name] = round(max(0.0, now - self._t0), 6)
 
     def note_room_silence_fired(self) -> None:
         """「全場沉默」規則實際排入 Chair 一次後呼叫，遞增退避次數。

@@ -12,7 +12,11 @@ ALLOWED_SUFFIXES = (
 
 def expired_artifacts(directory: Path, *, ttl_hours: int = 24,
                       now: float | None = None) -> list[Path]:
+    if ttl_hours <= 0:
+        raise ValueError("ttl_hours 必須大於 0")
     directory = Path(directory).resolve()
+    if not directory.is_dir():
+        return []
     cutoff = (time.time() if now is None else now) - ttl_hours * 3600
     return sorted(
         path for path in directory.iterdir()

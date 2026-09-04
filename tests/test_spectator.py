@@ -239,6 +239,15 @@ def test_security_env_rejects_partial_short_or_shared_tokens():
         })
 
 
+def test_security_env_rejects_non_loopback_http_trusted_origin():
+    with pytest.raises(ValueError, match="trusted origin"):
+        spectator.SpectatorSecurity.from_env({
+            "AHEM_VIEWER_TOKEN": "v" * 32,
+            "AHEM_OPERATOR_TOKEN": "o" * 32,
+            "AHEM_TRUSTED_ORIGINS": "http://demo.example.com",
+        })
+
+
 def test_full_viewer_content_requires_explicit_demo_acknowledgement():
     env = {
         "AHEM_VIEWER_TOKEN": "v" * 32,

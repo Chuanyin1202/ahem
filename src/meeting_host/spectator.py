@@ -62,14 +62,16 @@ class SpectatorSecurity:
             parsed = urlsplit(origin)
             if (parsed.scheme not in {"http", "https"} or not parsed.netloc
                     or parsed.path not in {"", "/"} or parsed.query or parsed.fragment
-                    or "*" in origin):
+                    or parsed.username or parsed.password or "*" in origin
+                    or (parsed.scheme == "http" and parsed.hostname not in
+                        {"localhost", "127.0.0.1", "::1"})):
                 raise ValueError(f"不安全的 trusted origin：{origin!r}")
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "SpectatorSecurity":
         env = dict(os.environ if env is None else env)
-        viewer = env.get("AHEM_VIEWER_TOKEN", "")
-        operator = env.get("AHEM_OPERATOR_TOKEN", "")
+        viewer = env.get("AHEM_VIEWER_TOKEN", "").strip()
+        operator = env.get("AHEM_OPERATOR_TOKEN", "").strip()
         bootstrap = False
         if bool(viewer) != bool(operator):
             raise RuntimeError("AHEM_VIEWER_TOKEN 與 AHEM_OPERATOR_TOKEN 必須同時設定")
@@ -181,7 +183,9 @@ async def _security_middleware(request: web.Request, handler):
             return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
         if request.method not in {"GET", "HEAD", "OPTIONS"}:
             origin = request.headers.get("Origin")
-            if origin and origin not in security.trusted_origins:
+            # 本機直連仍是同源請求；反向代理入口則必須明列。
+            same_origin = origin == str(request.url.origin()) if origin else True
+            if origin and not same_origin and origin not in security.trusted_origins:
                 return web.json_response({"ok": False, "error": "untrusted origin"}, status=403)
     response = await handler(request)
     _security_headers(response)

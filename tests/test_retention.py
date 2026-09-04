@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from meeting_host.retention import purge_expired
 
 
@@ -20,3 +22,9 @@ def test_retention_only_targets_expired_ahem_artifacts(tmp_path):
     assert not old.exists()
     assert recent.exists()
     assert unrelated.exists()
+
+
+def test_retention_rejects_non_positive_ttl_and_allows_missing_directory(tmp_path):
+    with pytest.raises(ValueError, match="大於 0"):
+        purge_expired(tmp_path, ttl_hours=0)
+    assert purge_expired(tmp_path / "missing", ttl_hours=24) == []

@@ -57,10 +57,10 @@ LoadCredential=ahem-kek:/etc/ahem/ahem-kek
 
 ## Discord voice 相依套件例外
 
-`discord-ext-voice_recv==0.5.2a179` 仍宣告舊的 `PyNaCl<1.6` 上限，但修補版本為
-`PyNaCl==1.6.2`。本專案以 `scripts/install-secure.sh` 分階段安裝並執行
-`pip check`，且用完整語音回歸測試守門。這是暫時相容性例外；上游更新正式版本後
-應移除 `--no-deps`，不得長期忽略其他依賴。
+`discord-ext-voice_recv==0.5.2a179` 透過 `discord.py[voice]` 間接宣告
+`PyNaCl<1.6`，但專案固定已修補版本 `PyNaCl==1.6.2`。安裝器只對這個
+alpha 套件使用 `--no-deps`，其他相依仍正常解析，安裝後再執行 `pip check`。
+這是有範圍、有回歸測試的暫時例外；上游移除舊上限後應恢復正常安裝。
 
 ## Token
 

@@ -5,10 +5,12 @@ import argparse
 import dataclasses
 import json
 import os
+import re
 import socket
 import stat
 import subprocess
 import sys
+from urllib.parse import urlsplit
 from collections.abc import Callable
 from pathlib import Path
 
@@ -37,6 +39,64 @@ def _token_checks(env: dict[str, str]) -> list[Check]:
     ]
 
 
+def _service_checks(env: dict[str, str], *, no_llm: bool) -> list[Check]:
+    required = {
+        "discord_credentials": "DISCORD_BOT_TOKEN",
+        "speech_to_text_credentials": "ELEVENLABS_API_KEY",
+    }
+    if not no_llm:
+        required["language_model_credentials"] = "OPENAI_API_KEY"
+    checks = [
+        Check(name, "pass" if env.get(variable, "").strip() else "fail",
+              f"{variable} 已設定" if env.get(variable, "").strip()
+              else f"缺少 {variable}")
+        for name, variable in required.items()
+    ]
+    provider = env.get("AHEM_TTS_PROVIDER", "elevenlabs").strip().lower()
+    if provider == "azure":
+        region = env.get("AZURE_SPEECH_REGION", "").strip()
+        gender = env.get("AZURE_TTS_GENDER", "female").strip().lower()
+        rate = env.get("AZURE_TTS_RATE", "+12%").strip()
+        ok = bool(env.get("AZURE_SPEECH_KEY", "").strip()
+                  and re.fullmatch(r"[a-z0-9-]+", region)
+                  and gender in {"female", "male"}
+                  and re.fullmatch(r"[+-]\d{1,3}%", rate))
+        try:
+            monthly_limit = int(env.get("AZURE_TTS_MONTHLY_LIMIT", "500000"))
+            hard_stop = int(env.get("AZURE_TTS_HARD_STOP_PERCENT", "95"))
+            warnings = [int(item.strip()) for item in
+                        env.get("AZURE_TTS_WARNING_PERCENTS", "80,90,95").split(",")
+                        if item.strip()]
+            ok = ok and monthly_limit > 0 and 1 <= hard_stop <= 100 and bool(warnings)
+            ok = ok and all(1 <= item <= hard_stop for item in warnings)
+        except ValueError:
+            ok = False
+        checks.append(Check(
+            "text_to_speech_configuration", "pass" if ok else "fail",
+            "Azure Speech 憑證、Region、聲線、語速與額度設定合格" if ok
+            else "Azure TTS 憑證或 Region／聲線／語速／額度設定不完整"))
+    elif provider == "elevenlabs":
+        checks.append(Check("text_to_speech_credentials", "pass",
+                            "ElevenLabs TTS 共用已檢查的 STT 憑證"))
+    else:
+        checks.append(Check("text_to_speech_credentials", "fail",
+                            "AHEM_TTS_PROVIDER 只支援 elevenlabs 或 azure"))
+    return checks
+
+
+def _valid_origin(origin: str) -> bool:
+    try:
+        parsed = urlsplit(origin)
+        if (parsed.scheme not in {"http", "https"} or not parsed.netloc
+                or parsed.path not in {"", "/"} or parsed.query or parsed.fragment
+                or parsed.username or parsed.password or "*" in origin):
+            return False
+        return not (parsed.scheme == "http" and parsed.hostname not in
+                    {"localhost", "127.0.0.1", "::1"})
+    except ValueError:
+        return False
+
+
 def _storage_check(directory: Path) -> Check:
     if not directory.exists():
         return Check("private_storage", "warn", f"{directory} 尚未建立；啟動時必須建立為 0700")
@@ -58,9 +118,11 @@ def _port_check(host: str, port: int) -> Check:
 
 def run_checks(*, mode: str, host: str, port: int, directory: Path,
                env: dict[str, str] | None = None,
-               keychain_loader: Callable[[], bytes] | None = None) -> list[Check]:
+               keychain_loader: Callable[[], bytes] | None = None,
+               no_llm: bool = False) -> list[Check]:
     env = dict(os.environ if env is None else env)
     checks = _token_checks(env)
+    checks.extend(_service_checks(env, no_llm=no_llm))
     checks.append(Check(
         "secure_storage",
         "pass" if env.get("AHEM_SECURE_STORAGE") == "1" else "fail",
@@ -83,13 +145,15 @@ def run_checks(*, mode: str, host: str, port: int, directory: Path,
         "Demo 已停用外部網路搜尋" if env.get("AHEM_DISABLE_WEB_SEARCH") == "1"
         else "建議 Demo 設定 AHEM_DISABLE_WEB_SEARCH=1",
     ))
-    origins = tuple(filter(None, env.get("AHEM_TRUSTED_ORIGINS", "").split(",")))
+    origins = tuple(origin.strip().rstrip("/") for origin in
+                    env.get("AHEM_TRUSTED_ORIGINS", "").split(",") if origin.strip())
     if mode == "local":
         checks.append(Check("network_boundary", "pass" if host == "127.0.0.1" else "fail",
                             "僅監聽本機 loopback" if host == "127.0.0.1"
                             else "local 模式只能使用 127.0.0.1"))
     else:
-        https_only = bool(origins) and all(origin.startswith("https://") for origin in origins)
+        https_only = bool(origins) and all(
+            _valid_origin(origin) and origin.startswith("https://") for origin in origins)
         cookie_secure = env.get("AHEM_COOKIE_SECURE") == "1"
         ok = https_only and cookie_secure
         checks.append(Check(
@@ -118,9 +182,11 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--directory", type=Path, default=Path("meetings"))
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--no-llm", action="store_true",
+                        help="與 live --no-llm 一致，不要求 OpenAI 憑證")
     args = parser.parse_args()
     result = summary(run_checks(mode=args.mode, host=args.host, port=args.port,
-                                directory=args.directory))
+                                directory=args.directory, no_llm=args.no_llm))
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:

@@ -14,6 +14,9 @@
 PYTHONPATH=src .venv/bin/python -m meeting_host.preflight --mode local
 ```
 
+預檢同時確認 Discord、ElevenLabs、OpenAI 與選定 TTS provider 的憑證存在，
+但不會呼叫真實 API。若啟動會議時使用 `--no-llm`，預檢也要加 `--no-llm`。
+
 ## 啟動
 
 ```bash

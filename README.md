@@ -96,6 +96,9 @@ PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
 > `POST /phase` 與 `POST /end` 需要 Operator Token。遠端展示請依
 > [`docs/security-architecture.md`](docs/security-architecture.md) 使用 HTTPS 反向代理。
 
+元件、時序、資料流、信任邊界、Raspberry Pi systemd 部署、失敗模式與驗收清單見
+[`docs/system-architecture.md`](docs/system-architecture.md)。
+
 此控制也涵蓋上游 `237e945` 修正的未授權 `/phase`、`/end` 風險；本分支進一步保護讀取端，不採用公開逐字稿或 query-string 權杖。
 
 不用 Discord 也能看畫面——回放任何一份事件檔：

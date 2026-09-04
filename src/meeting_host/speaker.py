@@ -25,6 +25,7 @@ import aiohttp
 import discord
 
 from .audio import DISCORD_RATE, FRAME_BYTES, SAMPLE_WIDTH, Framer, Upsampler
+from .security import prepare_private_dir, secure_write_text
 
 _EOS = object()  # 一句講完的哨兵
 SILENCE_FRAME = b"\x00" * FRAME_BYTES
@@ -80,7 +81,7 @@ class AzureUsageBudget:
             raise ValueError("AZURE_TTS_HARD_STOP_PERCENT 必須介於 1 到 100")
         if any(not 1 <= value <= hard_stop_percent for value in warning_percents):
             raise ValueError("AZURE_TTS_WARNING_PERCENTS 必須介於 1 到硬停百分比")
-        self.path = path
+        self.path = Path(path)
         self.monthly_limit = monthly_limit
         self.hard_stop_percent = hard_stop_percent
         self.warning_percents = tuple(sorted(set(warning_percents)))
@@ -93,15 +94,20 @@ class AzureUsageBudget:
         """預留本次字元；失敗也不回補，以免低估 Azure 實際計量。"""
         month = time.strftime("%Y-%m", time.gmtime())
         amount = len(text)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        prepare_private_dir(self.path.parent)
         lock_path = self.path.with_suffix(self.path.suffix + ".lock")
         with lock_path.open("a+", encoding="utf-8") as lock:
+            lock_path.chmod(0o600)
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
             try:
                 try:
                     state = json.loads(self.path.read_text(encoding="utf-8"))
-                except (FileNotFoundError, json.JSONDecodeError, OSError):
+                except FileNotFoundError:
                     state = {}
+                except (json.JSONDecodeError, OSError) as exc:
+                    raise VoiceError(
+                        f"Azure TTS 額度記錄無法讀取，為避免超額已停止：{self.path}"
+                    ) from exc
                 if state.get("month") != month:
                     state = {"month": month, "characters": 0, "warned": []}
                 used = int(state.get("characters", 0))
@@ -120,10 +126,8 @@ class AzureUsageBudget:
                             f"{projected:,}", f"{self.monthly_limit:,}", percent)
                         warned.add(threshold)
                 state.update(characters=projected, warned=sorted(warned))
-                temp = self.path.with_suffix(self.path.suffix + ".tmp")
-                temp.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n",
-                                encoding="utf-8")
-                temp.replace(self.path)
+                secure_write_text(
+                    self.path, json.dumps(state, ensure_ascii=False, indent=2) + "\n")
                 return projected
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)

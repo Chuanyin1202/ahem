@@ -1,0 +1,32 @@
+[Unit]
+Description=Ahem real-time AI meeting chair
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ahem
+Group=ahem
+WorkingDirectory=/var/lib/ahem
+Environment=PYTHONPATH=/opt/ahem/src
+EnvironmentFile=/etc/ahem/ahem.env
+LoadCredential=ahem-kek:/etc/ahem/ahem-kek
+ExecStartPre=/opt/ahem/.venv/bin/python -m meeting_host.preflight --mode lan --host 127.0.0.1 --directory /var/lib/ahem/meetings
+ExecStart=/opt/ahem/.venv/bin/python -u -m meeting_host.live --topic ${AHEM_TOPIC} --duration ${AHEM_DURATION_MIN} --channel ${AHEM_DISCORD_CHANNEL} --say-hello --spectator-port 8765 --privacy-mode strict --consent --auto-phase suggest
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+UMask=0077
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ahem
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

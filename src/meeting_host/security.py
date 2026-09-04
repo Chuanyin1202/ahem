@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import secrets
+import stat
 import subprocess
 import sys
 import tempfile
@@ -81,12 +82,28 @@ class FileKEK:
     def load(self) -> bytes:
         if not self.path.is_absolute():
             raise ValueError("AHEM_KEK_FILE 必須是絕對路徑")
-        if self.path.is_symlink() or not self.path.is_file():
-            raise ValueError("KEK 路徑必須是存在的一般檔案，不可為符號連結")
-        mode = self.path.stat().st_mode & 0o777
-        if mode & 0o077:
-            raise PermissionError(f"KEK 檔案權限過寬：{mode:04o}，必須為 0600 或更嚴格")
-        raw = base64.b64decode(self.path.read_text(encoding="ascii").strip(), validate=True)
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            fd = os.open(self.path, flags)
+        except OSError as exc:
+            raise ValueError("KEK 路徑必須是存在的一般檔案，不可為符號連結") from exc
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode):
+                raise ValueError("KEK 路徑必須是一般檔案")
+            mode = stat.S_IMODE(info.st_mode)
+            if mode & 0o077:
+                raise PermissionError(f"KEK 檔案權限過寬：{mode:04o}，必須為 0600 或更嚴格")
+            allowed_owners = {os.geteuid(), 0}
+            if info.st_uid not in allowed_owners:
+                raise PermissionError("KEK 檔案必須由服務帳號或 root 擁有")
+            with os.fdopen(fd, "r", encoding="ascii") as handle:
+                fd = -1
+                encoded = handle.read().strip()
+        finally:
+            if fd >= 0:
+                os.close(fd)
+        raw = base64.b64decode(encoded, validate=True)
         if len(raw) != 32:
             raise ValueError("Ahem KEK 必須是 32 bytes")
         return raw
@@ -190,16 +207,27 @@ def audit_record(action: str, *, actor: str, meeting_id: str, purpose: str,
 
 
 def redact_event_for_viewer(event: dict) -> dict:
-    """Viewer 只取得運作狀態；逐字稿、姓名與會議文件留給 Operator。"""
+    """Viewer 只取得運作狀態；對所有已知嵌套內容做去識別。"""
     event = json.loads(json.dumps(event))
     data = event.get("data") if isinstance(event, dict) else None
     if not isinstance(data, dict):
         return event
-    for key in ("text", "host_md", "minutes_md", "speaker", "target"):
+    for key in ("text", "host_md", "minutes_md", "participant_md", "speaker", "target", "topic"):
         if key in data:
             data[key] = "[已隱去]"
     if "participants" in data:
         data["participants"] = [f"P{i + 1:02d}" for i, _ in enumerate(data["participants"])]
     for key in ("host_path", "minutes_path", "log_path", "events_path"):
         data.pop(key, None)
+    kind = event.get("kind")
+    if kind == "share":
+        event["data"] = {f"P{i + 1:02d}": value for i, value in enumerate(data.values())}
+    elif kind == "glossary":
+        event["data"] = {"term": "[已隱去]", "explained": bool(data.get("explained"))}
+    elif kind == "slow_score":
+        for key in ("utterance", "reason", "pros", "cons"):
+            if key in data:
+                data[key] = "[已隱去]"
+    elif kind == "phase_suggestion" and "reason" in data:
+        data["reason"] = "[已隱去]"
     return event

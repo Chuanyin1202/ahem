@@ -104,3 +104,19 @@ def test_query_string_token_is_rejected():
             await client.close()
 
     asyncio.run(body())
+
+
+def test_same_origin_session_exchange_works_without_trusted_origin_list():
+    async def body() -> None:
+        client = _serve()
+        await client.start_server()
+        try:
+            origin = str(client.make_url("/")).rstrip("/")
+            response = await client.post(
+                "/session", headers={**_bearer(VIEWER_TOKEN), "Origin": origin})
+            assert response.status == 200
+            assert (await response.json())["role"] == "viewer"
+        finally:
+            await client.close()
+
+    asyncio.run(body())

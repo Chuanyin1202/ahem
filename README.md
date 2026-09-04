@@ -49,7 +49,7 @@ Discord 語音（每人一軌）
 
 ## 快速開始
 
-需求：Python 3.11 或 3.12（3.13 需另裝 `audioop-lts`，已列在 requirements）、一個加入你伺服器且有語音權限的 Discord bot、ElevenLabs 與 OpenAI 的 API key。主席預設仍用 ElevenLabs 發言；若要使用 Azure 台灣女性聲音，另需 Azure Speech key。
+需求：Python 3.11 或 3.12（3.13 需另裝 `audioop-lts`，已列在 requirements）、一個加入你伺服器且有語音權限的 Discord bot、ElevenLabs 與 OpenAI 的 API key。主席預設仍用 ElevenLabs 發言；若要使用 Azure 台灣男聲或女聲，另需 Azure Speech key。
 
 ```bash
 git clone https://github.com/Chuanyin1202/ahem.git && cd ahem
@@ -57,19 +57,23 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
 cp .env.example .env        # 填入 ELEVENLABS_API_KEY、OPENAI_API_KEY、DISCORD_BOT_TOKEN
 ```
 
-改用已實聽確認的 Azure 台灣女性主席聲音：
+改用已實聽確認的 Azure 台灣主席聲音：
 
 ```dotenv
 AHEM_TTS_PROVIDER=azure
 AZURE_SPEECH_KEY=<Azure Speech key>
 AZURE_SPEECH_REGION=eastasia
-AZURE_TTS_VOICE=zh-TW-HsiaoChenNeural
+AZURE_TTS_GENDER=female
 AZURE_TTS_RATE=+12%
 AZURE_TTS_MONTHLY_LIMIT=500000
 AZURE_TTS_HARD_STOP_PERCENT=95
 AZURE_TTS_WARNING_PERCENTS=80,90,95
 AZURE_TTS_USAGE_FILE=meetings/azure_tts_usage.json
 ```
+
+`AZURE_TTS_GENDER=female` 是 1 號小辰女聲，改成 `male` 就是 5 號雲哲男聲。
+兩者均使用相同的 `+12%` 語速。如需進階指定其他 Azure 聲線，可另設
+`AZURE_TTS_VOICE`，其優先權高於性別預設。
 
 這只替換主席的 TTS；即時逐字稿仍由 ElevenLabs Scribe 處理，所以 `ELEVENLABS_API_KEY` 仍須保留。Azure 口說層會把獨立的 `API` 念成已確認的「誒批哀」，並把「收斂」固定成台灣華語 `ㄕㄡ ㄌㄧㄢˋ`；觀戰畫面、事件檔與會後記錄保留原始文字，不會出現發音用的同音字。
 

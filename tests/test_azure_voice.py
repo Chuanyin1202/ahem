@@ -35,6 +35,39 @@ def test_build_voice_selects_confirmed_azure_defaults():
     assert voice.rate == "+12%"
 
 
+def test_build_voice_selects_confirmed_azure_male_voice():
+    voice = build_voice({
+        "AHEM_TTS_PROVIDER": "azure",
+        "AZURE_SPEECH_KEY": "azure-key",
+        "AZURE_SPEECH_REGION": "eastasia",
+        "AZURE_TTS_GENDER": "male",
+    })
+    assert isinstance(voice, AzureVoice)
+    assert voice.voice_id == "zh-TW-YunJheNeural"
+    assert voice.rate == "+12%"
+
+
+def test_build_voice_rejects_unknown_azure_gender():
+    with pytest.raises(ValueError, match="female 或 male"):
+        build_voice({
+            "AHEM_TTS_PROVIDER": "azure",
+            "AZURE_SPEECH_KEY": "azure-key",
+            "AZURE_SPEECH_REGION": "eastasia",
+            "AZURE_TTS_GENDER": "other",
+        })
+
+
+def test_explicit_azure_voice_overrides_gender_preset():
+    voice = build_voice({
+        "AHEM_TTS_PROVIDER": "azure",
+        "AZURE_SPEECH_KEY": "azure-key",
+        "AZURE_SPEECH_REGION": "eastasia",
+        "AZURE_TTS_GENDER": "male",
+        "AZURE_TTS_VOICE": "zh-TW-HsiaoYuNeural",
+    })
+    assert voice.voice_id == "zh-TW-HsiaoYuNeural"
+
+
 @pytest.mark.parametrize("region", ["https://example.com", "eastasia/path", "east asia"])
 def test_azure_region_rejects_non_region_values(region):
     with pytest.raises(ValueError, match="REGION"):

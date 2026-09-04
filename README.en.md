@@ -67,9 +67,20 @@ PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
 
 The spectator view is at `http://localhost:8765`. `Ctrl-C` ends the meeting and writes the records to `meetings/`.
 
-Startup prints two URLs: a read-only one for viewers and one with `?k=<token>` for the operator. `POST /phase` (switch phase) and `POST /end` (end the meeting) require an `X-Ahem-Token` header and return 403 without it. The token is random per start; pin one with `--spectator-token` or the `AHEM_SPECTATOR_TOKEN` environment variable.
+There are two tiers of token, and startup prints a URL for each:
 
-> **Network exposure**: the server binds `0.0.0.0` and **reads are always public**. Anyone who can reach the port sees the full transcript. This matters behind a public domain (reverse proxy, tunnel): the two state-changing endpoints are gated by the token, the transcript is not. Keep real meeting content off a public address, or put authentication in front of it.
+| | Can do | Where it comes from |
+|---|---|---|
+| **Participant** | read (transcript, chair judgements, minutes) | `--view-token` / `AHEM_VIEW_TOKEN`, random per start if unset |
+| **Operator** | read + switch phase + end the meeting | `--spectator-token` / `AHEM_SPECTATOR_TOKEN`, random per start if unset |
+
+**Reads are private by default**: `GET /events` requires either token, passed in the query string as `?k=` (SSE's `EventSource` cannot set custom headers). Everything real — transcript, chair judgements, minutes — leaves through that one endpoint, so gating it gates the content. `GET /` is deliberately left open: it is an empty shell, and gating it would break refresh, because the page stores the token in `sessionStorage` and strips it from the address bar (the screen gets projected). `POST /phase` and `POST /end` accept only the operator token, via the `X-Ahem-Token` header.
+
+How the participant token reaches people is up to you. Pasting the URL into the meeting's own Discord text chat scopes access to whoever can reach that channel — borrowing Discord's existing membership instead of building an account system. Tokens live with the process and die when the meeting ends.
+
+`--public-read` removes the read gate entirely, for a demo where the audience is not in the Discord channel. Writes are unaffected.
+
+> **Network exposure**: the server binds `0.0.0.0`. Behind a public domain (reverse proxy, tunnel), reads are gated by the tokens above; `--public-read` makes the full transcript world-readable, so use it only when that is the intent.
 
 The view also works without Discord, replaying any event log:
 

@@ -447,6 +447,7 @@
     share: {},
     serverNow: 0,
     connectionLost: false,
+    needToken: false,
     ended: false,
     minutes: null,          // minutes 事件的 payload（兩份 md 全文＋四路徑）
 
@@ -544,6 +545,8 @@
     statusEl.classList.toggle("switchable", !!m && !state.ended);
     if (state.ended) {
       statusEl.textContent = "會議已結束";
+    } else if (state.needToken) {
+      statusEl.textContent = "需要權杖才能觀看";
     } else if (state.connectionLost) {
       statusEl.textContent = "連線中斷";
     } else if (!m) {
@@ -1285,23 +1288,41 @@
     "queued", "spoken", "failed", "dropped", "share", "minutes", "glossary", "hearing",
     "phase", "phase_suggestion", "partial"];
 
-  var source = new EventSource("/events");
-  source.addEventListener("snapshot", function (e) {
-    var events = JSON.parse(e.data);
-    resetForSnapshot();
-    events.forEach(handleEvent);
-    renderStats();
-    renderJudgments();
-    renderShare();
-    renderTimeline();
-    renderTop();
-    renderAlerts();
-  });
-  KINDS.forEach(function (kind) {
-    source.addEventListener(kind, function (e) { handleEvent(JSON.parse(e.data)); });
-  });
-  source.onerror = function () { setConnectionLost(true); };
-  source.onopen = function () { setConnectionLost(false); };
+  // SSE 不能設自訂 header，權杖只能放在 query string（見 spectator.py TOKEN_QUERY）。
+  // 沒有權杖時先問 /health（公開）：伺服器若不是 --public-read，直接顯示「需要權杖」，
+  // 不要盲連再顯示「連線中斷」——那兩件事的處置完全不同。
+  var source = null;
+  function connect() {
+    source = new EventSource("/events" + (authToken ? "?k=" + encodeURIComponent(authToken) : ""));
+    wireSource();
+  }
+  if (authToken) {
+    connect();
+  } else {
+    fetch("/health").then(function (r) { return r.json(); }).then(function (d) {
+      if (d.public_read) { connect(); return; }
+      state.needToken = true;
+      renderTop();
+    }).catch(function () { connect(); });
+  }
+  function wireSource() {
+    source.addEventListener("snapshot", function (e) {
+      var events = JSON.parse(e.data);
+      resetForSnapshot();
+      events.forEach(handleEvent);
+      renderStats();
+      renderJudgments();
+      renderShare();
+      renderTimeline();
+      renderTop();
+      renderAlerts();
+    });
+    KINDS.forEach(function (kind) {
+      source.addEventListener(kind, function (e) { handleEvent(JSON.parse(e.data)); });
+    });
+    source.onerror = function () { setConnectionLost(true); };
+    source.onopen = function () { setConnectionLost(false); };
+  }
 
   renderTop();
   renderStats();

@@ -89,9 +89,20 @@ PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
 
 觀戰畫面在 `http://localhost:8765`。`Ctrl-C` 結束會議並寫出記錄到 `meetings/`。
 
-啟動時會印出兩個網址：唯讀的給觀眾，帶 `?k=<權杖>` 的給操作者。`POST /phase`（切換階段）與 `POST /end`（結束會議）要帶 `X-Ahem-Token` header，權杖不對回 403。權杖每次啟動隨機產生，用 `--spectator-token` 或環境變數 `AHEM_SPECTATOR_TOKEN` 可以釘住一組。
+權杖分兩級，啟動時各印一個網址：
 
-> **網路暴露**：觀戰服務綁定 `0.0.0.0`，且**讀取端一律公開**——能連到這個埠的任何人都看得到完整逐字稿。掛在公開網域（反向代理、tunnel）後面時要留意這點：會改變狀態的兩個端點有權杖擋著，逐字稿沒有。真實會議內容不想外流就別對外開，或在前面加一層認證。
+| | 能做什麼 | 從哪裡來 |
+|---|---|---|
+| **參與者** | 讀（逐字稿、主席判斷、總結） | `--view-token` ／ `AHEM_VIEW_TOKEN`，留空就隨機產生 |
+| **操作者** | 讀 ＋ 切階段 ＋ 結束會議 | `--spectator-token` ／ `AHEM_SPECTATOR_TOKEN`，留空就隨機產生 |
+
+**預設是私密的**：`GET /events` 要帶其中一組（放在 query string `?k=`，因為 SSE 的 `EventSource` 不能設自訂 header）。逐字稿、主席判斷、會議總結全從那條出去，鎖住它就等於鎖住所有真實內容；`GET /` 那份空殼 HTML 不鎖，否則重新整理會壞（前端把權杖存在 sessionStorage 並刻意從網址列抹掉——畫面會投影）。`POST /phase` 與 `POST /end` 只認操作者權杖，帶 `X-Ahem-Token` header。
+
+參與者權杖怎麼發由你決定。把網址貼進該場會議的 Discord 文字聊天，存取範圍就自然等於「進得了那個頻道的人」——借用 Discord 既有的成員資格，不必自己蓋帳號系統。權杖跟著行程活，會議結束就失效。
+
+`--public-read` 讓讀取端完全不設防，給 demo 現場用（評審不在 Discord 頻道裡，拿不到參與者權杖）。寫入端不受這個旗標影響。
+
+> **網路暴露**：觀戰服務綁定 `0.0.0.0`。掛在公開網域（反向代理、tunnel）後面時，讀取端靠上面那組權杖擋著；開了 `--public-read` 就等於完整逐字稿對全世界公開，只在 demo 那種刻意公開的場合用。
 
 不用 Discord 也能看畫面——回放任何一份事件檔：
 

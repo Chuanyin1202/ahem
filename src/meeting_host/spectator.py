@@ -30,9 +30,13 @@ PING_INTERVAL = 15.0
 QUEUE_MAXSIZE = 200
 SESSION_KEY: web.AppKey[Any] = web.AppKey("session")
 TOKEN_KEY: web.AppKey[Any] = web.AppKey("token")
+VIEW_TOKEN_KEY: web.AppKey[Any] = web.AppKey("view_token")
+PUBLIC_READ_KEY: web.AppKey[Any] = web.AppKey("public_read")
 # 兩個會改變狀態的端點（POST /phase、POST /end）要帶的 header。
-# GET 一律公開——觀戰畫面本來就是給人看的。
 TOKEN_HEADER = "X-Ahem-Token"
+# 讀取端（GET /events）改帶 query string：SSE 走 `EventSource`，瀏覽器不讓它設
+# 自訂 header，只能把權杖放在網址裡。
+TOKEN_QUERY = "k"
 # 同 live.py `--phase` 的 choices／live.Session 建構子預設值——階段只能是這三個。
 VALID_PHASES = ("發散期", "呻吟區", "收斂期")
 
@@ -138,7 +142,12 @@ async def _index_handler(request: web.Request) -> web.Response:
 
 async def _health_handler(request: web.Request) -> web.Response:
     session: SessionLike = request.app[SESSION_KEY]
-    return web.json_response({"ok": True, "events": len(session.events)})
+    # `public_read` 回報的是「讀取端現在到底開不開放」，不是單看 --public-read 旗標：
+    # 沒有設定參與者權杖時（單元測試、回放模式）本來就不設防，前端要據此決定
+    # 「直接連」還是「顯示需要權杖」，只看旗標會讓不設防的伺服器被誤判成要權杖。
+    open_read = bool(request.app[PUBLIC_READ_KEY]) or request.app[VIEW_TOKEN_KEY] is None
+    return web.json_response({"ok": True, "events": len(session.events),
+                              "public_read": open_read})
 
 
 async def _phase_handler(request: web.Request) -> web.Response:
@@ -167,6 +176,8 @@ async def _phase_handler(request: web.Request) -> web.Response:
 
 
 async def _events_handler(request: web.Request) -> web.StreamResponse:
+    if not _read_authorised(request):
+        return web.json_response({"ok": False, "error": "forbidden"}, status=403)
     session: SessionLike = request.app[SESSION_KEY]
     resp = web.StreamResponse(status=200, headers={
         "Content-Type": "text/event-stream",
@@ -228,7 +239,8 @@ async def _end_handler(request: web.Request) -> web.Response:
 
 
 def _authorised(request: web.Request) -> bool:
-    """POST 端點的守門。`token=None` ⇒ 不設防（單元測試與回放模式）。
+    """POST 端點的守門：只有操作者權杖過得了。`token=None` ⇒ 不設防
+    （單元測試與回放模式）。
 
     刻意不做「來源是本機就放行」：cloudflared 是在同一台機器上連 `localhost:<port>`，
     過 tunnel 的請求來源 IP 全部是 127.0.0.1——那條捷徑等於把整個網際網路
@@ -241,10 +253,36 @@ def _authorised(request: web.Request) -> bool:
     return secrets.compare_digest(given, token)
 
 
-def _build_app(session: SessionLike, token: str | None = None) -> web.Application:
+def _read_authorised(request: web.Request) -> bool:
+    """`GET /events` 的守門——逐字稿、主席判斷、會議總結全從這條出去，
+    鎖住這一個端點就等於鎖住所有真實內容。
+
+    `GET /` 刻意不鎖：那份 HTML 是純空殼，不含任何會議資料，鎖它只會讓
+    重新整理壞掉（前端把權杖存在 sessionStorage、並刻意從網址列抹掉，
+    重新整理時瀏覽器送出的網址上沒有權杖）。
+
+    參與者權杖與操作者權杖都放行——操作者本來就看得到全部。
+    `public_read=True`（`--public-read`，demo 用）時完全不設防。
+    """
+    if request.app[PUBLIC_READ_KEY]:
+        return True
+    view_token = request.app[VIEW_TOKEN_KEY]
+    if view_token is None:
+        return True  # 沒設參與者權杖 ⇒ 不設防（單元測試、回放模式）
+    given = request.query.get(TOKEN_QUERY, "") or request.headers.get(TOKEN_HEADER, "")
+    if secrets.compare_digest(given, view_token):
+        return True
+    operator = request.app[TOKEN_KEY]
+    return operator is not None and secrets.compare_digest(given, operator)
+
+
+def _build_app(session: SessionLike, token: str | None = None,
+                view_token: str | None = None, public_read: bool = False) -> web.Application:
     app = web.Application()
     app[SESSION_KEY] = session
     app[TOKEN_KEY] = token
+    app[VIEW_TOKEN_KEY] = view_token
+    app[PUBLIC_READ_KEY] = public_read
     app.router.add_get("/", _index_handler)
     app.router.add_get("/health", _health_handler)
     app.router.add_get("/events", _events_handler)
@@ -253,15 +291,29 @@ def _build_app(session: SessionLike, token: str | None = None) -> web.Applicatio
     return app
 
 
-async def serve(session: SessionLike, port: int, token: str | None = None) -> None:
+async def serve(session: SessionLike, port: int, token: str | None = None,
+                view_token: str | None = None, public_read: bool = False) -> None:
     """啟動觀戰 UI 伺服器；掛著跑直到被取消（`main_async` 的 `asyncio.gather` 收 Ctrl-C）。
 
-    沒給 token 就現場產一組：`POST /phase` 與 `POST /end` 一律要驗，操作者
-    用啟動時印出的那個網址（`?k=…`）開畫面，其他人開沒有參數的網址是唯讀。
-    服務綁 0.0.0.0 且可能掛在公開網域後面，不設防等於誰都能結束會議。
+    兩級權杖，沒給就現場各產一組：
+
+    - **操作者**（`token`／`AHEM_SPECTATOR_TOKEN`）：讀 ＋ 切階段 ＋ 結束會議
+    - **參與者**（`view_token`／`AHEM_VIEW_TOKEN`）：只能讀
+
+    預設**私密**：`GET /events` 要帶其中一組（query string `?k=`，因為 SSE 的
+    `EventSource` 不能設自訂 header）。逐字稿、主席判斷、會議總結全從那條出去，
+    所以鎖住它就等於鎖住所有真實內容；`GET /` 那份空殼 HTML 不鎖（見
+    `_read_authorised`）。
+
+    參與者權杖的投放方式刻意留給呼叫端決定——把網址貼進該場會議的 Discord
+    文字聊天，存取範圍就自然等於「進得了這個頻道的人」，不必自己蓋帳號系統。
+
+    `public_read=True`（`--public-read`）時讀取端完全不設防，給 demo 現場用：
+    評審不在 Discord 頻道裡，拿不到參與者權杖。寫入端不受這個旗標影響。
     """
     token = token or os.environ.get("AHEM_SPECTATOR_TOKEN") or secrets.token_urlsafe(12)
-    app = _build_app(session, token)
+    view_token = view_token or os.environ.get("AHEM_VIEW_TOKEN") or secrets.token_urlsafe(12)
+    app = _build_app(session, token, view_token, public_read)
     # shutdown_timeout：`live.shutdown()` cancel 掉這個 task 時會跑 `runner.cleanup()`，
     # 它會等所有還開著的連線收尾。SSE 連線本質上「永遠沒收完」，用預設的 60 秒
     # 會讓整個收尾卡住（實測：一個觀戰分頁連著時，cancel → task 收尾要 121 秒，
@@ -271,8 +323,11 @@ async def serve(session: SessionLike, port: int, token: str | None = None) -> No
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    print(f"觀戰 UI（唯讀）：http://localhost:{port}")
-    print(f"觀戰 UI（可操作）：http://localhost:{port}/?k={token}")
+    if public_read:
+        print(f"觀戰 UI（公開唯讀，--public-read）：http://localhost:{port}")
+    else:
+        print(f"觀戰 UI（參與者，可讀）：http://localhost:{port}/?k={view_token}")
+    print(f"觀戰 UI（操作者，可讀＋可控）：http://localhost:{port}/?k={token}")
     try:
         await asyncio.Event().wait()
     finally:
@@ -331,9 +386,11 @@ def _load_events(path: Path) -> list[Event]:
     return events
 
 
-async def _replay_main(path: Path, port: int, speed: float) -> None:
+async def _replay_main(path: Path, port: int, speed: float,
+                        public_read: bool = False) -> None:
     session = ReplaySession(_load_events(path))
-    await asyncio.gather(serve(session, port), session.replay(speed))
+    await asyncio.gather(serve(session, port, public_read=public_read),
+                          session.replay(speed))
 
 
 def main() -> None:
@@ -341,8 +398,10 @@ def main() -> None:
     ap.add_argument("--replay", required=True, help="events.jsonl 檔案路徑")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--speed", type=float, default=1.0, help="回放倍速")
+    ap.add_argument("--public-read", action="store_true",
+                     help="讀取端不設防（demo 彩排用，同 live 的同名旗標）")
     args = ap.parse_args()
-    asyncio.run(_replay_main(Path(args.replay), args.port, args.speed))
+    asyncio.run(_replay_main(Path(args.replay), args.port, args.speed, args.public_read))
 
 
 if __name__ == "__main__":

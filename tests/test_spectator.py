@@ -77,7 +77,8 @@ def test_health_and_index_and_sse_snapshot_then_live_event():
             resp = await client.get("/health")
             assert resp.status == 200
             body_json = await resp.json()
-            assert body_json == {"ok": True, "events": 1}
+            # public_read=True：這個 app 沒設參與者權杖，讀取端本來就不設防
+            assert body_json == {"ok": True, "events": 1, "public_read": True}
 
             # (b) /
             resp = await client.get("/")

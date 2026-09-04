@@ -170,3 +170,110 @@ def test_operator_url_keeps_token_but_strips_it_from_the_address_bar():
     assert out["endHidden"] is False
     assert "k=" not in out["url"], out["url"]
     assert out["stored"] == TOKEN
+
+
+# ── 讀取端分級：預設私密，--public-read 才開放 ────────────────────────────
+#
+# 設計來自使用者提案：權杖發在該場會議的 Discord 文字聊天裡，存取範圍就自然
+# 等於「進得了那個語音頻道的人」，不必自己蓋帳號系統。demo 現場評審不在頻道
+# 裡，所以另給一個明確旗標開放公開讀取。
+#
+# 鎖 `/events` 就等於鎖住所有真實內容（逐字稿、主席判斷、會議總結全從那條
+# 出去）；`/` 那份空殼 HTML 不鎖——鎖了重新整理就會壞，因為前端刻意把權杖從
+# 網址列抹掉（畫面會投影），重新整理時瀏覽器送出的網址上沒有權杖。
+
+VIEW_TOKEN = "view-only-token"
+
+
+def _tiered(public_read=False):
+    return TestClient(TestServer(
+        spectator._build_app(FakeSession(), TOKEN, VIEW_TOKEN, public_read)))
+
+
+def test_events_needs_a_token_by_default():
+    async def body():
+        client = _tiered()
+        await client.start_server()
+        try:
+            assert (await client.get("/events")).status == 403
+            assert (await client.get("/events?k=wrong")).status == 403
+        finally:
+            await client.close()
+    asyncio.run(body())
+
+
+def test_both_tokens_can_read_events():
+    """參與者與操作者都讀得到——操作者本來就看得到全部。"""
+    async def body():
+        for tok in (VIEW_TOKEN, TOKEN):
+            client = _tiered()
+            await client.start_server()
+            try:
+                assert (await client.get(f"/events?k={tok}")).status == 200
+            finally:
+                await client.close()
+    asyncio.run(body())
+
+
+def test_view_token_cannot_control_the_meeting():
+    """關鍵分權：能讀 ≠ 能結束會議。"""
+    async def body():
+        client = _tiered()
+        session = client.server.app[spectator.SESSION_KEY]
+        await client.start_server()
+        try:
+            resp = await client.post("/end", headers={spectator.TOKEN_HEADER: VIEW_TOKEN})
+            assert resp.status == 403
+            assert session.end_calls == 0
+            resp = await client.post("/end", headers={spectator.TOKEN_HEADER: TOKEN})
+            assert resp.status == 200
+            assert session.end_calls == 1
+        finally:
+            await client.close()
+    asyncio.run(body())
+
+
+def test_index_shell_stays_public_so_refresh_works():
+    """`/` 不鎖：前端把權杖存 sessionStorage 並從網址列抹掉，重新整理時
+    送出的網址沒有權杖，鎖了就會壞。空殼本身不含任何會議資料。"""
+    async def body():
+        client = _tiered()
+        await client.start_server()
+        try:
+            assert (await client.get("/")).status == 200
+        finally:
+            await client.close()
+    asyncio.run(body())
+
+
+def test_public_read_opens_reads_but_not_writes():
+    async def body():
+        client = _tiered(public_read=True)
+        session = client.server.app[spectator.SESSION_KEY]
+        await client.start_server()
+        try:
+            assert (await client.get("/events")).status == 200
+            assert (await client.post("/end")).status == 403
+            assert session.end_calls == 0
+        finally:
+            await client.close()
+    asyncio.run(body())
+
+
+def test_health_reports_whether_reads_are_open():
+    """前端靠這個決定「沒權杖時該連還是該顯示需要權杖」。回報的是實際狀態，
+    不是單看旗標——沒設參與者權杖時（測試、回放）本來就不設防。"""
+    async def body():
+        for public_read, view_token, expected in [
+            (False, VIEW_TOKEN, False),
+            (True, VIEW_TOKEN, True),
+            (False, None, True),
+        ]:
+            client = TestClient(TestServer(
+                spectator._build_app(FakeSession(), TOKEN, view_token, public_read)))
+            await client.start_server()
+            try:
+                assert (await (await client.get("/health")).json())["public_read"] is expected
+            finally:
+                await client.close()
+    asyncio.run(body())

@@ -1114,7 +1114,8 @@ async def main_async(args) -> None:
         serve = _try_import_spectator_serve()
         if serve is not None:
             tasks.append(asyncio.create_task(
-                serve(session, args.spectator_port, args.spectator_token or None)))
+                serve(session, args.spectator_port, args.spectator_token or None,
+                      args.view_token or None, args.public_read)))
 
     _applied = _style.apply(args.style)
     print(f"議題：{args.topic}（預計 {args.duration} 分鐘，階段：{args.phase}）")
@@ -1347,8 +1348,15 @@ def main() -> None:
     ap.add_argument("--say-hello", action="store_true", help="進頻道後主席先開口問候")
     ap.add_argument("--spectator-port", type=int, default=0, help="觀戰 UI 監聽埠（0＝不開）")
     ap.add_argument("--spectator-token", default="",
-                    help="操作權杖（POST /phase、/end 要帶）。留空＝讀環境變數 "
+                    help="操作者權杖（讀＋切階段＋結束會議）。留空＝讀環境變數 "
                          "AHEM_SPECTATOR_TOKEN，再沒有就每次啟動隨機產生一組並印出來")
+    ap.add_argument("--view-token", default="",
+                    help="參與者權杖（只能讀）。留空＝讀環境變數 AHEM_VIEW_TOKEN，"
+                         "再沒有就每次啟動隨機產生一組並印出來。把那個網址貼進該場"
+                         "會議的 Discord 文字聊天，存取範圍就等於進得了那個頻道的人")
+    ap.add_argument("--public-read", action="store_true",
+                    help="讀取端完全不設防（demo 現場用：評審不在 Discord 頻道裡，"
+                         "拿不到參與者權杖）。寫入端不受影響，仍要操作者權杖")
     try:
         asyncio.run(main_async(ap.parse_args()))
     except KeyboardInterrupt:

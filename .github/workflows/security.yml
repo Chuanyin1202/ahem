@@ -40,7 +40,16 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - name: Run the unified security gate
         run: AHEM_PYTHON=python scripts/security-check.sh
+      - name: Publish PR verification summary
+        if: success()
+        run: cat .security-run/pr-evidence.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v5
+        if: always()
         with:
-          name: ahem-sbom
-          path: sbom.cdx.json
+          name: ahem-verification-evidence
+          path: |
+            .security-run/pr-evidence.md
+            .security-run/pytest.txt
+            .security-run/summary.json
+            sbom.cdx.json
+          if-no-files-found: warn

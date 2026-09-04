@@ -38,5 +38,8 @@ fi
 report="$run_dir/summary.json"
 "$python_bin" -c 'import json,sys; json.dump({"pytest":{"passed":int(sys.argv[1]),"skipped":int(sys.argv[2] or 0),"xfailed":int(sys.argv[3] or 0)},"secret_scan":"0 個高可信秘密命中","pip_check":"No broken requirements found","pip_audit":"No known vulnerabilities found","bandit":"0 個 High severity finding"},open(sys.argv[4],"w"),ensure_ascii=False,indent=2)' "$passed" "$skipped" "$xfailed" "$report"
 
+"$python_bin" scripts/render_pr_evidence.py \
+  --report "$report" --output "$run_dir/pr-evidence.md"
+
 "$python_bin" scripts/update_project_status.py --report "$report"
 echo "已更新 PROJECT_STATUS.md（僅含非敏感摘要）。"

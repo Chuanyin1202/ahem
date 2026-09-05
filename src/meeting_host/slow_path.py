@@ -39,6 +39,7 @@ import os
 import urllib.request
 from pathlib import Path
 
+from .phrasing import strip_invisible, unexpected_chars
 from .state import MeetingState
 
 MODEL = "gpt-5.6-luna"
@@ -363,20 +364,13 @@ def build_utterance_prompt(st: MeetingState, now: float, r: dict,
         max_chars=MAX_UTTERANCE_CHARS)
 
 
-def phrase(st: MeetingState, now: float, r: dict, phase: str | None = None) -> str:
-    """第二次呼叫：把已定案的判斷寫成主席要說的那句話。回傳模型寫的原文。
-
-    這裡**不做任何長度裁決**——超過 `UTTERANCE_HARD_CAP` 的處置屬於閘門
-    （`live.slow_recheck_admissible`），理由見該常數的說明。回傳空字串只代表
-    「模型什麼都沒寫」。呼叫端據此放棄這次介入，**不退回罐頭句**：罐頭句正是
-    這次拆呼叫要修掉的東西，退回去等於白做。網路／解析層的例外直接往上拋，
-    由呼叫端決定怎麼記錄，這裡不吞。
-    """
+def _phrase_once(prompt: str) -> str:
+    """打一次話術呼叫，回模型寫的原文（只 strip 空白）。字元衛生交給 `phrase()`。"""
     body = {
         "model": MODEL,
         "reasoning_effort": UTTERANCE_EFFORT,
         "messages": [{"role": "system", "content": UTTERANCE_SYSTEM},
-                     {"role": "user", "content": build_utterance_prompt(st, now, r, phase)}],
+                     {"role": "user", "content": prompt}],
         "response_format": {"type": "json_object"},
     }
     req = urllib.request.Request(
@@ -387,3 +381,25 @@ def phrase(st: MeetingState, now: float, r: dict, phase: str | None = None) -> s
         payload = json.loads(resp.read())
     text = json.loads(payload["choices"][0]["message"]["content"]).get("utterance") or ""
     return text.strip() if isinstance(text, str) else ""
+
+
+def phrase(st: MeetingState, now: float, r: dict, phase: str | None = None) -> str:
+    """第二次呼叫：把已定案的判斷寫成主席要說的那句話。回傳模型寫的原文。
+
+    這裡**不做任何長度裁決**——超過 `UTTERANCE_HARD_CAP` 的處置屬於閘門
+    （`live.slow_recheck_admissible`），理由見該常數的說明。回傳空字串只代表
+    「模型什麼都沒寫」。呼叫端據此放棄這次介入，**不退回罐頭句**：罐頭句正是
+    這次拆呼叫要修掉的東西，退回去等於白做。網路／解析層的例外直接往上拋，
+    由呼叫端決定怎麼記錄，這裡不吞。
+    """
+    prompt = build_utterance_prompt(st, now, r, phase)
+    for attempt in (1, 2):
+        text = strip_invisible(_phrase_once(prompt))
+        bad = unexpected_chars(text)
+        if not bad:
+            return text
+        # 修不回來的那一層：把外文字母從 `Bილის` 拿掉只剩 `Bis`，比不講更糟。
+        # 重生一次（luna 很便宜，往返約 1.6 秒），第二次還壞就放棄這次介入。
+        print(f"    ⚠️ 話術含異常字元 {bad}（第 {attempt} 次）："
+              f"「{text}」" + ("，重生一次" if attempt == 1 else "，放棄這次介入"))
+    return ""

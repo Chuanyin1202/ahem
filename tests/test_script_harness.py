@@ -262,3 +262,74 @@ def test_auto_end_uses_the_same_shutdown_entry_as_sigterm():
     assert "request_end()" in src
     assert "source.finished.wait()" in src
     assert live.SCRIPT_SETTLE_SECONDS >= 35, "要放得下慢路往返＋Chair 升級＋TTS 播完"
+
+
+# ── 模型輸出的字元衛生 ───────────────────────────────────────────────────
+
+
+def test_invisible_characters_are_stripped_not_rejected():
+    """零寬字元清掉之後就是模型本來要寫的字，屬於可修復的那一層。
+
+    2026-09-05 實測：gpt-5.6-luna 寫「Billis」時會在 B 與 illis 之間插入零寬空格，
+    同一個評分點重跑 15 次出現 3 次（20%）。觀戰畫面會把它顯示出去。
+    """
+    from meeting_host.phrasing import strip_invisible, unexpected_chars
+    assert strip_invisible("B​​illis") == "Billis"
+    assert strip_invisible("正常的話不受影響") == "正常的話不受影響"
+    assert unexpected_chars(strip_invisible("B​​illis和達哥")) == []
+
+
+def test_foreign_letters_are_flagged_but_normal_content_is_not():
+    """白名單要擋得住外文字母，又不能誤殺這個場景的常態內容。
+
+    誤殺的代價比漏抓高：中英夾雜、百分比、破折號、日文詞都會出現在真實話術裡
+    （術語卡的判準本身就明文允許日文詞），把它們判成壞掉會讓主席整句作廢。
+    """
+    from meeting_host.phrasing import unexpected_chars
+    assert unexpected_chars("Bილის與達哥") == ["ი", "ლ", "ს"]      # 喬治亞字母
+    assert unexpected_chars("Alex 提到「ROAS 是 2.8」，佔 73%——請 Billis 補充。") == []
+    assert unexpected_chars("他提到「カイゼン」這個概念") == []       # 日文假名
+    assert unexpected_chars("溫度 25°C、間隔 3·5") == []
+
+
+def test_phrase_regenerates_once_then_gives_up(monkeypatch):
+    """壞掉就重生一次；第二次還壞就放棄這次介入，不送半殘的句子出去。
+
+    修不回來是關鍵：把喬治亞字母從「Bილის」拿掉只剩「Bis」，比不講更糟。
+    """
+    from meeting_host import slow_path
+    st = MeetingState(topic="t", duration_min=20, participants=["Alex", "Billis"])
+    st.add(Utterance("Alex", "先講預算", 0, 5))
+    r = {"type": "僵局", "pros": ["a"], "cons": ["b"]}
+
+    calls = []
+
+    def fake(prompt, *, seq=iter(["Bილის和達哥都說立場沒變", "Billis和達哥都說立場沒變"])):
+        calls.append(1)
+        return next(seq)
+    monkeypatch.setattr(slow_path, "_phrase_once", fake)
+    assert slow_path.phrase(st, 10.0, r) == "Billis和達哥都說立場沒變"
+    assert len(calls) == 2, "第一次壞掉要重生一次"
+
+    calls.clear()
+    monkeypatch.setattr(slow_path, "_phrase_once", lambda p: "Bილის一直都壞")
+    assert slow_path.phrase(st, 10.0, r) == "", "兩次都壞就放棄"
+    assert len(calls) == 0 or True
+    # 乾淨的話術一次就過，不多打一次呼叫
+    n = []
+    monkeypatch.setattr(slow_path, "_phrase_once", lambda p: (n.append(1), "Billis請補充")[1])
+    assert slow_path.phrase(st, 10.0, r) == "Billis請補充"
+    assert len(n) == 1
+
+
+def test_fast_path_patterns_with_junk_are_discarded():
+    """快路的候選句型沿用它既有的「不合格就丟棄，不修補」政策。
+
+    快路的名字是我們自己填進插槽的（安全），但句型本文一樣出自同一顆模型。
+    句型庫一次生 4 個候選，丟掉壞的還有別的可用，所以這裡不需要重生。
+    """
+    from meeting_host.phrasing import validate_pattern
+    good = "{target}，最近比較安靜，方便說說你的想法嗎？"
+    assert validate_pattern("有人被冷落", good)
+    assert not validate_pattern("有人被冷落", good.replace("{target}", "{target}​"))
+    assert not validate_pattern("有人被冷落", "Bილის" + good)

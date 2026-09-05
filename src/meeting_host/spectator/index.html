@@ -347,6 +347,10 @@
   .obs-empty { color: var(--muted); }
   .obs-row .ot { color: var(--dim); }
   .obs-row .ok { font-weight: 700; color: var(--text); }
+  /* T-G：心聲類（class 名稱維持 ok-critique 內部識別不改，顯示文字是「心聲」）
+     是真的呼叫 LLM，跟其餘三類規則算出來的不同——用主席的強調色區分，見
+     renderObservations()。 */
+  .obs-row .ok.ok-critique { color: var(--accent); }
   .obs-row .ox { color: var(--body-soft); overflow-wrap: anywhere; }
   .obs-cursor { color: var(--body-soft); animation: ahem-pulse 1s step-end infinite; }
   .obs-note { font-size: 10px; color: var(--muted); }
@@ -493,8 +497,12 @@
 
     <div class="rule"></div>
 
-    <!-- AI 即時觀察（Track D，D2）：規則從既有數據推導的一句話，不呼叫 LLM，
-         見 renderObservations() 系列函式；原本 Track C 常駐在這裡的
+    <!-- AI 即時觀察（Track D，D2；「心聲」類為 T-G 新增）：觀察／判斷／留意
+         三類是規則從既有數據推導的一句話，不呼叫 LLM；「心聲」類是 T-G 新增，
+         真的呼叫 LLM 產生主席的判斷力（見 live.Session.watch_critique；內部
+         event kind／class 名稱仍叫 critique，顯示文字是「心聲」，2026-09-05
+         中途拍板）——四類混在同一份清單裡，靠標籤顏色（--accent）誠實區分
+         來源，見 renderObservations() 系列函式。原本 Track C 常駐在這裡的
          KPI/時間軸/主席的思考/發言分佈四塊，已搬進下面的「群體動力」
          滑入抽屜（Track D，D3；把手見本檔案 <body> 結尾附近），這裡不再
          常駐顯示，改由那顆抽屜按鈕開關。 -->
@@ -507,7 +515,7 @@
       <div class="obs-list" id="obs-list">
         <div class="obs-empty">尚無觀察</div>
       </div>
-      <div class="obs-note">依既有規則從即時數據推導，非語意理解</div>
+      <div class="obs-note">觀察/判斷/留意依既有規則從即時數據推導；心聲由 AI 主席即時判斷（LLM）</div>
     </div>
 
     <div class="spacer"></div>
@@ -1423,9 +1431,13 @@
   }
 
   // ── AI 即時觀察（Track D，D2）──────────────────────────────────────────
-  // 三類全部是規則從既有已經算好的原子事實換算成一句話，不呼叫 LLM、不做語意
-  // 理解（見檔案開頭工作單背景的說明）。每類各自跟「上一次推播的文字」比對，
-  // 內容沒變就不重推，避免同一句話洗版。
+  // 以下三類（observe/judge/notice）全部是規則從既有已經算好的原子事實換算成
+  // 一句話，不呼叫 LLM、不做語意理解（見檔案開頭工作單背景的說明）。每類各自
+  // 跟「上一次推播的文字」比對，內容沒變就不重推，避免同一句話洗版。
+  // 第四類「心聲」（T-G 新增；event kind 仍叫 critique，顯示文字是「心聲」）
+  // 不在這裡——它真的呼叫 LLM，來源是後端 live.Session.watch_critique 送來的
+  // "ai_critique" 事件，直接在 handleEvent() 的對應 case 裡 pushObservation，
+  // 不經過這幾個 compute 函式。
   var SHARE_DOMINANCE_THRESHOLD = 0.65;  // 65%：夠高值得提醒，又不會在正常討論中亂觸發（可調）
   var DEADLOCK_COOLDOWN_S = 60;          // 僵局介入之後 60 秒沒有再介入，視為「已解除」（可調）
   var NOTICE_TIME_LEFT_RATIO = 0.3;      // 剩餘時間低於這個比例才提醒風險（可調）
@@ -1490,6 +1502,17 @@
 
   var OBS_LABEL = { observe: "觀察", judge: "判斷", notice: "留意" };
 
+  // 心聲類（內部 kind 前綴仍叫 "critique"，顯示文字是「心聲」——2026-09-05
+  // 中途拍板：這類判斷不一定是負評，「批判」預設負面，「心聲」更準）的 kind
+  // 是動態的（"critique_meeting"／"critique_person:<name>"），塞不進上面那個
+  // 固定物件——OBS_LABEL 三類維持原樣不動，這裡加一層查表。
+  function obsLabelFor(kind) {
+    if (OBS_LABEL[kind]) return OBS_LABEL[kind];
+    if (kind === "critique_meeting") return "心聲";
+    if (kind.indexOf("critique_person:") === 0) return "心聲 · " + kind.slice(16);
+    return kind;
+  }
+
   function renderObservations() {
     var box = el("obs-list");
     if (!box) return;
@@ -1503,8 +1526,11 @@
     // state.observations 是新→舊；畫面照設計稿由舊到新往下排，最新一則帶打字游標。
     var rows = state.observations.slice(0, 8).slice().reverse();
     box.innerHTML = rows.map(function (o, i) {
+      // 「心聲」是真的呼叫 LLM 判斷出來的，跟其餘三類規則算出來的不一樣——
+      // 標籤顏色改用 --accent（主席唯一的強調色）誠實區分，不新增裸 hex。
+      var isCritique = o.kind === "critique_meeting" || o.kind.indexOf("critique_person:") === 0;
       return '<div class="obs-row"><span class="ot mono">' + esc(fmtEventTime(o.t)) + '</span>' +
-        '&nbsp; <span class="ok">' + esc(OBS_LABEL[o.kind]) + '：</span>' +
+        '&nbsp; <span class="ok' + (isCritique ? ' ok-critique' : '') + '">' + esc(obsLabelFor(o.kind)) + '：</span>' +
         '<span class="ox">' + esc(o.text) + '</span>' +
         (i === rows.length - 1 ? '<span class="obs-cursor mono">▍</span>' : '') +
         '</div>';
@@ -1808,6 +1834,24 @@
           renderMinutesLive();
         }
         break;
+      case "ai_critique":
+        // T-G：AI 主席的「心聲」——真的呼叫 LLM 產生的判斷，跟其餘三類（觀察/
+        // 判斷/留意）是規則算出來的不同（見 live.Session.watch_critique）。
+        // event kind／data 欄位名稱維持 "critique" 命名不改，只有面板顯示文字
+        // 是「心聲」（2026-09-05 中途拍板：這類判斷不一定是負評，「批判」預設
+        // 負面，「心聲」更準）。data 形狀是 {meeting: str, participants: {名字:
+        // 評語}}——participants 是物件不是陣列，省略某人＝不評論他，不會給 null。
+        // 進同一個 state.observations 陣列、同一個 renderObservations()，靠
+        // kind 前綴 "critique_meeting"／"critique_person:<name>" 讓 obsLabelFor()
+        // 認出來，視覺上用 --accent 標示區分（見 renderObservations() 與
+        // .ok-critique）。不在這裡呼叫 renderObservations()——switch 結束後
+        // 已經統一呼叫一次（見下方註解），跟其他 case 的既有慣例一致。
+        if (data.meeting) pushObservation("critique_meeting", data.meeting);
+        Object.keys(data.participants || {}).forEach(function (name) {
+          var note = data.participants[name];
+          if (note) pushObservation("critique_person:" + name, name + "——" + note);
+        });
+        break;
     }
     // AI 即時觀察：全部規則都是從上面已經更新完的 state 算出來的原子事實，
     // 所以放在 switch 之後統一算一次，不用每個 case 各自呼叫一遍。
@@ -1861,7 +1905,7 @@
   // ── SSE ──
   var KINDS = ["meeting", "utterance", "speaking", "fast_timer", "slow_score",
     "queued", "spoken", "failed", "dropped", "share", "minutes", "glossary", "hearing",
-    "phase", "phase_suggestion", "partial"];
+    "phase", "phase_suggestion", "partial", "ai_critique"];
 
   // SSE 不能設自訂 header，權杖只能放在 query string（見 spectator.py TOKEN_QUERY）。
   // 沒有權杖時先問 /health（公開）：伺服器若不是 --public-read，直接顯示「需要權杖」，

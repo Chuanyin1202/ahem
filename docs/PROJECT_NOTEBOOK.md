@@ -10,6 +10,7 @@
 - 2026-09-05 — Track D 以 `git rebase main` 併回主線，4 處衝突人工合併＋覆核，順手修掉 DEFERRED_DEFECTS 第 5 項。細節見下。
 - 2026-09-05 — Track E（水彩背景改滿版半透明、會議摘要改白卡片，逐值比對提案圖修正）完工，已合併於 `0cb37c8`。
 - 2026-09-05 — Track F（補 Kaner 菱形「會議節奏」視覺化，用真實資料算座標＋核對抽屜排版/圖示）完工。細節見下。
+- 2026-09-05 — Track G（AI 即時觀察加第四類「心聲」，真的接 LLM＋保險栓 `--no-critique`）完工，本 worktree 內已 commit，尚未合併主線。細節見下。
 
 ---
 
@@ -402,3 +403,143 @@
     正式 demo 機器要照 README 自己建一份。
   - 本批累計缺陷修復 0 筆（純新增功能，沒有動到既有四塊的資料/渲染邏輯），
     疲勞計數不適用。
+
+## 2026-09-05 Track G：AI 即時觀察加第四類「心聲」，真的接 LLM＋保險栓
+
+- **時間**：2026-09-05（Demo Day 前一天）
+- **誰做的**：builder agent（worktree 隔離，`agent-a311027fff77f21ef`，分岔自
+  main 當時最新的 `5efe758`——開工前已用 `git log -1 main` 對過，不是舊快照，
+  這批沒有踩到前幾批連續撞過的 worktree 分岔地雷），Claude Sonnet 5 前台驗收。
+- **開工前棕地探勘**：完整讀過 `minutes.py`（`MINUTES_SYSTEM`／
+  `build_minutes_prompt()`／`_call_minutes_llm()`／`slow_path` 的 API 設定
+  匯入）、`live.py` 的 `watch_minutes()`／`main_async` 組 `tasks` 的地方／
+  `--no-llm` 旗標寫法、`index.html` 的 `computeObservation`/`computeJudgment`/
+  `computeNotice`/`pushObservation`/`OBS_LABEL`/`renderObservations()`。額外
+  發現工作單沒提到的一處接線：`index.html` 的 `KINDS`（SSE 白名單陣列，第
+  1862 行附近）沒有 `ai_critique`，若不加，正式連線（非 replay）永遠收不到
+  這個事件——`snapshot` 重播路徑不受影響（它是全量重播，不經過 `KINDS`
+  過濾），只有即時串流會被擋，這種「replay 測得過、demo 現場測不出來」的
+  落差正是最危險的那種，已補上。
+- **中途插播（重要）**：施工到一半，Zeal 插播「fable 專門設計了完整版
+  system prompt／JSON 格式」，取代工作單原本 G1 段落我自己寫的草稿版本。
+  已改用插播版本：JSON schema 從 `{"meeting_note": str, "participants":
+  [{"name","note"}]}` 改成 `{"meeting": str, "participants": {名字: 評語}}`
+  （`participants` 是物件不是陣列），面板顯示文字從「批判」改成「心聲」——
+  **但內部識別名稱（模組名 `critique.py`、event kind `"ai_critique"`、
+  `--no-critique` 旗標、方法名 `watch_critique`、CSS class `ok-critique`）
+  全部維持不改**，只有 UI 顯示字串與 JSON schema 是這次的更新範圍，插播訊息
+  原文「其餘工作單內容（G2 背景迴圈、保險栓、G3 前端接線骨架）不變」。
+- **做了什麼**：
+  1. **新檔案 `src/meeting_host/critique.py`**：仿 `minutes.py` 結構——
+     `CRITIQUE_SYSTEM`（逐字照抄插播的 fable 版本，不是自己轉述）、
+     `build_critique_prompt(events, participants)`（「## 與會者」名單＋
+     `minutes.build_minutes_prompt()` 同款逐字稿抽取）、`_call_critique_llm()`
+     （跟 `_call_minutes_llm()` 完全同款 urllib＋`timeout=90`＋
+     `response_format: json_object`，`from .slow_path import API_URL, EFFORT,
+     MODEL, _api_key` 沿用同一組既有設定，沒有另開新的）。
+  2. **`live.py`**：新增常數 `CRITIQUE_INTERVAL_S=45.0`／
+     `CRITIQUE_MIN_UTTERANCES=4`（比 `MINUTES_PREVIEW_*` 快一點、門檻低一點，
+     理由見工作單）；新增 `Session.watch_critique()`，完全仿 `watch_minutes()`
+     骨架（`while True: sleep → 門檻檢查 → asyncio.to_thread 呼叫 LLM →
+     `self.ending` 二次檢查 → `self.emit("ai_critique", …)`，整段包
+     `try/except`，`CancelledError` 原樣往外拋）；新增 `--no-critique`
+     旗標（`action="store_true"`，跟 `--no-llm` 同款寫法）；`main_async`
+     組 `tasks` 的地方在既有 `if not args.no_llm:` 區塊裡、`watch_minutes()`
+     之後，加一層 `if not args.no_critique: tasks.append(...watch_critique())`
+     ——兩個旗標任一開啟都排不進去。
+  3. **`index.html`**：`KINDS` 白名單補 `"ai_critique"`（工作單沒提到，見上）；
+     `handleEvent()` 加 `case "ai_critique":`，讀 `data.meeting`／
+     `data.participants`（物件，用 `Object.keys` 走訪）；新增 `obsLabelFor()`
+     查表函式（`OBS_LABEL` 三類固定物件不動，動態的 `critique_meeting`／
+     `critique_person:<name>` 另外查），`renderObservations()` 改呼叫
+     `obsLabelFor()` 取代原本直讀 `OBS_LABEL[o.kind]`；新增 CSS
+     `.obs-row .ok.ok-critique { color: var(--accent) }`，渲染時判斷
+     `isCritique` 動態加這個 class，肉眼可辨（其餘三類是 `--text`）；順手
+     更新了三處會讓人誤讀的既有註解／文案（`.obs-note` 腳注、AI 即時觀察區塊
+     的 HTML 註解、`computeObservation()` 前的區塊註解）——原文說「三類全部
+     不呼叫 LLM」，加了第四類之後這句話變成謊言，不改的話是留一個説明文件
+     層級的謊在裡面。
+  4. **一個小澄清（工作單 vs 既有程式碼慣例有出入，取後者）**：工作單 G3
+     第 1 條給的範例程式碼在 `case "ai_critique":` 裡呼叫了一次
+     `renderObservations()`，但讀完整份 `handleEvent()` 才發現：**這個函式
+     本來就在 switch 結束後統一呼叫一次**（第 1845 行附近的既有註解「AI 即時
+     觀察：全部規則都是從上面已經更新完的 state 算出來的原子事實，所以放在
+     switch 之後統一算一次，不用每個 case 各自呼叫一遍」），其餘 13 個既有
+     case 沒有任何一個在自己內部重複呼叫它。判斷維持既有慣例（case 裡不呼叫，
+     讓後面統一那次負責），不照抄工作單／插播訊息裡那行多餘呼叫——多呼叫一次
+     不會壞，但會製造「這裡好像有特殊理由要多算一次」的錯誤印象。
+- **實測證據**：
+  - `.venv/bin/python -m pytest tests/ -q` → **574 passed, 21 skipped, 2
+    xfailed**（基準 564 passed / 21 skipped / 2 xfailed ＋本批新增 10 筆全過，
+    數字對得上，其餘既有測試零失敗）。這台環境原本沒有 `.venv`，本批自己建
+    （`requirements.txt` + `playwright install chromium`，命中既有共用快取）。
+  - 新測試檔 `tests/test_critique_preview.py`（10 個測試）：
+    `build_critique_prompt()` 純函式輸出格式；逐字稿夠長時真的呼叫 LLM 並
+    emit `ai_critique`；逐字稿太短不呼叫；`CancelledError` 不被吞；
+    `session.ending=True` 時飛行中的呼叫不補發（比照 `watch_minutes` 的同款
+    回歸測試）；**保險栓本身**（`--no-critique`／`--no-llm`／兩者皆開，三種
+    組合各自驗證 `watch_critique` 不在 `main_async` 真正組出來的 `tasks`
+    清單裡）＋一個對照組（兩旗標都不開時 `watch_critique` 確實在清單裡，
+    順手核對 `watch_slow`/`watch_glossary`/`watch_minutes` 也還在，證明沒有
+    動到既有 `--no-llm` 任務清單）。
+  - **保險栓測試不是憑讀程式碼保證，是真的驅動了 `live.main_async()`**：
+    只換掉 `MeetingBot`（唯一真的會連網路的建構子）跟 `live.shutdown`（攔截
+    真正組出來的 `tasks`，避免真的跑收尾邏輯），`STTPool`／`build_voice`／
+    `Earcon`／`build_hello_gate` 都是真正的 production 物件（開工前逐一確認
+    建構時不連網路：`STTPool.__init__` 純同步賦值、`Voice.__init__` 只存
+    欄位不發請求、`Earcon.__init__` 讀本地 `assets/earcon.wav`、
+    `build_hello_gate(False)` 直接回 `None`）。用
+    `asyncio.wait_for(live.main_async(args), timeout=0.3)` 模擬「demo 現場按
+    Ctrl-C」的取消路徑，跟正式收尾走同一條 `except (KeyboardInterrupt,
+    asyncio.CancelledError): pass; finally: await shutdown(...)`。
+  - **變異測試（mutation testing）證明這條測試真的有牙齒**：故意把
+    `if not args.no_critique:` 暫時改成 `if True:`，重跑
+    `test_insurance_switch_keeps_watch_critique_out_of_task_list`——
+    `no-critique-only` 那個參數化案例如預期**變紅**（`no-llm-only`／`both`
+    兩案例因為外層還有 `if not args.no_llm:` 兜著，仍然綠——這正是預期行為，
+    證明測試矩陣分得出「哪一層旗標在擋」），改回原樣後重跑全部變綠。
+  - **真瀏覽器驗證**（`--replay examples/synthetic-meeting.events.jsonl
+    --port 8891 --speed 1000000 --public-read` + Playwright）：用
+    `window.__spectator.handleEvent({kind:"ai_critique", ...})` 灌兩筆事件
+    （會議整體一句＋ Alex 一句），DOM 讀出「心聲：」「心聲 · Alex：」都正確
+    出現；`getComputedStyle` 讀出 `.ok-critique` 是 `rgb(166, 93, 63)`
+    （`--accent` #A65D3F），其餘 `.ok` 是 `rgb(43, 38, 34)`（`--text`），
+    兩者不同色、肉眼可辨；同一句話沒變時重推 → 清單筆數不變（4→4，dedup
+    生效，不會無限疊同一句話）；文字真的變了 → 新一筆真的出現在畫面上
+    （這個面板本質是跟著時間走的觀察流，跟既有觀察/判斷/留意三類同一種設計，
+    不是「每人一張永遠覆蓋的現況卡」——新舊句都留在捲動歷史裡是設計本身，
+    不是 bug）；全程 `page.on("pageerror")` 零筆例外。截圖存在
+    `scratchpad/track_g_after_first.png`／`track_g_after_second.png`
+    （對話暫存檔，未入庫）。
+  - `node --check`（抽出 `<script>`…`</script>`）→ rc=0；Python
+    `HTMLParser` 標籤平衡檢查 → errors: 0, unclosed: []；
+    `grep "#[0-9A-Fa-f]{3,6}"` 對新增的 critique/心聲相關行 → 0 筆裸 hex。
+- **卡住或未完的**：無阻塞。以下是已知但刻意留給下一棒的落差，已記進
+  `docs/DEFERRED_DEFECTS.md` 第 7 項：`CRITIQUE_SYSTEM`（插播版本）開場說
+  「你會拿到…主席介入紀錄與發言統計」，但 `build_critique_prompt()` 目前
+  只組了與會者名單＋逐字稿，沒有真的附上介入紀錄或發言分佈。插播訊息明確只
+  要求換 system prompt／JSON schema，明講「其餘不變」，原始工作單對這個函式
+  的要求本來就只有「逐字稿抽取方式」，所以判斷這不在這批改動範圍——但這是
+  一個真實的 system prompt 與實際輸入內容不一致，不是我編出來的假想問題，
+  已詳細記錄根因與影響範圍，風險評估是「demo 前風險低（不會當機或報錯，只是
+  判斷力打折）」。
+- **下一關該知道什麼**：
+  - `docs/DEFERRED_DEFECTS.md` 第 7 項：要做到 system prompt 講的完整版本，
+    可以參考 `minutes.build_minutes_prompt()`／`minutes.render_host_record()`
+    的既有寫法，把介入紀錄與 `share` 事件的發言分佈也組進
+    `build_critique_prompt()`。
+  - 本批**沒有**合併回 `main`——只在這個 worktree 裡 commit，跟其他幾條
+    Track 一樣是獨立分支，合併時機與方式由 Zeal／協調者決定。
+  - `src/meeting_host/events.py`（`Event.kind` 的行內文件，每個新 kind
+    都在這裡留一段補充說明，`glossary`/`hearing`/`voice`/`phase` 等既有
+    kind 都是這樣記的）跟 `docs/specs/2026-08-28-demo-readiness-design.md`
+    （T-B 事件匯流排規格文件）都**沒有更新**——工作單「目標檔案」明確只列
+    `critique.py`／`live.py`／`index.html` 三個檔案，一開始順手在
+    `events.py` 補了一段 `ai_critique` 的說明文件，覆核時發現它不在
+    allowlist 裡，已還原（`git checkout -- src/meeting_host/events.py`）。
+    這不是「忘記做」，是「做了又主動撤回」，如實記在這裡：如果之後有人要把
+    `events.py` 或那份獨立 spec 文件當 event kind 的唯一正本查，要記得
+    它們目前都沒收錄 `ai_critique` 這個新 kind，下一棒如果確認補這段文件
+    在允許範圍內，可以參考本批 commit 歷史裡曾經寫過又還原的那版文字。
+  - `.venv`（含 chromium）留在這個 worktree，`.gitignore` 已排除。
+  - 本批累計缺陷修復 0 筆（純新增功能），疲勞計數不適用。

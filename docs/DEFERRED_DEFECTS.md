@@ -128,3 +128,29 @@
   `<details>` 抽屜連同它的 Enter 補丁 `<script>` 與四組只有它在用的 CSS
   （`.drawer`、`.drawer > summary`、`.drawer-body`、`.section-secondary`）一併
   移除，由 Track D 的滑入式覆疊抽屜取代。
+
+## 7. Track G「心聲」的 system prompt 承諾了 prompt 內容目前沒給的資料
+
+- **發現時間**：2026-09-05
+- **發現於哪一批**：Track G（AI 即時觀察加「心聲」類，接真的 LLM）
+- **內容**：`critique.CRITIQUE_SYSTEM`（2026-09-05 中途由 Zeal 插播、fable 設計
+  的完整版）開場明講「你會拿到目前為止的逐字稿、主席介入紀錄與發言統計」，但
+  `build_critique_prompt()` 目前只組了「## 與會者」名單＋「## 逐字稿」兩段，
+  沒有真的附上主席介入紀錄（`minutes._pair_interventions` 那種清單）或發言
+  分佈（`share` 事件那種統計）。System prompt 對 LLM 講的「你會拿到」是不實的。
+- **根因**：中途插播訊息明確列出要換的東西是 `CRITIQUE_SYSTEM` 文字＋JSON
+  schema（`meeting_note`/陣列 → `meeting`/物件），並明講「其餘工作單內容…不變」；
+  原始工作單對 `build_critique_prompt()` 的要求本來就只有「跟
+  `build_minutes_prompt()` 一樣的逐字稿抽取方式」，沒有要求帶介入紀錄／發言統計。
+  施工當下判斷：插播訊息沒有明確要求擴充這個函式，屬於「其餘不變」的範圍，
+  所以沒有動它——但這造成 system prompt 的文字承諾與實際輸入內容不一致，
+  已經在 `build_critique_prompt()` 的 docstring 裡標註這個落差。
+- **影響範圍**：`src/meeting_host/critique.py` 的 `build_critique_prompt()`。
+  不影響保險栓、不影響既有測試——LLM 拿不到承諾的資料，最壞情況是判斷力打折
+  （例如評不出「這個人態度前後不一致」這種需要對照介入紀錄才看得出的觀察），
+  不是程式錯誤，也不會導致例外或當機。
+- **狀態**：待處理。demo 前風險低（LLM 通常會就手上實際拿到的逐字稿內容作答，
+  不會因為 system prompt 多提了兩樣東西就當機或亂編），但要做到 system prompt
+  講的完整版本，下一棒可以參考 `minutes.build_minutes_prompt()`／
+  `minutes.render_host_record()` 的既有寫法，把介入紀錄與 `share` 事件的發言
+  分佈也組進 `build_critique_prompt()`。

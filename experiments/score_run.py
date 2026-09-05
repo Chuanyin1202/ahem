@@ -253,11 +253,31 @@ def _stats(values: list[float]) -> dict:
 
 
 def opportunity_recall(scored: dict, path: str | None) -> dict:
+    """某條路徑接住了多少個「它有機會處理」的窗口。
+
+    ⚠️ `expect_type: null`（不限型別）的窗口屬於**兩條路徑**，不是不屬於任何一條。
+    這裡曾經寫成 `window_path(w) == path`，而 `window_path` 對不限型別的窗口回傳
+    `None`——結果那種窗口同時從 `metrics.fast` 與 `metrics.slow` 的分母裡消失，
+    只留在 `metrics.overall`。2026-09-05 撞到：8/31 的 O1（標註者刻意不限型別，
+    見 labels.json 的 why）正是「該講卻不講」的主要素材，卻從來沒有被
+    `metrics.slow.opportunity_recall` 算進去過——judge_variants 的比較表以它當
+    主指標，於是一個把 O1 從 0/5 拉到 5/5 的變體，在表上顯示為「沒有改善」。
+
+    正確的口徑：不限型別的窗口進兩邊的分母，但**只有當實際命中它的那次介入
+    來自這條路徑時**才算這條路徑的命中（`hit["path"]`，由 `extract_interventions`
+    依 `FAST_KINDS` 標好）。有指定 `expect_type` 的窗口行為完全不變。
+    """
     opp_windows = [w for w in scored["scored_windows"] if w["kind"] == "opportunity"
-                   and (path is None or window_path(w) == path)]
+                   and (path is None or window_path(w) in (path, None))]
     if not opp_windows:
         return na(f"沒有屬於「{path or '任何'}」路徑、且 scored=true 的 opportunity 窗口")
-    hits = sum(1 for w in opp_windows if scored["window_report"][w["id"]]["hit"] is not None)
+    hits = 0
+    for w in opp_windows:
+        hit = scored["window_report"][w["id"]]["hit"]
+        if hit is None:
+            continue
+        if path is None or hit["path"] == path:
+            hits += 1
     return {"value": round(hits / len(opp_windows), 3), "hits": hits, "total": len(opp_windows)}
 
 

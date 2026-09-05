@@ -209,6 +209,30 @@ def test_fast_and_slow_stats_reported_separately():
     assert m["overall"]["fp_per_meeting_hour"]["count"] == 1
 
 
+def test_untyped_opportunity_window_counts_for_both_paths():
+    """`expect_type: null`（不限型別）的窗口屬於快路也屬於慢路，命中歸給實際接住它的那條。
+
+    2026-09-05 的回歸：原本 `opportunity_recall` 用 `window_path(w) == path` 過濾，
+    而不限型別的窗口 `window_path` 回傳 None，於是它同時從 fast 與 slow 的分母裡
+    消失。8/31 holdout 的 O1 正是這種窗口（標註者刻意不限型別），結果
+    `metrics.slow.opportunity_recall` 從來沒把它算進去——用那個數字當比較主指標時，
+    一個真的把 O1 接住的改動會顯示成「沒有改善」。
+    """
+    windows = [opportunity("U1", 0, 100), opportunity("U2", 200, 300)]
+    events = [spoken(50, "離題"),                       # 慢路接住 U1
+              spoken(250, "發言超時", target="甲")]      # 快路接住 U2
+    report = score_run.build_report(events, labels_of(windows, duration_seconds=3600.0),
+                                    Path("e"), Path("l"))
+    m = report["metrics"]
+    # 兩個窗口都進兩邊的分母
+    assert m["slow"]["opportunity_recall"]["total"] == 2
+    assert m["fast"]["opportunity_recall"]["total"] == 2
+    # 命中只歸給實際接住的那條路徑
+    assert m["slow"]["opportunity_recall"]["hits"] == 1
+    assert m["fast"]["opportunity_recall"]["hits"] == 1
+    assert m["overall"]["opportunity_recall"]["hits"] == 2
+
+
 # ── 7. 問候不計入介入 ─────────────────────────────────────────────────────
 
 

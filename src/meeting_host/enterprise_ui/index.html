@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ahem 企業工作台</title><link rel="stylesheet" href="/ui/style.css"><link rel="stylesheet" href="/ui/theme-v2.css"><link rel="icon" href="/ui/favicon.svg" type="image/svg+xml"></head>
+<body>
+<header><a class="login-brand" href="/" aria-label="Ahem 首頁">Ahem<span>企業工作台</span></a><p id="context" hidden></p><button id="logout" class="secondary" hidden>登出</button></header>
+<aside id="sidebar" hidden><a class="brand" href="/">Ahem<span>企業工作台</span></a><nav id="nav" aria-label="工作台分頁"></nav><p class="sidebar-note">內容依會議授權提供</p></aside>
+<main>
+<section id="login" aria-labelledby="login-title">
+<div class="login-art" aria-hidden="true"></div>
+<div class="login-copy"><h1 id="login-title">讓協作成果<br>被合適的人看見。</h1>
+<p>依照您的授權，查看會議分析、管理存取權限，或確認服務狀態。</p>
+<form id="login-form"><label for="token">存取憑證</label><input id="token" type="password" autocomplete="off" required aria-describedby="login-help">
+<p id="login-help" class="small">請使用管理員提供的憑證。登入後將依身分開啟工作台。</p><button type="submit">進入工作台</button></form></div></section>
+<p id="status" role="status" aria-live="polite"></p>
+<section id="workspace" hidden>
+<div class="heading"><div><h1 id="title"></h1><p id="description"></p></div><div id="role-art" aria-hidden="true"></div><button id="refresh" class="secondary">重新整理</button></div>
+<div id="panel" aria-busy="false"></div></section>
+</main><footer>內容依會議授權提供 · 工作階段 30 分鐘 · 健康狀態逾 5 分鐘顯示未知</footer>
+<script src="/ui/app.js"></script></body></html>

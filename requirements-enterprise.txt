@@ -1,0 +1,2 @@
+# Optional sidecar only; do not change the upstream Discord dependency set.
+cryptography==50.0.0

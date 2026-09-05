@@ -1,0 +1,26 @@
+# Example only; replace all paths/user and validate on your Linux host before enabling.
+[Unit]
+Description=Ahem optional enterprise file bridge
+After=local-fs.target
+
+[Service]
+Type=simple
+User=ahem
+Group=ahem
+WorkingDirectory=/opt/ahem
+Environment=PYTHONPATH=/opt/ahem/src
+LoadCredential=ahem-kek:/etc/ahem/enterprise-kek
+ExecStart=/opt/ahem/.venv/bin/python -m meeting_host.enterprise_bridge --source /var/lib/ahem/meetings --database /var/lib/ahem/enterprise/enterprise.db --identities /var/lib/ahem/enterprise/identities.json --token-file /var/lib/ahem/enterprise/bridge-token --policy team --interval 15
+Restart=on-failure
+RestartSec=15
+UMask=0077
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/var/lib/ahem/meetings
+ReadWritePaths=/var/lib/ahem/enterprise
+
+[Install]
+WantedBy=multi-user.target

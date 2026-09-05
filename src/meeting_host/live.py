@@ -13,6 +13,7 @@ import dataclasses
 import json
 import os
 import signal
+import tempfile
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -1341,9 +1342,18 @@ def _write_events_jsonl(s: Session, events_path: Path | None) -> None:
     """
     if events_path is None:
         return
-    with events_path.open("w", encoding="utf-8") as f:
-        for event in s.events:
-            f.write(json.dumps(dataclasses.asdict(event), ensure_ascii=False) + "\n")
+    # Publish only a complete file. Independent consumers must ignore .partial files.
+    fd, temporary = tempfile.mkstemp(prefix=".ahem-", suffix=".partial", dir=events_path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            for event in s.events:
+                f.write(json.dumps(dataclasses.asdict(event), ensure_ascii=False) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temporary, events_path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
     print(f"事件紀錄：{events_path}")
 
 

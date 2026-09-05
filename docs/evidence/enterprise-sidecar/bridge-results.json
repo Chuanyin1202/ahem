@@ -1,0 +1,17 @@
+{
+  "scans": [
+    {
+      "imported": 1,
+      "duplicates": 0,
+      "rejected": 0
+    },
+    {
+      "imported": 0,
+      "duplicates": 1,
+      "rejected": 0
+    }
+  ],
+  "page_errors": [],
+  "rendered_imported_content": true,
+  "fixture": "synthetic, using real live._write_events_jsonl and two fresh CLI processes"
+}

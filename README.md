@@ -83,7 +83,7 @@ flowchart TD
 | 中文處理 | OpenCC（`s2twp`） | Scribe 輸出為簡體，統一轉台灣正體 |
 | 資料 | JSONL、Markdown | 事件流與會後記錄；**不需要資料庫** |
 | 測試與工具 | pytest、Playwright、ffmpeg | 625 項回歸測試、瀏覽器驗證、會議錄影 |
-| Sponsor 技術 | **ElevenLabs**（實際使用：Scribe STT ＋ 串流 TTS） | 【待補】正式 Sponsor 資格與賽道認定依主辦規則確認 |
+| Sponsor 技術 | **ElevenLabs**（實際使用：Scribe STT ＋ 串流 TTS） | 主賽道 **02 AI for Everyday Life**；Sponsor 資格認定依主辦規則 |
 
 ---
 
@@ -172,7 +172,8 @@ PYTHONPATH=src .venv/bin/python -m pytest -q tests
 ## 作品展示
 
 - **評選影片**：【待補 YouTube 連結，設為「知道連結即可觀看」】
-- **作品展示網址**：【待補】<https://ahem.eighti.app>（需部署端有服務在跑；沒有服務時回 502）
+- **作品展示網址**：<https://ahem.eighti.app> —— 常駐回放一場完整會議（黑客松籌備，四位與會者），
+  可直接看到主席的三次介入、兩次「判出問題但選擇不開口」，以及會後產出的決議／待辦／未解決事項。
 - **原始碼**：<https://github.com/Chuanyin1202/ahem>
 
 ![觀戰畫面](docs/images/spectator.png)
@@ -240,7 +241,7 @@ PYTHONPATH=src .venv/bin/python -m pytest -q tests
 | aiohttp | Apache-2.0 AND MIT | | packaging | Apache-2.0 OR BSD-2-Clause |
 | aiosignal | Apache-2.0 | | pluggy | MIT |
 | attrs | MIT | | propcache | Apache-2.0 |
-| audioop-lts | 【待補】僅 Python 3.13 安裝，本環境未安裝故未讀取 | | pycparser | BSD-3-Clause |
+| audioop-lts | PSF-2.0 | | pycparser | BSD-3-Clause |
 | cffi | MIT-0 | | Pygments | BSD-2-Clause |
 | davey | MIT | | PyNaCl | Apache-2.0 |
 | discord-ext-voice_recv | MIT | | pytest | MIT |
@@ -281,12 +282,14 @@ for n in sorted(set(names)):
 
 ## 團隊成員
 
-| 姓名 | 分工 |
-| --- | --- |
-| 【待補】（GitHub：Chuanyin1202） | 【待補】 |
-| 【待補】（GitHub：BillisWen） | 【待補】 |
-| 【待補】（GitHub：zealchou） | 【待補】 |
-| 【待補】 | 【待補】 |
+隊伍編號 **T043**，隊名 **分身有術**。
+
+| 姓名 | 分工 | GitHub |
+| --- | --- | --- |
+| Alex Huang | 核心 | [Chuanyin1202](https://github.com/Chuanyin1202) |
+| 周逸達 | 前端 UI | [Zeal Chou](https://github.com/zealchou) |
+| Billis | 後端 UI | [BillisWen](https://github.com/BillisWen) |
+| Jax | 測試 | — |
 
 ---
 

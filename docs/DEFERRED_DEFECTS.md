@@ -2,14 +2,13 @@
 
 > 依 CLAUDE.md「已知但延後處理的缺陷一律進追蹤清單」規則建立。每次開新一批施工前先掃一眼這裡有沒有能順手處理的。
 
-## 1. Track C 的 Enter 鍵補丁是解一個不存在的問題，可刪
+## 1. 【已結案，判斷相反】Track C 的 Enter 鍵補丁不是多餘的，審計那次的判斷是錯的
 
-- **發現時間**：2026-09-05
-- **發現於哪一批**：Track C 獨立審計（agent `a7a39b09ef2807203`）
-- **內容**：`src/meeting_host/spectator/index.html` 為了「補Chrome原生`<summary>`不支援Enter鍵」加了約8行JS（含keydown/keyup與preventDefault）。審計用零JS對照組實測，Chrome原生`<summary>`本來就支援Enter鍵切換，這個前提不成立。
-- **根因**：施工者的鍵盤測試方法本身有瑕疵，誤判成「不支援」。
-- **影響範圍**：`src/meeting_host/spectator/index.html`，收合抽屜的鍵盤操作。目前行為正確（4次Enter/4次Space交替測試通過、無雙重觸發），只是多餘。
-- **狀態**：待處理。**demo（2026-09-06）之後再刪**，現在動它是不必要的風險。馬尾判斷：`net -19行`。
+- **發現時間**：2026-09-05（獨立審計標記待刪）→ 同日再次查證（前台）判定不能刪
+- **經過**：Track C 獨立審計（agent `a7a39b09ef2807203`）宣稱「用零JS對照組實測，Chrome原生`<summary>`本來就支援Enter鍵，這8行是解一個不存在的問題」，Zeal 指示直接刪掉。前台刪掉後，**用不受沙盒干擾的方式**重新對照一個完全空白、零JS的`<details>/<summary>`測試 Enter 鍵：連續兩種CDP事件寫法皆為 `[False, False, False, False]`（Space則正常切換 `[False, True, False, True]`）——**證實這台機器這個版本的Chrome，原生`<summary>`確實不支援Enter鍵**，跟審計當時的結論相反。已把這8行加回來，並重新驗證加回後Enter與Space皆正常交替（`[True, False, True, False, True]`）。
+- **根因（回頭看兩邊為什麼會兜不起來）**：懷疑審計當時的「零JS對照組已支援Enter」測試本身也踩到類似的環境干擾（本次前台第一次測試在有沙盒限制的環境下執行，結果詭異地連Space都失效；改用不受限的方式跑，結果才穩定重現）——**這是一個「兩次獨立測試同一件事，其中一次的測試環境本身不可靠」的案例**，不是誰粗心，而是這類鍵盤模擬測試對執行環境很敏感，同一個判斷最好在正式合併前多重驗證一次，不能只憑一次對照組結果就下定論。
+- **影響範圍**：`src/meeting_host/spectator/index.html` 的收合抽屜鍵盤操作。
+- **狀態**：**已結案，保留這8行程式碼，不要刪**。540項測試全過。
 
 ## 2. Track C 背景圖畫框用 `background: transparent`，建議改回 `var(--bg)`
 

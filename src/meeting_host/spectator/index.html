@@ -418,6 +418,12 @@
       // 不含 Enter；同一支測試對一個原生 <button> 送同樣的 Enter 事件會正常
       // 觸發 click，排除是送鍵方式的問題。開關狀態仍然是原生 details.open
       // 屬性，這裡沒有另外自己管一份布林 state。
+      //
+      // 2026-09-05 補記：獨立審計曾用另一套CDP測試宣稱「原生已支援Enter，這段
+      // 是多餘的」，前台一度照做刪掉；刪掉後在同一台機器、同一個Chrome上，
+      // 對一個完全空白的<details>/<summary>重測兩種CDP事件寫法，Enter都無法
+      // 觸發開關（Space可以）——推翻了那次審計對這一點的判斷，已把這段加回來。
+      // 這是「合併後才發現獨立審計本身有一項判斷是錯的」的真實案例，不是猜測。
       (function () {
         var summary = document.getElementById("group-dynamics").querySelector("summary");
         summary.addEventListener("keydown", function (e) {

@@ -26,11 +26,16 @@
 - `chair`    推向左欄逐字稿（主席說的話出現在那裡）
 - `thinking` 推向右欄「AI 即時觀察／主席的思考」
 
-## 為什麼用 crop 而不是 zoompan
+## 為什麼用 zoompan 而不是 crop
 
-`zoompan` 是為靜態圖片設計的，套在影片上每一格會重新取樣，畫面會抖。這裡改用
-時間變化的 `crop` 再 `scale` 回原尺寸——等效於推鏡，而且每一格都是原始像素的
-單純裁切，沒有抖動。推近目標保持 16:10（與來源同比例），避免變形。
+第一版想用時間變化的 `crop` 再 `scale` 回原尺寸，行不通：**`crop` 的 `w`／`h`
+只在 filter 初始化時求值一次**，運算式裡放 `t` 會直接報
+`Error when evaluating the expression`。只有 `x`／`y` 會每格重算——也就是說
+`crop` 做得到平移，做不到推近。
+
+改用 `zoompan`，它就是為這件事設計的：`zoom` 這個變數帶得到上一格的值，
+所以可以每格遞增。影片來源要加 `d=1`（一格進、一格出），否則它會把每一格
+當成靜態圖重複輸出 `d` 次，長度會爆掉。
 """
 from __future__ import annotations
 
@@ -51,38 +56,58 @@ ZOOM_END = 0.72      # 推到最後保留原畫面的幾成（越小推越近）
 
 # 推近目標（左上角座標與尺寸，維持 16:10）。數值對應 1440×900 的觀戰畫面版面：
 # 左欄逐字稿約 0–1060px，右欄面板約 1080–1440px。
+# 倍率不要開太大：右欄本身只有 340px 寬，硬推到 3× 會把文字切在畫面外，
+# 觀眾看到的是半句話。實測 1.4–1.8× 已經足夠把視線帶過去，字也還讀得完整。
 TARGETS = {
     "none":     None,
-    "chair":    (40, 240, 1000, 625),      # 左欄中下段，主席的介入出現在這裡
-    "thinking": (940, 380, 480, 300),      # 右欄「AI 即時觀察」與心聲
-    "minutes":  (1060, 20, 380, 238),      # 右上「會議產出（預覽）」
+    "chair":    (40, 240, 1000, 625),      # 左欄中下段，主席的介入出現在這裡（1.44×）
+    "thinking": (640, 60, 800, 500),       # 右欄「AI 即時觀察」與心聲（1.80×）
+    "minutes":  (640, 0, 800, 500),        # 右欄「會議產出（預覽）」（1.80×）
 }
 
 
+FPS = 30
+
+
 def seg_filter(zoom: str, dur: float) -> str:
-    """單一段落的 filter chain：推近 → 縮回輸出尺寸 → 頭尾淡入淡出。"""
+    """單一段落的 filter chain：推近 → 頭尾淡入淡出。"""
     t = TARGETS.get(zoom)
     if t is None:
         vf = f"scale={W}:{H}"
     else:
         tx, ty, tw, th = t
-        # 線性內插：t=0 是整張畫面，t=dur 是目標區域
-        cw = f"'{W}+({tw}-{W})*min(1,t/{dur:.3f})'"
-        ch = f"'{H}+({th}-{H})*min(1,t/{dur:.3f})'"
-        cx = f"'({tx})*min(1,t/{dur:.3f})'"
-        cy = f"'({ty})*min(1,t/{dur:.3f})'"
-        vf = f"crop=w={cw}:h={ch}:x={cx}:y={cy},scale={W}:{H}"
-    return (f"{vf},fade=t=in:st=0:d={FADE},"
+        zmax = W / tw                       # 目標區域佔畫面寬度的倒數 = 放大倍率
+        frames = max(1, int(dur * FPS))
+        step = (zmax - 1.0) / frames        # 每格遞增，跑滿整段
+        # zoompan 的 x/y 是可視區域的**左上角**，範圍 0..(iw-iw/zoom)。所以錨點要用
+        # 「目標左上角佔可移動範圍的比例」，不是「目標中心佔全畫面的比例」——後者會
+        # 讓偏離畫面中心的目標整個位移掉（實測右欄被推到只剩左半邊在畫面內）。
+        fx = tx / (W - tw) if W > tw else 0.0
+        fy = ty / (H - th) if H > th else 0.0
+        # 用輸出幀號 `on` 直接算倍率，不要用 `zoom+step` 這種累加寫法：`zoom` 讀的是
+        # 上一格的值，但在 `d=1`（一格進一格出）底下它每格都被重置回 1，推近永遠不會
+        # 發生（2026-09-05 實測：24 秒的段落跑到最後一格仍是原尺寸）。
+        vf = (f"zoompan=z='min(1+{step:.8f}*on,{zmax:.4f})'"
+              f":x='(iw-iw/zoom)*{fx:.4f}':y='(ih-ih/zoom)*{fy:.4f}'"
+              f":d=1:s={W}x{H}:fps={FPS}")
+    # `fps` 要放在 zoompan 之前：zoompan 的 `fps=` 只是宣告輸出幀率，不會補幀，
+    # 拿 25fps 的來源去餵它，出來的時間軸會被壓成 25/30（實測：一段 24 秒的畫面
+    # 只剩 20 秒的內容，尾端整段對不上）。先補到 30fps 再推近就對得上了。
+    return (f"fps={FPS},{vf},fade=t=in:st=0:d={FADE},"
             f"fade=t=out:st={max(0.0, dur - FADE):.3f}:d={FADE},setsar=1")
 
 
 def cut(source: Path, seg: dict, out: Path) -> float:
     start, end = float(seg["start"]), float(seg["end"])
     dur = end - start
-    # -ss 放在 -i 之前是快速搜尋（關鍵影格），放在之後是精確搜尋。這裡要精確，
-    # 因為段落起點是照事件時間挑的，差一秒就會切掉主席那一句。
+    # -ss 必須放在 -i 之前。放在之後是輸出端 seek：解碼整支來源、跑完整條 filter
+    # chain，最後才丟掉前面的幀——於是 `fade=t=out:st=dur-0.35` 是從**來源**第 0 秒
+    # 起算的，段落還沒開始畫面就黑掉了（2026-09-05 實測：zoompan 段每段只有 45KB
+    # 的純黑，而且 274s／318s 兩段因為時間軸被壓縮而落在來源尾端之外，直接產出空檔）。
+    # 放在 -i 之前是輸入端 seek，filter chain 拿到的是一條從 0 開始的段落，
+    # 且自 ffmpeg 2.1 起輸入端 seek 就是精確到幀的，不會只切在關鍵影格上。
     subprocess.run(
-        ["ffmpeg", "-y", "-v", "error", "-i", str(source), "-ss", f"{start}", "-t", f"{dur}",
+        ["ffmpeg", "-y", "-v", "error", "-ss", f"{start}", "-i", str(source), "-t", f"{dur}",
          "-vf", seg_filter(seg.get("zoom", "none"), dur),
          "-an", "-c:v", "libx264", "-preset", "medium", "-crf", "20",
          "-pix_fmt", "yuv420p", "-r", "30", str(out)],
@@ -106,9 +131,14 @@ def build(spec: dict, out: Path) -> None:
                   f" {d:>5.1f}s  zoom={seg.get('zoom', 'none'):<9} {seg.get('note', '')}")
         listing = tmp / "list.txt"
         listing.write_text("".join(f"file '{p}'\n" for p in parts), encoding="utf-8")
+        # 重新編碼而不是 `-c copy`：段落之間的時間基準（tbn/tbc）不一定一致，
+        # 串流複製會讓 concat 丟掉時間戳對不上的片段。2026-09-05 實測：七段
+        # 共 105 秒，用 `-c copy` 接出來只有 71 秒，而且中段整片空白。
+        # 重編一次成本很低（片子只有一兩分鐘），換來的是長度一定對。
         subprocess.run(
             ["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", str(listing),
-             "-c", "copy", "-movflags", "+faststart", str(out)],
+             "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
+             "-r", str(FPS), "-fps_mode", "cfr", "-movflags", "+faststart", str(out)],
             check=True, capture_output=True)
         print(f"\n完成：{out}　總長 {total:.1f} 秒（{total / 60:.1f} 分）"
               f"　{out.stat().st_size / 1e6:.1f} MB")

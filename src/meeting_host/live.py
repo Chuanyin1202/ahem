@@ -1081,7 +1081,8 @@ SCRIPT_SETTLE_SECONDS = 45.0
 """
 
 
-async def end_after_script(session: "Session", source) -> None:
+async def end_after_script(session: "Session", source,
+                           settle: float = SCRIPT_SETTLE_SECONDS) -> None:
     """劇本播完 → 沉澱 → 走跟 SIGTERM 完全同一條收尾路徑。
 
     不自己寫收尾邏輯，呼叫 `request_end()`：那是觀戰 UI 的 POST /end 與
@@ -1090,9 +1091,9 @@ async def end_after_script(session: "Session", source) -> None:
     """
     await source.finished.wait()
     session.script_settling = True
-    session._log(f"    劇本播完，沉澱 {SCRIPT_SETTLE_SECONDS:.0f} 秒後自動收尾"
+    session._log(f"    劇本播完，沉澱 {settle:.0f} 秒後自動收尾"
                  f"（期間快路靜音，讓已排入的介入講完）")
-    await asyncio.sleep(SCRIPT_SETTLE_SECONDS)
+    await asyncio.sleep(settle)
     session.request_end()
 
 
@@ -1237,7 +1238,7 @@ async def main_async(args) -> None:
     if hello_gate is not None:
         tasks.append(asyncio.create_task(session.watch_hello(hello_gate)))
     if script:
-        tasks.append(asyncio.create_task(end_after_script(session, pool)))
+        tasks.append(asyncio.create_task(end_after_script(session, pool, args.settle)))
     if args.spectator_port:
         serve = _try_import_spectator_serve()
         if serve is not None:
@@ -1550,6 +1551,10 @@ def main() -> None:
                     help="不出聲：TTS 換成等長靜音、不需要音訊裝置。時序行為與有聲"
                          "完全相同（見 speaker.SilentVoice／MutedOutput），話術的 LLM "
                          "呼叫照跑。無人值守與 headless 機器用這個")
+    ap.add_argument("--settle", type=float, default=SCRIPT_SETTLE_SECONDS, metavar="秒",
+                    help="腳本播完之後等多久才收尾（預設 45）。錄 demo 影片時可以縮短——"
+                         "沉澱期畫面是靜止的，等於片尾的空白。縮太短會讓還在佇列裡的"
+                         "介入來不及講出來")
     ap.add_argument("--script", default=None, metavar="PATH",
                     help="腳本測試台：讀一份劇本 JSON 取代 STT，與會者全是假的、"
                          "只有主席是真的（見 docs/specs/2026-09-05-script-harness-design.md）")

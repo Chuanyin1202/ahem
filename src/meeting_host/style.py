@@ -25,8 +25,29 @@ STYLES: dict[str, dict[str, float]] = {
                   "AGENDA_WARN_RATIO": 1.0 / 4.0},
     "demo":      {"OVERTIME_SECONDS": 120.0, "NEGLECTED_SECONDS": 240.0, "COOLDOWN_SECONDS": 20.0, "SILENCE_SECONDS": 60.0,
                   "NONE_VETO": False},
+    "test":      {"OVERTIME_SECONDS": 60.0, "NEGLECTED_SECONDS": 90.0, "SILENCE_SECONDS": 30.0},
 }
-LABELS = {"strict": "嚴格主席", "gentle": "溫和引導", "efficient": "效率優先", "demo": "Demo（誤報率未實測）"}
+LABELS = {"strict": "嚴格主席", "gentle": "溫和引導", "efficient": "效率優先", "demo": "Demo（誤報率未實測）",
+          "test": "腳本測試台（縮短規則門檻，不可用於真實會議）"}
+
+"""`test` 檔位只縮**快路的規則門檻**，用來把腳本測試台的一輪驗證從約 50 分鐘
+壓到 20–25 分鐘。三個值都是純數字比較，縮了走的是同一條 code path。
+
+**刻意不縮的三類常數**（縮了測到的就不是產品行為）：
+
+- `COOLDOWN_SECONDS`（30 秒）：主席講一句 TTS 要 8–11 秒（`MAX_UTTERANCE_CHARS`
+  50 字 ÷ 4.5 字每秒）。冷卻縮到 10 秒等於「講完 1 秒就能再講」。
+- `speaker.PAUSE_SECONDS`（1.0）／`ESCALATE_SECONDS`（15）：跟 TTS 播放時間與 LLM
+  往返（判斷 3.4s ＋ 話術 1.6s）耦合，縮了會讓「等不到停頓就升級硬打斷」從例外
+  變成常態。這兩個也不在 STYLES 的覆寫範圍內。
+- 慢路的 TICK（5 秒）：時間軸一壓縮，慢路在「每會議分鐘」看到的評分點就變少，
+  它看到的世界跟真實不一樣。
+
+⚠️ **不能取代 1× 的完整跑**：每次發版前至少要有一場正式門檻的完整場次，
+否則「縮了才對、不縮就不對」這類問題永遠不會浮現。
+⚠️ 用它跑出來的期望窗口要**從當下生效的門檻算**，不能寫死秒數，否則 test 檔位與
+正式檔位的分數不能互相比較（見 docs/specs/2026-09-05-script-harness-design.md 決定五）。
+"""
 
 # 每個鍵覆寫哪個模組——目前只有 demo 檔位的 NONE_VETO 落在 slow_path，其餘沿用
 # fast_path。新增跨模組的鍵時把它加進這裡，不要在 apply() 裡用 try/except 亂猜。

@@ -25,7 +25,7 @@ from .discord_source import MeetingBot
 from .events import Event
 from .hearing import HearingMonitor
 from .phrasing import PHRASE_KINDS, PhraseBank, generate_patterns, greeting_text
-from .speaker import ESCALATE_SECONDS, Chair, Earcon, Intervention, build_voice
+from .speaker import ESCALATE_SECONDS, Chair, Earcon, Intervention, SilentVoice, build_voice
 from .state import MeetingState
 from .stt import STTPool
 
@@ -427,6 +427,8 @@ class Session:
         # 觀戰 UI 的「結束會議」開關（POST /end）走的取消動作。main_async 注入
         # main_task.cancel，讓 UI 結束與 kill -TERM 落到完全同一條 shutdown()。
         self._cancel = cancel
+        # 腳本測試台專用：劇本播完、正在沉澱等收尾。真實會議恆為 False。
+        self.script_settling = False
         # T14：快路話術／問候的句型庫。不傳就給一個沒有生成器的空庫——
         # take() 永遠回 None，等同這個功能完全不存在，既有測試與 --no-llm
         # 因此不必知道這個參數就能維持原行為（驗收 12）。
@@ -747,7 +749,12 @@ class Session:
         # 收尾閘門（快路那一關）：房間已經在道別了，四條規則的話術都預設會議
         # 還要繼續，這時候出聲就是在要求別人做一件已經結束的事
         # （逐條理由見 fast_path.CLOSING_SUPPRESSED_KINDS）。
-        closing = meeting_is_closing_for_rules(self.st, now)
+        # `script_settling`：腳本測試台的劇本已經播完，正在等佇列裡的介入收乾。
+        # 沿用收尾閘門同一組壓制規則（fast_path.CLOSING_SUPPRESSED_KINDS）——
+        # 理由也一樣：房間已經沒有會議在進行，那四條規則的話術都預設會議還要
+        # 繼續。不壓的話，劇本結束後的靜默會讓它們一路觸發（2026-09-05 實測：
+        # 一場 6.3 分鐘的劇本開口 8 次，其中 5 次是播完之後的噪音）。
+        closing = self.script_settling or meeting_is_closing_for_rules(self.st, now)
         for t in fast_path.check(self.st, now, self.done, closing=closing,
                                   deaf=bool(deaf_reason)):
             iv = Intervention(kind=t.kind, target=t.target,
@@ -1017,11 +1024,78 @@ def install_shutdown_signal_handlers(main_task: asyncio.Task) -> None:
             pass  # Windows 的 ProactorEventLoop 不支援 add_signal_handler；本專案只跑 macOS/Linux
 
 
+def load_script(path: str | Path) -> dict:
+    """讀一份劇本 JSON，欄位缺一不可。
+
+    刻意用外部檔案而不是 python 常數：production 的 `live.py` 不該 import
+    `experiments/`（`run.py` 那條 sys.path 插入是既有的權宜，不要擴散），
+    而且劇本是資料不是程式碼——加場景不必動 code，也方便直接改對白。
+
+    格式：
+        {"name": ..., "note": ..., "topic": ..., "duration_min": 12,
+         "participants": ["Alex", "Billis", "達哥"],
+         "lines": [[0, "Alex", "第一句"], [12.5, "Billis", "第二句"]]}
+    `lines` 的第一個欄位是**會議相對秒數**，跟 `Utterance.start` 同座標。
+    """
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    for key in ("name", "topic", "duration_min", "participants", "lines"):
+        if key not in data:
+            raise ValueError(f"劇本 {path} 缺少欄位 {key!r}")
+    if not data["lines"]:
+        raise ValueError(f"劇本 {path} 的 lines 是空的")
+    unknown = {row[1] for row in data["lines"]} - set(data["participants"])
+    if unknown:
+        # 名單以外的人開口，主席會對一個它不知道存在的人做統計與點名——
+        # 這種劇本錯誤在跑起來之後很難看出來，開跑前就擋掉
+        raise ValueError(f"劇本 {path} 的 lines 出現不在 participants 裡的人：{sorted(unknown)}")
+    return data
+
+
+SCRIPT_SETTLE_SECONDS = 45.0
+"""劇本播完之後再等多久才收尾。
+
+要放得下「最後一則發言之後還可能發生的整條鏈」：慢路 TICK 5 秒 ＋ 判斷往返
+約 3.4 秒 ＋ 話術約 1.6 秒 ＋ Chair 軟插入等停頓最長 15 秒（ESCALATE_SECONDS）
+＋ TTS 播完約 10 秒 ≈ 35 秒。取 45 留一點餘裕。
+
+沉澱期間快路被壓掉（見 `Session.script_settling`），所以這 45 秒不會生出
+「全場沉默」那類噪音；慢路本來就要有新的 utterance 才會評分，劇本停了它自然
+也停，不必另外壓。
+"""
+
+
+async def end_after_script(session: "Session", source) -> None:
+    """劇本播完 → 沉澱 → 走跟 SIGTERM 完全同一條收尾路徑。
+
+    不自己寫收尾邏輯，呼叫 `request_end()`：那是觀戰 UI 的 POST /end 與
+    kill -TERM 共用的唯一入口，兩份會議記錄與 events.jsonl 都由它保證寫出去。
+    另開一條收尾路徑就會有第二種「有時候檔案沒寫出來」的失敗模式。
+    """
+    await source.finished.wait()
+    session.script_settling = True
+    session._log(f"    劇本播完，沉澱 {SCRIPT_SETTLE_SECONDS:.0f} 秒後自動收尾"
+                 f"（期間快路靜音，讓已排入的介入講完）")
+    await asyncio.sleep(SCRIPT_SETTLE_SECONDS)
+    session.request_end()
+
+
 async def main_async(args) -> None:
     load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
     main_task = asyncio.current_task()
     install_shutdown_signal_handlers(main_task)
+
+    script = load_script(args.script) if getattr(args, "script", None) else None
+    if script:
+        # 劇本自帶議題與時長——腳本測試台的每個場景都是一場完整的會議，
+        # 不該還要在命令列重打一次；打錯就會讓「議程超時」的門檻對不上劇本。
+        args.topic, args.duration = script["topic"], script["duration_min"]
+        # 劇本自己宣告該用哪個門檻檔位。命令列的 --style 優先（要臨時對照時用），
+        # 沒給就照劇本走。2026-09-05 乾跑發現這不是可有可無的：`imbalance` 在
+        # test 檔位下會冒出 6 次快路介入，隔離被破壞，那個劇本就測不到它要測的
+        # 東西了；`healthy` 是負面測試，縮門檻等於改變「該不該講」的定義本身。
+        if args.style is None and script.get("style"):
+            args.style = script["style"]
 
     st = MeetingState(topic=args.topic, duration_min=args.duration, participants=[])
     # T14：--no-llm 時不注入生成器——PhraseBank.can_generate() 恆為 False，
@@ -1030,28 +1104,53 @@ async def main_async(args) -> None:
                               topic=args.topic)
     session = Session(st, args.phase, cancel=main_task.cancel, phrase_bank=phrase_bank,
                       auto_phase=(None if args.no_llm else args.auto_phase))
-    # 議題與人名餵給 STT 當專有名詞提示，中英夾雜的辨識率差很多
-    pool = STTPool(os.environ["ELEVENLABS_API_KEY"], keyterms=args.keyterms)
+    if script:
+        # 腳本模式：整個 STT 換掉。bot 仍然會進頻道（TTS 要從那裡出去），
+        # 但它收到的真人音訊會被 ScriptSource.feed() 丟掉——所以你那邊多吵都沒關係。
+        from .script_source import ScriptSource
+        for name in script["participants"]:
+            st.ensure_participant(name, time.perf_counter())
+        pool = ScriptSource([tuple(r) for r in script["lines"]], st, session.t0,
+                            on_voice=session.note_voice)
+        print(f"腳本模式：{script['name']}——{script.get('note', '')}")
+        print(f"  與會者全是劇本（{'、'.join(script['participants'])}），只有主席是真的")
+    else:
+        # 議題與人名餵給 STT 當專有名詞提示，中英夾雜的辨識率差很多
+        pool = STTPool(os.environ["ELEVENLABS_API_KEY"], keyterms=args.keyterms)
     # 失聰偵測的臂 (A)：連線層自己的健康狀態（見 hearing.py 與 STTPool.offline）。
     session.stt_pool = pool
 
-    bot = MeetingBot(pool, args.channel, st)
-    # RTP 層「麥克風正在／不在傳送」訊號進事件流——跟 session.consume() 裡的
-    # "speaking"（來自 STT）是獨立來源，見 events.py 的 kind 說明與
-    # discord_source.py 的 on_voice_activity docstring。
-    # 走 `session.note_voice` 而不是直接 emit：同一顆訊號還要餵失聰偵測的臂 (B)，
-    # 兩件事綁在一個方法裡才不會之後只改到其中一條（見 Session.note_voice）。
-    bot.on_voice_activity = session.note_voice
-    voice = build_voice()
+    # 腳本模式完全不接 Discord。理由不只是「用不到」——`discord_source.state_sync()`
+    # 會把頻道裡每個真人加進 `st.participants`（見該函式），所以只要有人在頻道裡聽，
+    # 主席就會多看到一個從頭到尾不發言的與會者，發言佔比被稀釋、五分鐘後還會對他
+    # 觸發「有人被冷落」。2026-09-05 實測：同一份劇本，離線跑時主席正確點名劇本裡
+    # 被冷落的兩個人，接上 Discord 之後那句話改成點名旁聽者。測試台的前提是
+    # 「除了主席以外都是劇本」，接上 Discord 就守不住這個前提。
+    bot = None if script else MeetingBot(pool, args.channel, st)
+    if bot is not None:
+        # RTP 層「麥克風正在／不在傳送」訊號進事件流——跟 session.consume() 裡的
+        # "speaking"（來自 STT）是獨立來源，見 events.py 的 kind 說明與
+        # discord_source.py 的 on_voice_activity docstring。
+        # 走 `session.note_voice` 而不是直接 emit：同一顆訊號還要餵失聰偵測的臂 (B)，
+        # 兩件事綁在一個方法裡才不會之後只改到其中一條（見 Session.note_voice）。
+        # 腳本模式由 `ScriptSource` 送同一顆訊號（見該模組 docstring）。
+        bot.on_voice_activity = session.note_voice
+    voice = SilentVoice() if getattr(args, "mute", False) else build_voice()
     earcon = Earcon()  # 缺檔在這裡就炸，不要進了頻道才發現
     chair: Chair | None = None
     # 只有 --say-hello 才需要問候時機的判斷；沒開這個旗標就永遠不建 gate，
     # start_chair／watch_hello 據此完全跳過問候路徑（驗收 5）
     hello_gate = build_hello_gate(args.say_hello)
     if hello_gate is not None:
-        # bot 收到在場真人的第一個音訊封包（音訊執行緒，已經過 call_soon_threadsafe
-        # 轉進 event loop）→ 立刻重新判斷是否該問候，不等下一次輪詢
-        bot.on_human_audio = lambda name: session.note_human_audio(hello_gate)
+        if bot is not None:
+            # bot 收到在場真人的第一個音訊封包（音訊執行緒，已經過 call_soon_threadsafe
+            # 轉進 event loop）→ 立刻重新判斷是否該問候，不等下一次輪詢
+            bot.on_human_audio = lambda name: session.note_human_audio(hello_gate)
+        else:
+            # 腳本模式沒有真人音訊可等。`note_audio` 那道保險是為了防「真人剛進頻道、
+            # 語音連線還沒建好就問候，對方只聽到半句」——劇本沒有這個問題，人從
+            # 第 0 秒就都在，所以直接放行，不然問候會一直卡在等一個永遠不會來的訊號。
+            hello_gate.note_audio()
 
     def on_spoken(iv, at):
         # at 是 Chair 量到的「第一個可聽幀」時刻（裸 perf_counter）——
@@ -1074,18 +1173,26 @@ async def main_async(args) -> None:
                                             deaf=bool(session.deaf_reason()))
 
     async def start_chair():
-        while getattr(bot, "output", None) is None:  # 等 bot 進頻道
-            await asyncio.sleep(0.5)
         nonlocal chair
-        chair = Chair(st, bot.output, voice, earcon,
+        if bot is None:
+            # 腳本模式：聲音送本機喇叭，或（--mute）排空丟掉。兩者都沒有播放執行緒
+            # 會重建，所以也沒有 on_output_replaced 那條 re-sync（見下面 bot 分支）。
+            from .speaker import LocalOutput, MutedOutput
+            output = MutedOutput() if args.mute else LocalOutput()
+        else:
+            while getattr(bot, "output", None) is None:  # 等 bot 進頻道
+                await asyncio.sleep(0.5)
+            output = bot.output
+        chair = Chair(st, output, voice, earcon,
                       revision=lambda: session.revision, on_spoken=on_spoken, on_failed=on_failed,
                       on_escalate=on_escalate, on_dropped=session.on_dropped)
         session.chair = chair
-        # 播放器重建會換掉 bot.output；Chair 不跟著換就會對著沒人消費的舊佇列說話。
-        # 註冊完必須再 re-sync 一次：上面「讀 bot.output → 建 Chair → 註冊」這幾步之間
-        # 播放執行緒也可能重建過，那次通知沒人收得到（R1）
-        bot.on_output_replaced = chair.replace_output
-        chair.replace_output(bot.output)
+        if bot is not None:
+            # 播放器重建會換掉 bot.output；Chair 不跟著換就會對著沒人消費的舊佇列說話。
+            # 註冊完必須再 re-sync 一次：上面「讀 bot.output → 建 Chair → 註冊」這幾步之間
+            # 播放執行緒也可能重建過，那次通知沒人收得到（R1）
+            bot.on_output_replaced = chair.replace_output
+            chair.replace_output(bot.output)
         session.emit_meeting()
         session._last_participant_count = len(st.participants)
         if hello_gate is not None:
@@ -1095,11 +1202,12 @@ async def main_async(args) -> None:
         await chair.run()
 
     tasks = [
-        asyncio.create_task(bot.start(os.environ["DISCORD_BOT_TOKEN"])),
         asyncio.create_task(start_chair()),
         asyncio.create_task(session.consume(pool)),
         asyncio.create_task(session.watch_fast(hello_gate)),
     ]
+    if bot is not None:
+        tasks.insert(0, asyncio.create_task(bot.start(os.environ["DISCORD_BOT_TOKEN"])))
     if not args.no_llm:
         tasks.append(asyncio.create_task(session.watch_slow()))
         tasks.append(asyncio.create_task(session.watch_phrasing()))
@@ -1110,6 +1218,8 @@ async def main_async(args) -> None:
         tasks.append(asyncio.create_task(session.watch_glossary()))
     if hello_gate is not None:
         tasks.append(asyncio.create_task(session.watch_hello(hello_gate)))
+    if script:
+        tasks.append(asyncio.create_task(end_after_script(session, pool)))
     if args.spectator_port:
         serve = _try_import_spectator_serve()
         if serve is not None:
@@ -1125,7 +1235,8 @@ async def main_async(args) -> None:
             # AHEM_PUBLIC_URL、人眼看的橫幅沒讀，同一場會議吐出兩種網址。
             from .spectator import public_base_url
             base, _ = public_base_url(args.spectator_port)
-            bot.join_notice = (
+            if bot is not None:
+                bot.join_notice = (
                 "會議開始，這是本場的觀戰畫面（只有這個頻道看得到）：\n"
                 + (base if args.public_read else f"{base}/?k={view_token}")
                 + "\n畫面會即時顯示逐字稿、主席開口與忍住的紀錄。")
@@ -1177,7 +1288,7 @@ async def _flush_spectator(session: Session, timeout: float = 3.0) -> None:
         print(f"    ⚠️ 觀戰 UI 事件推送逾時（{timeout:.0f} 秒），不再等待")
 
 
-async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task]) -> None:
+async def shutdown(session: Session, bot: MeetingBot | None, tasks: list[asyncio.Task]) -> None:
     """收尾：不論怎麼中斷都要保證會議摘要／逐字稿／事件紀錄寫得出去。
 
     實測（SIGINT → asyncio.Runner 的優雅取消路徑）發現兩件事：
@@ -1248,7 +1359,8 @@ async def shutdown(session: Session, bot: MeetingBot, tasks: list[asyncio.Task])
         _drain_chair(session)
         _write_events_jsonl(session, events_path)
         try:
-            await asyncio.wait_for(bot.close(), timeout=10.0)
+            if bot is not None:      # 腳本模式沒有 bot，本機喇叭由行程結束時自己收
+                await asyncio.wait_for(bot.close(), timeout=10.0)
         except asyncio.TimeoutError:
             print("    ⚠️ bot.close() 逾時（10 秒），放棄等待")
         except asyncio.CancelledError:
@@ -1416,6 +1528,13 @@ def main() -> None:
                     help="語音頻道 ID。留空＝讀環境變數 AHEM_CHANNEL_ID")
     ap.add_argument("--keyterms", nargs="*", default=None, help="專有名詞提示")
     ap.add_argument("--no-llm", action="store_true", help="只跑快路")
+    ap.add_argument("--mute", action="store_true",
+                    help="不出聲：TTS 換成等長靜音、不需要音訊裝置。時序行為與有聲"
+                         "完全相同（見 speaker.SilentVoice／MutedOutput），話術的 LLM "
+                         "呼叫照跑。無人值守與 headless 機器用這個")
+    ap.add_argument("--script", default=None, metavar="PATH",
+                    help="腳本測試台：讀一份劇本 JSON 取代 STT，與會者全是假的、"
+                         "只有主席是真的（見 docs/specs/2026-09-05-script-harness-design.md）")
     ap.add_argument("--say-hello", action="store_true", help="進頻道後主席先開口問候")
     ap.add_argument("--spectator-port", type=int, default=0, help="觀戰 UI 監聽埠（0＝不開）")
     ap.add_argument("--spectator-token", default="",

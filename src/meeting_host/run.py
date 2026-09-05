@@ -34,9 +34,36 @@ def stats_block(st: MeetingState, now: float) -> str:
     )
 
 
-def run(name: str, use_llm: bool) -> None:
-    sc = SCENARIOS[name]
-    st, utterances = replay.load(sc)
+def load_script_scenario(path: str):
+    """讀腳本測試台的劇本 JSON（`live.py --script` 同一份檔案），轉成這裡要的形狀。
+
+    兩邊共用同一份劇本是刻意的：有聲的實跑（`live --script`，真實時間、有 Chair
+    與 TTS）與無人值守的量化跑（這裡，模擬時間、瞬間跑完、可連跑 N 次）必須是
+    **同一個輸入**，不然「調參前後的比較」比的是兩份不同的東西。
+    """
+    import json
+    from pathlib import Path as _P
+    from .live import load_script
+    from .script_source import to_utterances
+    d = load_script(_P(path))
+    st = MeetingState(topic=d["topic"], duration_min=d["duration_min"],
+                      participants=list(d["participants"]))
+    for who in d["participants"]:
+        st.joined_at[who] = 0.0   # 劇本從第 0 秒就全員在場
+    utterances = to_utterances([tuple(r) for r in d["lines"]])
+    sc = {"note": d.get("note", ""), "topic": d["topic"], "duration": d["duration_min"],
+          "expect": d.get("expect", "（劇本未寫期望）"), "phase": d.get("phase"),
+          "elapsed": (utterances[-1].end + 30) / 60.0}
+    return sc, st, utterances
+
+
+def run(name: str, use_llm: bool, script: str | None = None) -> None:
+    if script:
+        sc, st, utterances = load_script_scenario(script)
+        name = f"script:{name}"
+    else:
+        sc = SCENARIOS[name]
+        st, utterances = replay.load(sc)
 
     print(f"\n{'=' * 68}")
     print(f"場景：{name} — {sc['note']}")
@@ -131,9 +158,21 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("scenario", nargs="?")
     ap.add_argument("--llm", action="store_true", help="加上慢路 LLM 評分")
+    ap.add_argument("--script", default=None, metavar="PATH",
+                    help="改吃腳本測試台的劇本 JSON（與 live --script 同一份檔案）")
+    ap.add_argument("--rounds", type=int, default=1,
+                    help="同一份輸入跑幾輪。LLM 判斷本身不穩定，單次結果只是一個抽樣——"
+                         "任何比較都至少 5 輪（docs/evaluation.md）")
     ap.add_argument("--list", action="store_true")
     args = ap.parse_args()
 
+    if args.script:
+        from pathlib import Path as _P
+        for i in range(args.rounds):
+            if args.rounds > 1:
+                print(f"\n\n{'█' * 20} 第 {i + 1}/{args.rounds} 輪 {'█' * 20}")
+            run(_P(args.script).stem, args.llm, script=args.script)
+        return
     if args.list or not args.scenario:
         for k, v in SCENARIOS.items():
             print(f"  {k:<18} {v['note']}")

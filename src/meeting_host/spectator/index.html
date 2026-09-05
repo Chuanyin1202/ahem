@@ -52,6 +52,13 @@
        不重複定義第二份。 */
     --kaner-fill: #EAE1D2;   /* 已走過路徑的填色 */
     --kaner-track: #C9BEAD;  /* 三階段分隔虛線 */
+    /* 2026-09-05 Zeal 指定：逐字稿的時間/講者名原本借用 --accent（主席專屬
+       磚紅），但 astra 審查指出這會讓一般發言跟主席發言撞色、搶掉主席的
+       視覺獨佔性。改用凱羅品牌色票的「凱羅靛藍」（逐值抄自
+       KAIROS_BRAND_MASTER_v1/02_COLOR/kairos-color-spec.json 的
+       "Kairos Indigo"）——冷色，跟 --accent 的暖磚紅明顯不同色系，
+       主席行維持 --accent 不動，兩者不會再互相稀釋。 */
+    --kairos-indigo: #181737;
   }
 
   @keyframes ahem-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
@@ -183,21 +190,23 @@
     flex-grow: 1; min-height: 0; overflow-x: hidden; overflow-y: auto;
   }
   .u-line { display: grid; grid-template-columns: 64px 1fr; gap: 20px; }
-  /* Zeal 2026-09-05 明確要求：時間與講者名換紅色高亮＋加粗，讓掃視逐字稿時
-     一眼認得出「誰、什麼時候」。用既有 --accent（主席專屬強調色），不新增
-     裸 hex——主席那一行原本就靠這個顏色跟其他行區分，現在其他行的時間/
-     名字也用同一色，兩者的視覺區隔改成靠下面 .u-chair 的底色遮罩，不再
-     只靠顏色（見 .u-chair 註解）。 */
-  .u-time { font-size: 12px; color: var(--accent); font-weight: 700; padding-top: 5px; }
+  /* Zeal 2026-09-05 明確要求：時間與講者名換高亮色＋加粗，讓掃視逐字稿時
+     一眼認得出「誰、什麼時候」。第一版借用 --accent（主席專屬磚紅），但
+     astra 審查指出這會讓一般發言跟主席發言撞色、稀釋主席的視覺獨佔性——
+     Zeal 當場拍板改用 --kairos-indigo（冷色系，跟暖色的 --accent 明顯
+     不同），主席行維持 --accent 不動（見下面 .u-line.chair .u-time）。 */
+  .u-time { font-size: 12px; color: var(--kairos-indigo); font-weight: 700; padding-top: 5px; }
   .u-text { font-size: 16px; line-height: 1.75; color: var(--body); min-width: 0; overflow-wrap: anywhere; }
   /* 設計稿的逐字稿沒有講者名（那場只有一個人）。多人會議不寫名字會讀不懂，
      所以保留講者名——這是刻意偏離。原本用 --muted／500 讓它退在內文後面，
-     2026-09-05 改成跟時間戳同一組紅色高亮＋加粗（理由同上）。 */
-  .u-speaker { font-weight: 700; color: var(--accent); }
+     2026-09-05 改成跟時間戳同一組 --kairos-indigo 高亮＋加粗（理由同上）。 */
+  .u-speaker { font-weight: 700; color: var(--kairos-indigo); }
   .u-line.now { align-items: center; }
   .u-line.now .u-time { padding-top: 0; }
   .u-line.now .u-text { font-size: 13px; color: var(--dim); }
-  /* 主席行的時間色已經跟其他行一致（見上面 .u-time），這裡不用再重複覆寫。 */
+  /* 主席行的時間戳改回 --accent，跟一般發言的 --kairos-indigo 分開——這是
+     主席唯一保留的專屬強調色，不能被其他行借去用（見上面 .u-time 註解）。 */
+  .u-line.chair .u-time { color: var(--accent); }
   /* Zeal 2026-09-05：主席發言原本只靠左邊 2px 細線區分，他覺得不夠明顯——
      加一層淺灰底色遮罩當作真正的「這是主席在說話」的視覺容器，而不是只靠
      一條細線。用既有 --track（設計稿裡本來就是「淺灰」語意的那個變數，時間軸

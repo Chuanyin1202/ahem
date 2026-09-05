@@ -61,7 +61,11 @@ ZOOM_END = 0.72      # 推到最後保留原畫面的幾成（越小推越近）
 TARGETS = {
     "none":     None,
     "chair":    (40, 240, 1000, 625),      # 左欄中下段，主席的介入出現在這裡（1.44×）
-    "thinking": (640, 60, 800, 500),       # 右欄「AI 即時觀察」與心聲（1.80×）
+    "thinking": (640, 60, 800, 500),       # 右欄上半（1.80×）
+    # 「忍住」有兩件事要講，但一個 16:10 的框裝不下：徽章在 y≈107，心聲在 y≈540 以下。
+    # 所以拆成兩個鏡位——徽章負責「它現在正忍著」，心聲負責「它為什麼忍」。
+    "held":     (800, 30, 640, 400),       # 計時器＋「忍住中・已忍住 N 秒」（2.25×）
+    "observe":  (740, 462, 700, 438),      # 「AI 即時觀察」與心聲逐條（2.06×）
     "minutes":  (640, 0, 800, 500),        # 右欄「會議產出（預覽）」（1.80×）
     # 「群體動力」抽屜是 right:0／width:380px 的覆疊層，佔畫面右緣整條高度。
     # 內容由上到下是：會議節奏（Kaner 菱形）→ 四個 KPI → 時間軸 → 主席的思考
@@ -170,7 +174,7 @@ def mmss(x: float) -> str:
     return f"{int(x) // 60}:{int(x) % 60:02d}"
 
 
-def sheet(spec: dict, events_path: Path, offset: float = 2.0) -> str:
+def sheet(spec: dict, events_path: Path, offset: float = 0.0) -> str:
     """把事件檔映到精華版的時間軸上，產生配音用的稿子。
 
     精華版是無聲的（TTS 那一軌刻意不留，由人事後配音），所以配音的人需要知道
@@ -237,6 +241,9 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, default=Path("meetings/ahem-highlight.mp4"))
     ap.add_argument("--events", type=Path, help="事件檔；給了就一併產出配音時間軸")
     ap.add_argument("--sheet-only", action="store_true", help="只產配音稿，不重新渲染影片")
+    ap.add_argument("--offset", type=float, default=0.0,
+                     help="錄影比回放起點晚幾秒。每趟錄影都不一樣（瀏覽器載入耗時不定），"
+                          "用會議時鐘對一格畫面就量得出來")
     a = ap.parse_args(argv)
 
     if a.spec:
@@ -249,7 +256,7 @@ def main(argv=None) -> int:
         build(spec, a.out)
     if a.events:
         md = a.out.with_name(a.out.stem + "-配音稿.md")
-        md.write_text(sheet(spec, a.events), encoding="utf-8")
+        md.write_text(sheet(spec, a.events, a.offset), encoding="utf-8")
         print(f"配音時間軸：{md}")
     return 0
 

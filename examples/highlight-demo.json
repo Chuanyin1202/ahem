@@ -1,0 +1,18 @@
+{
+  "source": "meetings/v3.mp4",
+  "segments": [
+    {"start": 0,   "end": 6,   "zoom": "none",     "note": "開場：黑客松籌備，四位與會者"},
+    {"start": 51,  "end": 68,  "zoom": "chair",    "note": "① 離題 → 主席把尾牙話題拉回"},
+    {"start": 164, "end": 171, "zoom": "held"    , "note": "② 忍住：判出失衡但三軸未過門檻"},
+    {"start": 184, "end": 201, "zoom": "chair",    "note": "③ 發言權失衡 → 引用被打斷的半句話"},
+    {"start": 228, "end": 234, "zoom": "observe" , "note": "④ 忍住：同型退避，90 秒內講過了"},
+    {"start": 274, "end": 291, "zoom": "chair",    "note": "⑤ 假共識 → 點名沒表態的 Billis"},
+    {"start": 298, "end": 308, "zoom": "dyn-top",
+     "source": "meetings/v3-dyn.mp4",
+     "note": "⑥ 會議節奏（Kaner）＋ KPI：判斷 14 次、開口 3、忍住 11"},
+    {"start": 41,  "end": 49,  "zoom": "dyn-bottom",
+     "source": "meetings/v3-dyn-scroll.mp4",
+     "note": "⑦ 時間軸、主席的思考、發言分佈：Alex 57% / Billis 4%"},
+    {"start": 317, "end": 326, "zoom": "minutes",  "note": "⑧ 會議產出：決議／待辦／未解決"}
+  ]
+}

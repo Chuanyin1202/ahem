@@ -1120,8 +1120,11 @@ async def main_async(args) -> None:
                                                    args.view_token or None)
             tasks.append(asyncio.create_task(
                 serve(session, args.spectator_port, op_token, view_token, args.public_read)))
-            base = os.environ.get("AHEM_PUBLIC_URL", "").rstrip("/") \
-                or f"http://localhost:{args.spectator_port}"
+            # 跟啟動橫幅共用同一支解析（`spectator.public_base_url`）——這兩個地方
+            # 各自讀環境變數正是 2026-09-05 出事的形狀：貼進 Discord 的網址讀了
+            # AHEM_PUBLIC_URL、人眼看的橫幅沒讀，同一場會議吐出兩種網址。
+            from .spectator import public_base_url
+            base, _ = public_base_url(args.spectator_port)
             bot.join_notice = (
                 "會議開始，這是本場的觀戰畫面（只有這個頻道看得到）：\n"
                 + (base if args.public_read else f"{base}/?k={view_token}")
@@ -1372,7 +1375,34 @@ def summary(s: Session) -> Path:
     return events_out
 
 
+def _env_channel_id() -> int | None:
+    """`--channel` 的預設值：讀 `AHEM_CHANNEL_ID`。
+
+    argparse 的 `type=int` 只套用在命令列給進來的字串上，**不套用在 default**，
+    所以這裡自己轉。轉不動就當作沒設定——啟動時 bot 會照原本的路徑等頻道，
+    而不是拿一個壞掉的 default 去 join 一個不存在的頻道。
+
+    為什麼要有這個：頻道 ID 是**部署環境**的東西，不是產品的一部分。寫死在
+    文件裡的指令會被複製到錯的機器上（2026-09-05 就發生過），而且這個 repo
+    是公開的，把頻道 ID 留在版控裡等於公開一個可被騷擾的目標。放進部署機器
+    自己的 .env，指令就不必帶它。
+    """
+    raw = os.environ.get("AHEM_CHANNEL_ID", "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        print(f"    ⚠️ AHEM_CHANNEL_ID 不是數字（{raw!r}），忽略")
+        return None
+
+
 def main() -> None:
+    # .env 要在建 parser 之前載入：`--channel` 的 default 來自 AHEM_CHANNEL_ID，
+    # 而 `main_async` 裡那次 load_dotenv 發生在參數解析**之後**，來不及。
+    # load_dotenv 預設不覆寫已存在的環境變數，所以呼叫兩次是安全的
+    # （命令列 export 的值仍然贏過 .env）。
+    load_dotenv(Path(__file__).parent.parent.parent / ".env")
     ap = argparse.ArgumentParser()
     ap.add_argument("--topic", default="會議")
     ap.add_argument("--duration", type=int, default=30)
@@ -1382,7 +1412,8 @@ def main() -> None:
                          "見 style.py；不給就用預設值）")
     ap.add_argument("--auto-phase", default=None, choices=["suggest", "apply"],
                     help="階段自動判斷：suggest 只在觀戰畫面建議，apply 自動套用（--no-llm 時無效）")
-    ap.add_argument("--channel", type=int, default=None, help="語音頻道 ID")
+    ap.add_argument("--channel", type=int, default=_env_channel_id(),
+                    help="語音頻道 ID。留空＝讀環境變數 AHEM_CHANNEL_ID")
     ap.add_argument("--keyterms", nargs="*", default=None, help="專有名詞提示")
     ap.add_argument("--no-llm", action="store_true", help="只跑快路")
     ap.add_argument("--say-hello", action="store_true", help="進頻道後主席先開口問候")

@@ -1347,3 +1347,20 @@ def test_judge_prompt_no_longer_asks_for_an_utterance():
     assert "utterance" not in p
     assert "你會說的話" not in p
     assert '"type"' in p and '"pros"' in p
+
+
+def test_channel_id_comes_from_env_and_bad_values_are_ignored(monkeypatch):
+    """`--channel` 的預設值讀 AHEM_CHANNEL_ID；壞值當作沒設，不拿去 join。
+
+    頻道 ID 屬於部署環境，不是產品的一部分：寫死在文件裡的指令會被複製到錯的
+    機器上，而這個 repo 是公開的，把 ID 留在版控裡等於公開一個可被騷擾的目標。
+    argparse 的 `type=int` 不套用在 default 上，所以轉換必須自己做——轉不動時
+    回 None（照原本的路徑等頻道），不能讓一個壞掉的 default 去 join 不存在的頻道。
+    """
+    from meeting_host import live
+    monkeypatch.delenv("AHEM_CHANNEL_ID", raising=False)
+    assert live._env_channel_id() is None
+    monkeypatch.setenv("AHEM_CHANNEL_ID", " 1234567890 ")
+    assert live._env_channel_id() == 1234567890
+    monkeypatch.setenv("AHEM_CHANNEL_ID", "not-a-number")
+    assert live._env_channel_id() is None

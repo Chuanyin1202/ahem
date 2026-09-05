@@ -302,6 +302,25 @@ def resolve_tokens(token: str | None = None,
             view_token or os.environ.get("AHEM_VIEW_TOKEN") or secrets.token_urlsafe(12))
 
 
+def public_base_url(port: int) -> tuple[str, bool]:
+    """觀戰畫面對外的 base URL，以及「這是不是真的對外網址」。
+
+    `AHEM_PUBLIC_URL` 由**部署那台機器**的 .env 提供（例如 Cloudflare Tunnel 的
+    主機名）；沒設就退回 `http://localhost:<port>`，並回報 False。
+
+    2026-09-05 的事故：真實會議跑在部署主機上、對外走 tunnel，但這裡的橫幅一律
+    印 `http://localhost:8765/?k=…`。那串網址在部署主機上是對的、拿給別人是死的，
+    而**橫幅本身看不出差別**——結果是把只有那台機器連得到的網址交了出去，對方
+    在外網完全打不開。`live.py` 貼進 Discord 的通知早就讀了 `AHEM_PUBLIC_URL`
+    （見該處），只有這條人眼會看的橫幅沒讀，兩邊資訊不一致。
+
+    回傳第二個值是為了讓呼叫端能在沒設的時候**明講這是本機網址**——安靜地退回
+    localhost 正是這次出事的原因，退回本身沒錯，不出聲才有錯。
+    """
+    base = os.environ.get("AHEM_PUBLIC_URL", "").strip().rstrip("/")
+    return (base, True) if base else (f"http://localhost:{port}", False)
+
+
 async def serve(session: SessionLike, port: int, token: str | None = None,
                 view_token: str | None = None, public_read: bool = False) -> None:
     """啟動觀戰 UI 伺服器；掛著跑直到被取消（`main_async` 的 `asyncio.gather` 收 Ctrl-C）。
@@ -333,11 +352,15 @@ async def serve(session: SessionLike, port: int, token: str | None = None,
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
+    base, is_public = public_base_url(port)
     if public_read:
-        print(f"觀戰 UI（公開唯讀，--public-read）：http://localhost:{port}")
+        print(f"觀戰 UI（公開唯讀，--public-read）：{base}")
     else:
-        print(f"觀戰 UI（參與者，可讀）：http://localhost:{port}/?k={view_token}")
-    print(f"觀戰 UI（操作者，可讀＋可控）：http://localhost:{port}/?k={token}")
+        print(f"觀戰 UI（參與者，可讀）：{base}/?k={view_token}")
+    print(f"觀戰 UI（操作者，可讀＋可控）：{base}/?k={token}")
+    if not is_public:
+        print("    ⚠️ AHEM_PUBLIC_URL 未設定，上面是**本機網址**——只有這台機器連得到。"
+              "\n       真實會議／demo 要交給別人的網址，必須在部署那台機器的 .env 設 AHEM_PUBLIC_URL。")
     try:
         await asyncio.Event().wait()
     finally:
@@ -404,6 +427,13 @@ async def _replay_main(path: Path, port: int, speed: float,
 
 
 def main() -> None:
+    # 回放模式是 demo 的離線備案（雲端服務掛掉時就靠它），所以它印出來的網址
+    # 跟 live 一樣要能交給別人。`live.py` 有 load_dotenv，這條路徑沒有——
+    # 2026-09-05 實測：Pi5 上跑回放，AHEM_PUBLIC_URL 明明在 .env 裡，橫幅仍然
+    # 印 localhost 並跳「未設定」警告。備案路徑在出事當下才會用到，那時沒有
+    # 人有餘裕發現網址是死的。
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent.parent.parent / ".env")
     ap = argparse.ArgumentParser(description="觀戰 UI 回放模式：無 Discord 時看畫面")
     ap.add_argument("--replay", required=True, help="events.jsonl 檔案路徑")
     ap.add_argument("--port", type=int, default=8765)

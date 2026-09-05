@@ -333,3 +333,43 @@ def test_fast_path_patterns_with_junk_are_discarded():
     assert validate_pattern("有人被冷落", good)
     assert not validate_pattern("有人被冷落", good.replace("{target}", "{target}​"))
     assert not validate_pattern("有人被冷落", "Bილის" + good)
+
+
+def test_same_type_backoff_blocks_the_repeat_not_the_first_call():
+    """同型退避擋的是「同一件事講第二次」，不是第一次。
+
+    2026-09-05：腳本場次的離題提醒間隔 01:25／02:04／02:44／03:24／04:02——
+    每 38-40 秒一次，正好是全域冷卻 30 秒加上慢路 tick 與話術往返，也就是
+    「一到能講就講」。快路早就有 done 集合與全場沉默的退避，慢路兩者都沒有。
+    """
+    from meeting_host import live, slow_path
+    st = MeetingState(topic="t", duration_min=20, participants=["Alex", "Billis"])
+    st.add(Utterance("Alex", "在聊房租", 0, 10))
+    st.add(Utterance("Billis", "對啊漲很多", 12, 20))
+    r = {"type": "離題", "verdict": "負向介入", "positive": 2, "negative": 4, "none": 1}
+
+    ok, why = live.slow_gate(st, 200.0, r)
+    assert ok and why == "", "第一次要放行"
+
+    st.type_spoken_at["離題"] = 200.0
+    st.interventions.append(200.0)
+    # 全域冷卻（30s）已過，但同型退避（90s）還沒
+    ok, why = live.slow_gate(st, 200.0 + 40, r)
+    assert not ok and why == "同型退避", (ok, why)
+
+    ok, why = live.slow_gate(st, 200.0 + slow_path.SAME_TYPE_COOLDOWN_SECONDS + 1, r)
+    assert ok, "退避期過了要放行"
+
+    # 換一個型別不受影響——退避是「同一件事」，不是「主席閉嘴」
+    st2 = MeetingState(topic="t", duration_min=20, participants=["Alex", "Billis"])
+    st2.add(Utterance("Alex", "x", 0, 10))
+    st2.type_spoken_at["離題"] = 200.0
+    st2.interventions.append(200.0)
+    ok, _ = live.slow_gate(st2, 240.0, {**r, "type": "僵局"})
+    assert ok, "不同型別不該被別人的退避擋住"
+
+
+def test_backoff_value_reuses_the_room_silence_threshold():
+    """90 秒不是新發明的數字：專案已經為『同一件事重複提醒』定過它。"""
+    from meeting_host import fast_path, slow_path
+    assert slow_path.SAME_TYPE_COOLDOWN_SECONDS == fast_path.SILENCE_SECONDS

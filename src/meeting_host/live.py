@@ -185,6 +185,14 @@ def slow_gate(st: MeetingState, now: float, r: dict, deaf: bool = False) -> tupl
         return False, "失聰"
     if st.since_last_intervention(now) < fast_path.COOLDOWN_SECONDS:
         return False, "冷卻"
+    # 同型退避：全域冷卻只管「上一次開口」，管不到「同一件事講第五次」。
+    # 排在全域冷卻之後，理由跟收尾排在冷卻之前一樣——讓 reason 指出真正的原因：
+    # 落在全域冷卻內的本來就會被上一關擋掉，走到這裡代表冷卻已經過了、
+    # 是同型重複才被擋。
+    from .slow_path import SAME_TYPE_COOLDOWN_SECONDS
+    last = st.type_spoken_at.get(r.get("type"))
+    if last is not None and now - last < SAME_TYPE_COOLDOWN_SECONDS:
+        return False, "同型退避"
     return True, ""
 
 
@@ -842,6 +850,14 @@ class Session:
                 self.log.append(f"    (主席聽不到，慢路不出聲：{reason})【{r['type']}】")
             elif reason == "冷卻":
                 self.log.append(f"    (慢路結果在冷卻期內作廢)【{r['type']}】")
+            elif reason == "同型退避":
+                # 沒有這一支的話，閘門生效時 log 只是安靜下來，看的人不知道為什麼——
+                # 2026-09-05 實測那場擋了 6 次，log 一個字都沒有。
+                from .slow_path import SAME_TYPE_COOLDOWN_SECONDS
+                last = self.st.type_spoken_at.get(r["type"], 0.0)
+                self.log.append(
+                    f"    (同一型別 {self.now - last:.0f} 秒前才講過，退避中)"
+                    f"【{r['type']}】門檻 {SAME_TYPE_COOLDOWN_SECONDS:.0f} 秒")
             elif reason == "話術失敗":
                 self.log.append(f"    (慢路決定開口但話術生成失敗，放棄這次介入)【{r['type']}】")
             elif reason == "話術過長":
@@ -1157,6 +1173,7 @@ async def main_async(args) -> None:
         # 這裡重新讀時鐘的話，callback 的時間契約就白給了
         at_relative = at - session.t0
         st.interventions.append(at_relative)
+        st.type_spoken_at[iv.kind] = at_relative   # 慢路同型退避讀它（見 slow_path 的常數）
         session.emit("spoken", {"kind": iv.kind, "target": iv.target, "text": iv.text,
                                  "hard": iv.hard, "at": at_relative})
         session.emit_share()

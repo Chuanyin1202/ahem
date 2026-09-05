@@ -80,6 +80,13 @@ class MeetingState:
     # （見 Session._fast_tick 呼叫 note_room_silence_fired()），呼叫端負責時機，
     # 跟 done 的管理方式一致。
     room_silence_hits: int = 0
+    # 每個介入型別上次真的出聲的時刻（會議相對秒）。慢路的「同型退避」讀它——
+    # 快路早就有 `done: set[(kind, target)]`（同一件事講過就不再講，狀態改變才解除）
+    # 與 `room_silence_hits`（門檻每觸發一次 ×1.5），慢路兩者都沒有，於是同一段
+    # 離題可以每 38-40 秒被提醒一次（2026-09-05 腳本場次實測：01:25／02:04／02:44／
+    # 03:24／04:02，正好是全域冷卻 30 秒＋慢路 tick＋話術往返）。
+    # 由 `live.Session.on_spoken` 在真的出聲時寫入，跟 `interventions` 同一時機。
+    type_spoken_at: dict[str, float] = field(default_factory=dict)
 
     def add(self, u: Utterance) -> None:
         self.utterances.append(u)

@@ -188,6 +188,7 @@ by team **分身有術** (T043), on the **AI for Everyday Life** track, for the
 | Billis | Back-end UI |
 | Jax | Testing |
 
+Submission video: <https://youtu.be/fBwspxwBTws> (94 seconds, unlisted).
 Live demo: <https://ahem.eighti.app> — a permanent replay of the meeting above.
 
 License: [MIT](LICENSE). Every dependency, font and asset is listed with its

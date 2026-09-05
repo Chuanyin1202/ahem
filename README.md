@@ -175,7 +175,7 @@ PYTHONPATH=src .venv/bin/python -m pytest -q tests
 
 ## 作品展示
 
-- **評選影片**：【待補 YouTube 連結，設為「知道連結即可觀看」】
+- **評選影片**：<https://youtu.be/fBwspxwBTws>（94 秒，設為「知道連結即可觀看」）
 - **作品展示網址**：<https://ahem.eighti.app> —— 常駐回放一場完整會議（黑客松籌備，四位與會者），
   可直接看到主席的三次介入、兩次「判出問題但選擇不開口」，以及會後產出的決議／待辦／未解決事項。
 - **原始碼**：<https://github.com/Chuanyin1202/ahem>

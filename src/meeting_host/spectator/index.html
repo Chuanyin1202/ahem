@@ -483,7 +483,11 @@
   /* 2026-09-05：窄螢幕仍鎖在單一 viewport；左右內容各自捲動，避免長逐字稿或
      即時觀察把另一欄推出畫面。所有縮小都由實際的 min-width/換行處理，不用全域
      overflow-x:hidden 掩蓋溢位。 */
-  @media (max-width: 767px) {
+  /* 斷點要對齊上面那個 `min-width: 1200px`，不是對齊「手機」這個概念。停在 767px
+     的話，768–1199px 之間沒有任何規則管得到它，版面被撐到 1200 然後橫向捲動——
+     iPad 直式（768）、橫式（1024）、半螢幕的筆電視窗全部中獎。實測 767→ok、
+     768→內容 1200 溢出、1199→溢出、1200→ok。 */
+  @media (max-width: 1199px) {
     body { min-width: 0; }
     .head {
       align-items: stretch; flex-direction: column; gap: 16px;

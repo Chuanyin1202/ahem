@@ -10,6 +10,7 @@ import os
 import secrets
 import sqlite3
 import time
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -145,22 +146,52 @@ class Workspace:
                    and not hmac.compare_digest(actor['_credential_digest'], expired['digest']))
         return rotated or (expired is not None and expired[0] <= time.time()) or self.db.execute('SELECT 1 FROM disabled_members WHERE actor=?', (actor['id'],)).fetchone() is not None
 
-    def issue_credential(self, profile, days):
+    @contextmanager
+    def transaction(self):
+        """Synchronous, nest-safe unit of work; commit failures also roll back.
+
+        Never await inside this scope: the connection is shared by HTTP handlers.
+        """
+        if self.db.in_transaction:
+            savepoint = 'nested_' + secrets.token_hex(8)
+            self.db.execute(f'SAVEPOINT {savepoint}')
+            try:
+                yield
+                self.db.execute(f'RELEASE SAVEPOINT {savepoint}')
+            except BaseException:
+                self.db.execute(f'ROLLBACK TO SAVEPOINT {savepoint}')
+                self.db.execute(f'RELEASE SAVEPOINT {savepoint}')
+                raise
+        else:
+            try:
+                self.db.execute('BEGIN IMMEDIATE')
+                yield
+                self.db.commit()
+            except BaseException:
+                self.db.rollback()
+                raise
+
+    def issue_credential(self, profile, days, *, audit_actor=None, action=None):
+        # Memory must only change after the outermost durable commit.
+        if self.db.in_transaction:
+            raise RuntimeError('Credential issuance requires its own transaction')
         token=secrets.token_urlsafe(32)
         digest=hashlib.sha256(token.encode()).hexdigest()
         expires=time.time()+days*86400
-        with self.db:
+        with self.transaction():
             self.db.execute('INSERT OR REPLACE INTO member_credentials VALUES (?,?,?,?)',
                 (profile['id'],digest,json.dumps(profile),expires))
+            if audit_actor is not None:
+                self.audit(audit_actor, action, 'ok')
         self.identities={k:v for k,v in self.identities.items() if v['id']!=profile['id']}
         self.identities[digest]=dict(profile)
         self.sessions={k:v for k,v in self.sessions.items() if v[0]['id']!=profile['id']}
         return {'token':token,'expires_at':expires,'actor':profile['id']}
 
     def audit(self, actor, action, outcome, target=None):
-        self.db.execute("INSERT INTO audit (at,tenant,actor,action,outcome,target) VALUES (?,?,?,?,?,?)", (time.time(), actor["tenant"],
-            hashlib.sha256(actor["id"].encode()).hexdigest()[:16], action, outcome, target))
-        self.db.commit()
+        with self.transaction():
+            self.db.execute("INSERT INTO audit (at,tenant,actor,action,outcome,target) VALUES (?,?,?,?,?,?)", (time.time(), actor["tenant"],
+                hashlib.sha256(actor["id"].encode()).hexdigest()[:16], action, outcome, target))
 
     def expire(self):
         self.evaluate_alerts()
@@ -179,7 +210,7 @@ class Workspace:
         """Allowlisted health only; never include raw errors or meeting content."""
         now=time.time()
         rows=self.db.execute('SELECT h.* FROM health h JOIN alert_rules r ON h.tenant=r.tenant AND h.component=r.component WHERE r.enabled=1').fetchall()
-        with self.db:
+        with self.transaction():
             for row in rows:
                 state=row['state'] if now-row['at']<300 else 'unknown'
                 old=self.db.execute('SELECT state FROM alert_state WHERE tenant=? AND component=?',(row['tenant'],row['component'])).fetchone()
@@ -211,8 +242,7 @@ class Workspace:
             raise ValueError('Invalid source identifier')
         mid = secrets.token_hex(16)
         blob = self.store.encrypt_text(json.dumps(events, ensure_ascii=False), meeting_id=mid, artifact_type="events")
-        with self.db:
-            self.db.execute('BEGIN IMMEDIATE')
+        with self.transaction():
             if source_id is not None:
                 receipt = self.db.execute('SELECT meeting FROM import_receipts WHERE tenant=? AND source=?',
                                           (actor['tenant'], source_id)).fetchone()
@@ -223,7 +253,7 @@ class Workspace:
             self.db.execute("INSERT INTO meeting_imports VALUES (?,?)", (mid,time.time()))
             if source_id is not None:
                 self.db.execute('INSERT INTO import_receipts VALUES (?,?,?)', (actor['tenant'],source_id,mid))
-        self.audit(actor, "import", "ok", mid)
+            self.audit(actor, "import", "ok", mid)
         return mid
 
 
@@ -299,11 +329,11 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
         sid = secrets.token_urlsafe(32)
         credential = ws.db.execute('SELECT expires FROM member_credentials WHERE actor=?', (actor['id'],)).fetchone()
         expires = min(now+1800, credential[0]) if credential else now+1800
+        ws.audit(actor, "login", "ok")
         ws.sessions[sid] = (actor, expires)
         response = web.json_response({"role": actor["role"]})
         response.set_cookie("enterprise", sid, httponly=True, samesite="Strict",
                             secure=origin.startswith("https://"), max_age=max(0, int(expires-now)), path="/")
-        ws.audit(actor, "login", "ok")
         return response
 
     async def logout(request):
@@ -314,8 +344,8 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
 
     async def logout_all(request):
         actor = request[ACTOR]
-        ws.sessions = {k: v for k, v in ws.sessions.items() if v[0]["id"] != actor["id"]}
         ws.audit(actor, "logout_all", "ok")
+        ws.sessions = {k: v for k, v in ws.sessions.items() if v[0]["id"] != actor["id"]}
         response = web.json_response({"ok": True})
         response.del_cookie("enterprise", path="/")
         return response
@@ -410,12 +440,12 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
                        a["tenant"] == actor["tenant"] and a["role"] == "viewer"), None)
         if target is None or type(body.get("allow")) is not bool:
             raise ValueError("Invalid grant")
-        with ws.db:
+        with ws.transaction():
             if body["allow"]:
                 ws.db.execute("INSERT OR IGNORE INTO grants VALUES (?,?)", (row["id"], target["id"]))
             else:
                 ws.db.execute("DELETE FROM grants WHERE meeting=? AND actor=?", (row["id"], target["id"]))
-        ws.audit(actor, "grant" if body["allow"] else "revoke", "ok", row['id'])
+            ws.audit(actor, "grant" if body["allow"] else "revoke", "ok", row['id'])
         return web.json_response({"ok": True})
 
     async def health(request):
@@ -425,13 +455,13 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
             body = await object_body(request)
             if body.get("component") not in COMPONENTS or body.get("state") not in SERVICE_STATES:
                 raise ValueError("Use allowlisted component/state")
-            with ws.db:
+            with ws.transaction():
                 previous = ws.db.execute("SELECT state FROM health WHERE tenant=? AND component=?",
                     (actor["tenant"], body["component"])).fetchone()
                 if not previous or previous[0] != body["state"]:
                     ws.db.execute("INSERT INTO health_history VALUES (?,?,?,?)", (actor["tenant"], body["component"], body["state"], time.time()))
                 ws.db.execute("INSERT OR REPLACE INTO health VALUES (?,?,?,?)", (actor["tenant"], body["component"], body["state"], time.time()))
-            ws.evaluate_alerts()
+                ws.evaluate_alerts()
         rows = {r["component"]: r for r in ws.db.execute("SELECT * FROM health WHERE tenant=?", (actor["tenant"],))}
         return web.json_response({"components": [dict(component=c,
             state=rows[c]["state"] if c in rows and time.time()-rows[c]["at"] < 300 else "unknown",
@@ -470,9 +500,9 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
         if row["policy"] == "regulated" and target != "regulated":
             raise ValueError("Restricted content cannot be downgraded")
         expires = min(row["expires"], time.time()+days*86400)
-        with ws.db:
+        with ws.transaction():
             ws.db.execute("UPDATE meetings SET policy=?,expires=? WHERE id=?", (target, expires, row["id"]))
-        ws.audit(actor, "policy", "ok", row['id'])
+            ws.audit(actor, "policy", "ok", row['id'])
         return web.json_response({"policy": target, "expires_at": expires})
 
     async def members(request):
@@ -484,18 +514,18 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
                 raise web.HTTPNotFound()
             if target.get("regulated_content") is True and actor.get("regulated_content") is not True:
                 raise web.HTTPForbidden()
-            if request.path.endswith('/status'):
-                enabled = body.get('enabled')
-                if type(enabled) is not bool or target['id'] == actor['id']:
-                    raise ValueError('Cannot change own status')
-                with ws.db:
+            with ws.transaction():
+                if request.path.endswith('/status'):
+                    enabled = body.get('enabled')
+                    if type(enabled) is not bool or target['id'] == actor['id']:
+                        raise ValueError('Cannot change own status')
                     if enabled:
                         ws.db.execute('DELETE FROM disabled_members WHERE actor=?',(target['id'],))
                     else:
                         ws.db.execute('INSERT OR IGNORE INTO disabled_members VALUES (?)',(target['id'],))
-                ws.audit(actor, 'member_enable' if enabled else 'member_disable', 'ok')
+                    ws.audit(actor, 'member_enable' if enabled else 'member_disable', 'ok')
+                ws.audit(actor, "revoke_sessions", "ok")
             ws.sessions = {k: v for k, v in ws.sessions.items() if v[0]["id"] != target["id"]}
-            ws.audit(actor, "revoke_sessions", "ok")
             return web.json_response({"ok": True})
         return web.json_response({"members": [dict(id=i["id"],role=i["role"],regulated_content=i.get("regulated_content") is True,
             suspended=ws.db.execute('SELECT 1 FROM disabled_members WHERE actor=?',(i['id'],)).fetchone() is not None,
@@ -529,8 +559,7 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
             if target['id']==actor['id'] or (target.get('regulated_content') and not actor.get('regulated_content')):
                 raise web.HTTPForbidden()
             action='credential_rotate'
-        result=ws.issue_credential(target,days)
-        ws.audit(actor,action,'ok')
+        result=ws.issue_credential(target,days,audit_actor=actor,action=action)
         # Plaintext returned once; only a digest is persisted. Never log this response.
         return web.json_response(result)
 
@@ -554,9 +583,9 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
         day=body.get('day')
         if not isinstance(day,str) or date.fromisoformat(day).isoformat()!=day or date.fromisoformat(day)>datetime.now(MEETING_TZ).date():
             raise ValueError('Expected a non-future YYYY-MM-DD meeting date')
-        with ws.db:
+        with ws.transaction():
             ws.db.execute('INSERT OR REPLACE INTO meeting_dates VALUES (?,?)',(row['id'],day))
-        ws.audit(actor,'meeting_date_update','ok',row['id'])
+            ws.audit(actor,'meeting_date_update','ok',row['id'])
         return web.json_response({'day':day,'source':'operator_entered'})
 
     async def meeting_trends(request):
@@ -586,18 +615,18 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
                 expected={'open':'acknowledged','acknowledged':'resolved'}.get(row['status'])
                 if target != expected or expected is None:
                     raise ValueError('Invalid incident transition')
-                with ws.db:
+                with ws.transaction():
                     ws.db.execute('UPDATE incidents SET status=?,updated=? WHERE id=?',(target,now,row['id']))
-                ws.audit(actor,'incident_'+target,'ok')
+                    ws.audit(actor,'incident_'+target,'ok')
             else:
                 if body.get('component') not in COMPONENTS or body.get('severity') not in {'warning','critical'}:
                     raise ValueError('Invalid incident')
                 # No free text: support must never receive raw customer content.
-                with ws.db:
+                with ws.transaction():
                     if ws.db.execute("SELECT 1 FROM incidents WHERE tenant=? AND component=? AND status!='resolved'",(actor['tenant'],body['component'])).fetchone():
                         raise web.HTTPConflict(reason='Component already has an open incident')
                     ws.db.execute('INSERT INTO incidents VALUES (?,?,?,?,?,?,?)', (secrets.token_hex(16),actor['tenant'],body['component'],body['severity'],'open',now,now))
-                ws.audit(actor,'incident_create','ok')
+                    ws.audit(actor,'incident_create','ok')
         limit,offset=paging(request)
         rows=ws.db.execute('SELECT id,component,severity,status,created,updated FROM incidents WHERE tenant=? ORDER BY updated DESC,id LIMIT ? OFFSET ?', (actor['tenant'],limit,offset))
         return web.json_response({'entries':[dict(r) for r in rows], 'limit':limit,'offset':offset,
@@ -609,12 +638,12 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
             body=await object_body(request)
             if body.get('component') not in COMPONENTS or type(body.get('enabled')) is not bool:
                 raise ValueError('Invalid alert rule')
-            with ws.db:
+            with ws.transaction():
                 ws.db.execute('INSERT OR REPLACE INTO alert_rules VALUES (?,?,?)',(actor['tenant'],body['component'],int(body['enabled'])))
                 if not body['enabled']:
                     ws.db.execute('DELETE FROM alert_state WHERE tenant=? AND component=?',(actor['tenant'],body['component']))
-            ws.audit(actor,'alert_rule_update','ok')
-            ws.evaluate_alerts()
+                ws.audit(actor,'alert_rule_update','ok')
+                ws.evaluate_alerts()
         rules={r['component']:bool(r['enabled']) for r in ws.db.execute('SELECT * FROM alert_rules WHERE tenant=?',(actor['tenant'],))}
         return web.json_response({'rules':[{'component':c,'enabled':rules.get(c,False)} for c in sorted(COMPONENTS)]})
 
@@ -640,10 +669,10 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
         if row['policy'] == 'regulated' and actor.get('regulated_content') is not True:
             ws.audit(actor, 'delete', 'denied', row['id'])
             raise web.HTTPForbidden()
-        with ws.db:
+        with ws.transaction():
             ws.db.execute("DELETE FROM grants WHERE meeting=?", (row["id"],))
             ws.db.execute("DELETE FROM meetings WHERE id=?", (row["id"],))
-        ws.audit(actor, "delete", "ok", row['id'])
+            ws.audit(actor, "delete", "ok", row['id'])
         return web.json_response({"ok": True})
 
     app = web.Application(middlewares=[boundary], client_max_size=4*1024*1024)

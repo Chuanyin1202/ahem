@@ -32,7 +32,7 @@ Discord voice (one track per participant)
    → ElevenLabs Scribe real-time Mandarin transcript
    → two judgement paths
         fast path: pure rules, zero latency   overrun / agenda / neglected / room silence
-        slow path: LLM, every 5 s             off-topic / repetition / false consensus / deadlock / factual error
+        slow path: LLM, every 5 s             off-topic / repetition / false consensus / deadlock / factual error / floor imbalance
    → quiet gates (any one blocks speech)
         meeting winding down / STT dead / cooldown / no acceptable phrasing
    → speak: a hard interruption plays a chime first; a soft one waits for a pause and speaks directly
@@ -103,9 +103,10 @@ Ahem has chaired and been measured on two real Discord meetings (14 and 43 minut
 | Aspect | Status |
 |---|---|
 | Phrasing quality | Solved. After the split into two calls, 32 of 34 scoring points quote the transcript verbatim (2 of 34 before) |
-| Judgement stability | **The main open problem.** Re-running the same scoring points five times, the chair speaks between 1 and 5 times; of the three moments labelled "should speak", it misses all three in 3 rounds out of 5. Majority voting was measured and helps little; three judgement-prompt variants (coarser scale, explicit criteria, two-stage) each improved one recording at the other's expense: raising sensitivity raises false positives in step |
+| Judgement stability | **Still the main open problem.** Re-running the same scoring points five times, the chair speaks between 1 and 5 times; three judgement-prompt variants (coarser scale, explicit criteria, two-stage) each improved one recording at the other's expense: raising sensitivity raises false positives in step |
+| "Should have spoken but didn't" | Half solved. One cause was a missing slot in the type list: the model decided to intervene, found no type that fit, answered "none", and was killed by its own type gate (64% of all "intervene" verdicts on the 8/31 recording went that way). Adding a "floor imbalance" type plus code-computed structural signals took the labelled monologue window from 0/5 rounds to 5/5; the price is slow-path false positives rising from a median of 3 to 5. The other half (the three axes tying and being vetoed) is unsolved |
 | Housekeeping misfires | Fixed. Adjusting audio or locating a file was read as off-topic in 5 of 5 rounds; now 0 of 5, with no loss on genuine off-topic detection |
-| Intervention coverage | Of the six types, "false consensus" and "factual error" have never fired in a real meeting |
+| Intervention coverage | Of the seven types, "false consensus" and "factual error" have never fired in a real meeting |
 | STT failure detection | Implemented; verified offline only |
 | Phase detection | First version, suggest mode; 0 spurious switches across 36 readings on two recordings that stay divergent; criteria exclude conflict aimed at the chair |
 

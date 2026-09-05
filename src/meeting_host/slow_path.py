@@ -55,7 +55,14 @@ KEY_RULES = """判斷原則：
 1. 看意圖與影響——發言者想做什麼，那些話會如何影響其他人
 2. 必看前後文——單獨看沒問題的話，放進脈絡可能正在升溫，反之亦然
 3. 評行為不評觀點——你同不同意那個看法完全不影響判斷，只看語氣、清晰度、建設性、對討論的影響
-4. 保持一致——全程用同一套標準，只用實際出現的內容，不要過度詮釋"""
+4. 保持一致——全程用同一套標準，只用實際出現的內容，不要過度詮釋
+
+關於「發言權失衡」這一類（其他類型看的是「說了什麼」，只有這一類看的是「誰還在參與」）：
+算的樣子——有人被實質排除在討論之外：他被接走話之後始終沒能把那句講完，
+或已經連續幾分鐘只剩「嗯」「對」「OK」這種應聲，討論實際上只剩一個人在推。
+不算的樣子——只是某人講得比較多、或這一段本來就由某人主述而其他人在聽。
+兩個人的發言時間本來就不會一樣，**佔比數字本身不構成失衡**，不要拿百分比當理由。
+要看的是對方還有沒有真的在參與。"""
 
 PHASE_RULES = """## 會議階段（由背景任務持續判定，不是你要推斷的）
 目前：{phase}
@@ -81,6 +88,9 @@ TEMPLATE = """## 會議資訊
 ## 發言統計
 {stats}
 {phase_block}
+## 結構訊號（程式量到的，不是你要推測的）
+{structure}
+
 ## 最近的對話
 {transcript}
 
@@ -96,7 +106,7 @@ TEMPLATE = """## 會議資訊
   "positive": <1-5，該鼓勵某人或某種行為的強度>,
   "negative": <1-5，該抑制某人或某種行為的強度>,
   "none": <1-5，此刻不需要任何介入的強度。獨立評分，不是前兩者的殘差>,
-  "type": "<離題/重複/假共識/僵局/事實錯誤/無>"
+  "type": "<離題/重複/假共識/僵局/事實錯誤/發言權失衡/無>"
 }}"""
 
 
@@ -160,6 +170,42 @@ def is_intervention(r: dict) -> bool:
     return r.get("verdict") != "不介入" and r.get("type") not in ("無", "", None)
 
 
+# 結構訊號的回顧長度。取 3 分鐘不是調出來的：`fast_path.OVERTIME_SECONDS` 是 180 秒，
+# 用同一個長度，「快路已經在數的那一輪」跟慢路看到的窗口才是同一段時間，兩條路對
+# 「這個人講多久了」不會各說各話。
+#
+# 只用 `Replay.state_at()` 也重建得出來的欄位（utterances／speaking／participants）——
+# 不碰 voice_active／silence_since，那兩個離線重建不出來（見 rescore_slow_path.Replay
+# 的 docstring），用了就等於讓 production 與離線重評看到不同的 prompt，之後所有
+# 回放量測都不再對得上 production。
+STRUCTURE_WINDOW_SECONDS = 180.0
+
+
+def build_structure(st: MeetingState, now: float) -> str:
+    """把「誰還在參與」這件事算成數字，不要模型自己從逐字稿數。
+
+    為什麼需要這一段：`最近的對話` 只有 6 則，而真人講長話時 6 則可能橫跨兩三分鐘、
+    也可能只有二十秒，模型無從分辨「對方剛講完」與「對方三分鐘只回了一個『OK』」。
+    最長句字數是這裡最關鍵的一欄——它把「應聲」跟「發言」分開：2026-08-31 那場
+    O1 窗口內，Jax 三分鐘內唯一的一句是「OK。」（3 字），Alex 最長 280 字。
+    """
+    lo = now - STRUCTURE_WINDOW_SECONDS
+    win = [u for u in st.utterances if u.end >= lo]
+    lines = []
+    for p in st.participants:
+        mine = [u for u in win if u.speaker == p]
+        secs = sum(u.end - u.start for u in mine)
+        longest = max((len(u.text) for u in mine), default=0)
+        lines.append(f"- 最近 3 分鐘 {p}：說了 {secs:.0f} 秒／{len(mine)} 句，"
+                     f"最長的一句 {longest} 字")
+    switches = sum(1 for a, b in zip(win, win[1:]) if a.speaker != b.speaker)
+    lines.append(f"- 最近 3 分鐘發言權易手 {switches} 次")
+    who, run = st.current_run_seconds(now)
+    lines.append(f"- 目前這一輪：{who} 已連續講 {run / 60:.1f} 分鐘，中間沒有人插話"
+                 if who else "- 目前這一輪：沒有人正在連續發言")
+    return "\n".join(lines)
+
+
 def build_prompt(st: MeetingState, now: float, phase: str | None = None) -> str:
     stats = "\n".join(
         f"- {p}：發言 {st.spoke_seconds(p) / 60:.1f} 分鐘（佔 {st.share(p, now):.0%}），"
@@ -171,7 +217,8 @@ def build_prompt(st: MeetingState, now: float, phase: str | None = None) -> str:
     return TEMPLATE.format(
         topic=st.topic, duration=st.duration_min, elapsed=now / 60,
         participants="、".join(st.participants),
-        stats=stats, transcript=transcript, rules=KEY_RULES,
+        stats=stats, structure=build_structure(st, now),
+        transcript=transcript, rules=KEY_RULES,
         phase_block=f"\n{PHASE_RULES.format(phase=phase)}\n" if phase else "")
 
 

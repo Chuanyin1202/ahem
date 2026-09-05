@@ -114,6 +114,15 @@
   .clock { font-size: 36px; font-weight: 600; color: var(--text); }
   .clock-total { font-size: 13px; color: var(--muted); }
   .status { font-size: 12px; color: var(--muted); }
+  /* 2026-09-05 Zeal 比對原始提案 Artifact（Ahem 主席狀態畫面提案，Main.dc.html）
+     發現右上角排版跟現行版不同：提案圖是「階段名稱＋主席狀態徽章」同一排橫向
+     並排（.head-clock 只有 clock-row／badge-row／caption 三排），現行版把
+     phase 文字疊在徽章下面自成一排，變成四排。這裡補一個橫排容器把兩者併回
+     同一排，其餘（clock-row 在上、caption 在下）不動。.phase-menu 的下拉選單
+     用 position:absolute + top:100%，錨點是最近的 position:relative 祖先
+     （.head-clock，不是這個新容器），這裡刻意不給 .badge-row 設 position，
+     移動 DOM 位置不影響下拉選單原本的定位邏輯。 */
+  .badge-row { display: flex; align-items: center; gap: 10px; }
 
   /* 階段切換：設計稿沒有這個控制項（它是單一「決定階段」的靜態畫面），但現場
      demo 需要手動切階段。做法是讓設計稿本來就有的狀態列文字可點，點開一個用
@@ -507,15 +516,18 @@
           <div class="clock mono" id="clock">00:00</div>
           <div class="clock-total mono" id="clock-total">/ --:--</div>
         </div>
-        <!-- 主席狀態徽章：三態圖示疊在同一個位置，CSS 依 .chair-badge--<mode> 顯示對應那個 -->
-        <div class="chair-badge" id="chair-badge" hidden>
-          <svg class="chair-badge-icon" data-mode="speaking" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="9" x2="5" y2="15"></line><line x1="12" y1="5" x2="12" y2="19"></line><line x1="19" y1="9" x2="19" y2="15"></line></svg>
-          <svg class="chair-badge-icon" data-mode="holding" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="8" y1="5" x2="8" y2="19"></line><line x1="16" y1="5" x2="16" y2="19"></line></svg>
-          <svg class="chair-badge-icon" data-mode="warning" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L22 20 L2 20 Z"></path><line x1="12" y1="9.5" x2="12" y2="14"></line><circle cx="12" cy="16.8" r="0.9" fill="currentColor" stroke="none"></circle></svg>
-          <span class="chair-badge-label" id="chair-badge-label">忍住中</span>
+        <!-- 2026-09-05：跟提案圖 Main.dc.html 對齊，phase 文字＋主席徽章同一排 -->
+        <div class="badge-row">
+          <div class="status" id="status">等待會議開始</div>
+          <!-- 主席狀態徽章：三態圖示疊在同一個位置，CSS 依 .chair-badge--<mode> 顯示對應那個 -->
+          <div class="chair-badge" id="chair-badge" hidden>
+            <svg class="chair-badge-icon" data-mode="speaking" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="9" x2="5" y2="15"></line><line x1="12" y1="5" x2="12" y2="19"></line><line x1="19" y1="9" x2="19" y2="15"></line></svg>
+            <svg class="chair-badge-icon" data-mode="holding" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="8" y1="5" x2="8" y2="19"></line><line x1="16" y1="5" x2="16" y2="19"></line></svg>
+            <svg class="chair-badge-icon" data-mode="warning" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L22 20 L2 20 Z"></path><line x1="12" y1="9.5" x2="12" y2="14"></line><circle cx="12" cy="16.8" r="0.9" fill="currentColor" stroke="none"></circle></svg>
+            <span class="chair-badge-label" id="chair-badge-label">忍住中</span>
+          </div>
         </div>
         <div class="chair-badge-caption mono" id="chair-badge-caption"></div>
-        <div class="status" id="status">等待會議開始</div>
         <!-- 階段切換選單，預設收起；顯示文字＝發想／拉鋸／決定，data-phase 是內部值 -->
         <div class="phase-menu" id="phase-menu" hidden>
           <div class="phase-item" data-phase="發散期">發想</div>

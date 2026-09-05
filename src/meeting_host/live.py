@@ -1068,6 +1068,14 @@ class Session:
         隔離：整段包在 try/except（比照 `watch_minutes`）——LLM 失敗、逾時、
         JSON 壞掉都只印一行跳過，不拖垮其他背景迴圈；`CancelledError` 原樣
         往外拋，那是收尾路徑，不是錯誤。
+
+        2026-09-06 Track H：`CRITIQUE_SYSTEM` 承諾的主席介入紀錄與發言統計，由
+        這裡負責從 `self.st`／`self.now` 換算成 `critique.CritiqueStats`（純
+        資料，不含 `Session`／`MeetingState` 物件本身）再傳給 `_call_critique_llm`
+        ——`build_critique_prompt()` 因此仍是不依賴 `Session` 的純函式，單元測試
+        不用建一整個 Session 就能餵假資料。佔比分母沿用 `emit_share()` 那一套
+        （`chair_seconds = len(st.interventions) * 3.0`），不是 `state.share()`
+        （見 `emit_share()` docstring）。
         """
         while True:
             await asyncio.sleep(CRITIQUE_INTERVAL_S)
@@ -1075,10 +1083,26 @@ class Session:
                 n_utterances = sum(1 for e in self.events if e.kind == "utterance")
                 if n_utterances < CRITIQUE_MIN_UTTERANCES:
                     continue
-                from .critique import _call_critique_llm
+                from .critique import CritiqueStats, ParticipantSpeechStat, _call_critique_llm
                 events_snapshot = list(self.events)  # 同一個 event loop，複製期間不會被改
-                participants = list(self.st.participants)
-                payload = await asyncio.to_thread(_call_critique_llm, events_snapshot, participants)
+                now = self.now
+                chair_seconds = len(self.st.interventions) * 3.0  # 同 emit_share() 的估算
+                stats = CritiqueStats(
+                    now=now,
+                    remaining_seconds=self.st.remaining_seconds(now),
+                    participants=[
+                        ParticipantSpeechStat(
+                            name=p,
+                            spoke_seconds=self.st.spoke_seconds(p),
+                            silent_seconds=self.st.silent_seconds(p, now),
+                            absent=p in self.st.absent,
+                        )
+                        for p in self.st.participants
+                    ],
+                    chair_seconds=chair_seconds,
+                    chair_interventions=len(self.st.interventions),
+                )
+                payload = await asyncio.to_thread(_call_critique_llm, events_snapshot, stats)
                 if self.ending:
                     # 跟 watch_minutes 同一個理由：這通 LLM 呼叫飛行期間會議已經進入
                     # 收尾，這筆心聲觀察不該再補發、蓋掉已經在收尾的畫面。

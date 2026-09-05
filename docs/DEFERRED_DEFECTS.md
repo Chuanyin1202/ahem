@@ -129,7 +129,7 @@
   （`.drawer`、`.drawer > summary`、`.drawer-body`、`.section-secondary`）一併
   移除，由 Track D 的滑入式覆疊抽屜取代。
 
-## 7. Track G「心聲」的 system prompt 承諾了 prompt 內容目前沒給的資料
+## 7. 【已解決】Track G「心聲」的 system prompt 承諾了 prompt 內容目前沒給的資料
 
 - **發現時間**：2026-09-05
 - **發現於哪一批**：Track G（AI 即時觀察加「心聲」類，接真的 LLM）
@@ -149,8 +149,18 @@
   不影響保險栓、不影響既有測試——LLM 拿不到承諾的資料，最壞情況是判斷力打折
   （例如評不出「這個人態度前後不一致」這種需要對照介入紀錄才看得出的觀察），
   不是程式錯誤，也不會導致例外或當機。
-- **狀態**：待處理。demo 前風險低（LLM 通常會就手上實際拿到的逐字稿內容作答，
-  不會因為 system prompt 多提了兩樣東西就當機或亂編），但要做到 system prompt
-  講的完整版本，下一棒可以參考 `minutes.build_minutes_prompt()`／
-  `minutes.render_host_record()` 的既有寫法，把介入紀錄與 `share` 事件的發言
-  分佈也組進 `build_critique_prompt()`。
+- **狀態**：**2026-09-06 Track H 已解決**。`build_critique_prompt()` 新增
+  「## 發言統計」（`spoke_seconds`／`silent_seconds`／`remaining_seconds`，佔比
+  沿用 `emit_share()` 的分母含主席估算秒數）與「## 主席介入紀錄」
+  （直接呼叫 `minutes._pair_interventions(events)`，只列 `outcome=="spoken"`
+  的，一次都沒有時印固定占位句）兩節，插在「## 與會者」與「## 逐字稿」之間。
+  統計／介入資料由 `live.Session.watch_critique()` 把 `self.st`／`self.now`
+  換算成 `critique.CritiqueStats`／`ParticipantSpeechStat` 再傳入，
+  `build_critique_prompt()` 本身仍是不依賴 `Session` 的純函式。同一批也補上
+  40-60 分鐘長會議的逐字稿壓縮（`_compact_transcript()`：超過 12,000 字元或
+  300 則發言才觸發，尾窗全留＋兩類錨點插回＋STT 重複去重，demo 的 5 分鐘會議
+  不觸發，行為不變）。新增 8 條測試於 `tests/test_critique_preview.py`
+  （純函式格式、邊界情況、壓縮函式、`watch_critique()` 呼叫參數內容，
+  該檔測試項目數由原本 10 項增至 18 項），
+  `pytest tests/` 全綠（558 passed / 26 skipped / 2 xfailed，這台環境沒裝
+  playwright 所以 skipped 數比之前批次的紀錄多，屬環境差異不是新的失敗）。

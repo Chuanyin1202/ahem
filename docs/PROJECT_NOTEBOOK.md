@@ -11,6 +11,7 @@
 - 2026-09-05 — Track E（水彩背景改滿版半透明、會議摘要改白卡片，逐值比對提案圖修正）完工，已合併於 `0cb37c8`。
 - 2026-09-05 — Track F（補 Kaner 菱形「會議節奏」視覺化，用真實資料算座標＋核對抽屜排版/圖示）完工。細節見下。
 - 2026-09-05 — Track G（AI 即時觀察加第四類「心聲」，真的接 LLM＋保險栓 `--no-critique`）完工，本 worktree 內已 commit，尚未合併主線。細節見下。
+- 2026-09-06 — Track H（心聲補真統計/介入紀錄＋長會議逐字稿壓縮，解決 DEFERRED_DEFECTS 第 7 項）完工，本 worktree 內已 commit，尚未合併主線。細節見下。
 
 ---
 
@@ -542,4 +543,116 @@
     它們目前都沒收錄 `ai_critique` 這個新 kind，下一棒如果確認補這段文件
     在允許範圍內，可以參考本批 commit 歷史裡曾經寫過又還原的那版文字。
   - `.venv`（含 chromium）留在這個 worktree，`.gitignore` 已排除。
+
+---
+
+## 2026-09-06 Track H：心聲補真統計/介入紀錄＋長會議逐字稿壓縮
+
+- **時間**：2026-09-06（決賽 Demo Day 當天前）
+- **誰做的**：builder agent（worktree 隔離，`agent-a413cae73783fcac8`，分岔自
+  main 當時最新的 `fea5ed4`——開工前已用 `git log -1 main` 對過），
+  規格由 fable（另一模型）針對這個專案的真實程式碼設計，逐字照抄不自行改寫
+  用詞（見 CLAUDE.md「寫進正典/規格要逐字照抄」）；Claude Sonnet 5 前台驗收。
+- **開工前棕地探勘**：完整讀過 `critique.py`（91 行全文，`CRITIQUE_SYSTEM`／
+  `build_critique_prompt()`／`_call_critique_llm()`）、`minutes.py` 第
+  98-157 行 `_pair_interventions(events)`（配對邏輯與回傳欄位）、`live.py`
+  第 522-534 行 `emit_share()`（佔比分母公式）與第 1057-1096 行
+  `watch_critique()`（現行呼叫方式）、`state.py` 的 `spoke_seconds`／
+  `silent_seconds`／`remaining_seconds`／`absent` 四個既有查詢方法——工作單
+  點名的統計來源全部現成，沒有另外重算一份。
+- **背景**：`CRITIQUE_SYSTEM`（Track G 上線）開宗明義說 LLM 會拿到「逐字稿、
+  主席介入紀錄與發言統計」，但 `build_critique_prompt()` 之前只給逐字稿＋
+  與會者名單——這個落差記在 `docs/DEFERRED_DEFECTS.md` 第 7 項，是 Track G
+  施工時特意標記「留給下一棒決定」的已知缺口。Zeal 同時指出實測會議長度是
+  40-60 分鐘（不是只有 demo 那 5 分鐘），要求一併處理逐字稿越餵越長的問題。
+- **做了什麼**：
+  1. **`src/meeting_host/critique.py`**：新增 `CritiqueStats`／
+     `ParticipantSpeechStat` 兩個 dataclass，承載 `watch_critique()` 從
+     `self.st`／`self.now` 換算出來的統計資料——`build_critique_prompt()`
+     因此仍是不依賴 `Session`／`MeetingState` 的純函式，單元測試不用建一整個
+     Session。原本獨立的 `participants: list[str]` 參數併入
+     `CritiqueStats.participants`（不再重複傳一份永遠要保持同步的清單）。
+     新增 `_render_stats_table()`／`_render_interventions()` 兩個排版函式，
+     插在「## 與會者」與「## 逐字稿」之間（順序：先給量、再給主席做過什麼、
+     最後才是長逐字稿）。介入紀錄抽取直接呼叫 `minutes._pair_interventions
+     (events)`，沒有重寫第二份配對邏輯。新增 `_compact_transcript()`（長會議
+     逐字稿壓縮，見下）與 `_dedupe_consecutive()`／`_render_transcript()`
+     兩個輔助函式。`_call_critique_llm(events, stats)` 簽章同步更新。
+     `CRITIQUE_SYSTEM` 整段替換成 Zeal／fable 這批給的完整版本（逐字照抄，
+     已用程式比對驗證跟工作單原文逐字元相同，見下方實測證據）。
+  2. **`src/meeting_host/live.py`**：`Session.watch_critique()` 內新增把
+     `self.st`／`self.now` 換算成 `CritiqueStats`／`ParticipantSpeechStat`
+     的邏輯（`chair_seconds = len(self.st.interventions) * 3.0`，跟
+     `emit_share()` 用同一個公式，不是 `state.share()`），再傳給
+     `_call_critique_llm`。任務排程（`--no-critique`／`--no-llm` 保險栓）與
+     `CRITIQUE_INTERVAL_S`／`CRITIQUE_MIN_UTTERANCES` 兩個常數完全沒動。
+  3. **長會議逐字稿壓縮**（`_compact_transcript(events, now)`）：觸發門檻
+     為逐字稿超過 12,000 字元或超過 300 則發言（兩者任一），demo 的 5 分鐘
+     會議兩個門檻都碰不到，行為與改動前完全相同。觸發後：先做 STT 連續重複
+     發言去重；尾窗（最後 15 分鐘或最後 120 則，取範圍較短者）全部逐字保留；
+     尾窗之外只留兩類錨點原文（每人第一則長度 ≥10 字的發言／每筆已說出口的
+     介入前緊鄰兩則發言），插回原時間位置；其餘整段拿掉的連續區段換成一筆
+     `kind="critique_gap"` 的合成事件，`_render_transcript()` 認得這個 kind
+     原樣印出標記文字。刻意不做（已寫進程式碼註解）：不開第二個 LLM 呼叫做
+     摘要、不做規則式中文縮寫/關鍵詞抽取、不做「決議偵測」錨點；已知天花板
+     （跨過尾窗的遠距重複抓不到）也寫進註解，不是這批的缺陷。
+  4. `docs/DEFERRED_DEFECTS.md` 第 7 項標記已解決，`docs/PROJECT_NOTEBOOK.md`
+     補這一節。
+- **實測證據**：
+  - `CRITIQUE_SYSTEM` 逐字比對：寫了一段 Python 腳本從工作單原文用正則抽出
+    程式碼區塊、跟 `critique.py` 裡的字串逐字元比較 → `MATCH`（見驗收流程，
+    不是憑肉眼比對）。
+  - `.venv/bin/python -m pytest tests/ -q`（本批自己在這個 worktree 建的
+    `.venv`，`requirements.txt` 全裝，沒裝 `playwright`——凡是需要真瀏覽器
+    的測試檔用 `pytest.importorskip("playwright.sync_api")` 乾淨跳過，不是
+    失敗）→ **558 passed, 26 skipped, 2 xfailed, 0 failed**。skipped 數比
+    Track G 紀錄的 21 多 5，是這台環境沒裝 playwright 的環境差異（多跳過
+    5 個需要真瀏覽器的測試檔），不是這批改動造成的新跳過或新失敗。
+  - `tests/test_critique_preview.py` 從原本 10 個測試項目增加到 18 個
+    （新增 8 個），單獨執行 `.venv/bin/python -m pytest
+    tests/test_critique_preview.py -q` → **18 passed**：
+    - `build_critique_prompt()` 統計表／介入紀錄格式正確（含表頭時間換算、
+      佔比分母含主席、發言則數、距上次發言）；
+    - 邊界情況：完全沒有介入時印固定占位句「（目前為止主席沒有介入）」；
+      有已離會的人時名字加「（已離會）」、距上次發言欄寫「—」但其餘欄位
+      照列；議程超時（remaining 為負）顯示「已超時 MM:SS」；
+    - 介入紀錄行格式：硬打斷/軟插入＋【kind→target】或【kind】＋原文引號，
+      作廢（`outcome != "spoken"`）的候選不出現在輸出裡；
+    - `_compact_transcript()`：未達門檻時輸出與原樣逐字相同（`==` 比對，
+      不是子字串檢查）；超過門檻時尾窗最後 120 則逐字保留（用 `==`
+      比對整段子清單，不是抽樣檢查）、被拿掉的段落合成一筆
+      `kind="critique_gap"` 標記且文案含正確的略去則數；兩類錨點（每人
+      第一則夠長的發言／介入前緊鄰兩則）即使落在被拿掉的舊段裡也真的
+      被插回輸出；同一人連續完全相同的發言只留一則，相似但不同的不受影響；
+    - `watch_critique()` 傳給 `_call_critique_llm` 的 `CritiqueStats` 內容
+      正確：用 mock 截住呼叫參數本身（不是只斷言「有呼叫」），核對
+      `chair_seconds`／`chair_interventions`／`remaining_seconds` 跟
+      `session.st` 對得上，且 `absent` 集合裡的人真的被標記
+      `ParticipantSpeechStat.absent=True`。
+  - 既有保險栓測試（`--no-critique`／`--no-llm`／兩者皆開三種組合＋對照組）
+    全部沿用原樣未改動斷言邏輯（只改了 mock 的函式簽章以配合新參數），
+    全部通過，證明這批改動沒有動到任務排程那條路徑。
+  - `git status --short` 只有三個檔案被改動：`src/meeting_host/critique.py`／
+    `src/meeting_host/live.py`／`tests/test_critique_preview.py`，符合工作單
+    allowlist，沒有動到 `minutes.py`／`index.html`／既有「觀察/判斷/留意」
+    三類規則邏輯。
+- **卡住或未完的**：無阻塞，工作單三項交付（system prompt 替換／統計＋介入
+  紀錄／長會議壓縮）全部完成，沒有跳過任何一項。已知的刻意簡化都寫進
+  `_compact_transcript()` 的程式碼註解裡（見上「做了什麼」第 3 點），不是
+  遺漏。
+- **下一關該知道什麼**：
+  - 本批**沒有**合併回 `main`——只在這個 worktree 裡 commit，跟 Track G
+    一樣是獨立分支，合併時機與方式由 Zeal／協調者決定。
+  - `.venv`（本批自建，未裝 playwright）留在這個 worktree，`.gitignore`
+    已排除；要跑到真瀏覽器那幾個測試檔（`test_spectator_*`／`test_partial`）
+    需要另外 `pip install playwright && playwright install chromium`。
+  - `_compact_transcript()` 的壓縮門檻（12,000 字元／300 則）與尾窗大小
+    （15 分鐘／120 則）都是 `critique.py` 頂部的模組常數
+    （`CRITIQUE_COMPACT_CHAR_THRESHOLD`／`CRITIQUE_COMPACT_EVENT_THRESHOLD`／
+    `CRITIQUE_TAIL_WINDOW_SECONDS`／`CRITIQUE_TAIL_WINDOW_EVENTS`），demo
+    現場如果想確認壓縮邏輯完全不會被觸發，可以直接讀這四個常數對照實際會議
+    長度，不用跑統計。
+  - 遠距重複偵測（某人 25 分鐘前講過同一論點、又不落在錨點裡）是已知天花板，
+    不是這批的缺陷；需要時的升級路徑是 LLM 滾動摘要，明確不在這批範圍內，
+    已寫進 `_compact_transcript()` docstring。
   - 本批累計缺陷修復 0 筆（純新增功能），疲勞計數不適用。

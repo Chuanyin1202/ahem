@@ -21,7 +21,14 @@ import asyncio
 import pytest
 
 from meeting_host import live
-from meeting_host.critique import build_critique_prompt
+from meeting_host.critique import (
+    CRITIQUE_TAIL_WINDOW_EVENTS,
+    CritiqueStats,
+    ParticipantSpeechStat,
+    _compact_transcript,
+    build_critique_prompt,
+)
+from meeting_host.events import Event
 from meeting_host.live import Session
 from meeting_host.state import MeetingState
 
@@ -37,15 +44,31 @@ def _add_utterances(session, n):
                                     "start": float(i), "end": float(i) + 0.5})
 
 
+def _stats(participants=(), now=0.0, remaining=0.0, chair_seconds=0.0,
+           chair_interventions=0):
+    """組一份 `CritiqueStats` 給純函式測試用。`participants` 是
+    `(name, spoke_seconds, silent_seconds, absent)` 四元組的序列；只給名字
+    （字串）時其餘欄位補 0.0／False。"""
+    stats = []
+    for p in participants:
+        if isinstance(p, str):
+            stats.append(ParticipantSpeechStat(name=p, spoke_seconds=0.0,
+                                                silent_seconds=0.0, absent=False))
+        else:
+            name, spoke, silent, absent = p
+            stats.append(ParticipantSpeechStat(name=name, spoke_seconds=spoke,
+                                                silent_seconds=silent, absent=absent))
+    return CritiqueStats(now=now, remaining_seconds=remaining, participants=stats,
+                          chair_seconds=chair_seconds, chair_interventions=chair_interventions)
+
+
 # ── (a) build_critique_prompt：純函式 ──────────────────────────────────
 
 
 def test_build_critique_prompt_includes_roster_and_transcript():
-    from meeting_host.events import Event
-
     events = [Event("utterance", 5.0, {"speaker": "Alex", "text": "先講一下時程",
                                         "start": 4.0, "end": 5.0})]
-    prompt = build_critique_prompt(events, ["Alex", "Bob"])
+    prompt = build_critique_prompt(events, _stats(["Alex", "Bob"], now=5.0))
     assert "## 與會者" in prompt
     assert "Alex、Bob" in prompt
     assert "## 逐字稿" in prompt
@@ -53,8 +76,72 @@ def test_build_critique_prompt_includes_roster_and_transcript():
 
 
 def test_build_critique_prompt_handles_empty_events_and_participants():
-    prompt = build_critique_prompt([], [])
+    prompt = build_critique_prompt([], _stats([]))
     assert "（無）" in prompt
+
+
+# ── (a') 交付2：發言統計／主席介入紀錄兩節格式 ──────────────────────────
+
+
+def test_build_critique_prompt_stats_table_and_no_intervention_placeholder():
+    """沒有任何介入時，「## 主席介入紀錄」節不能省略，要印固定占位句——
+    否則 LLM 分不清「沒介入」跟「沒餵資料」。"""
+    events = [
+        Event("utterance", 10.0, {"speaker": "周葵", "text": "先講一下時程",
+                                   "start": 9.0, "end": 10.0}),
+        Event("utterance", 20.0, {"speaker": "林同", "text": "我覺得可以",
+                                   "start": 19.0, "end": 20.0}),
+    ]
+    stats = _stats(
+        [("周葵", 100.0, 5.0, False), ("林同", 50.0, 2.0, False)],
+        now=200.0, remaining=1600.0, chair_seconds=9.0, chair_interventions=3,
+    )
+    prompt = build_critique_prompt(events, stats)
+
+    assert "## 發言統計" in prompt
+    assert "會議已進行 03:20，議程剩 26:40" in prompt
+    assert "| 周葵 | 01:40 | 63% | 1 | 00:05 |" in prompt
+    assert "| 林同 | 00:50 | 31% | 1 | 00:02 |" in prompt
+    assert "| 主席 | 00:09 | 6% | 3 次介入 | — |" in prompt
+
+    assert "## 主席介入紀錄" in prompt
+    assert "（目前為止主席沒有介入）" in prompt
+
+
+def test_build_critique_prompt_marks_absent_participant_and_overtime():
+    """有已離會的人：名字加「（已離會）」，距上次發言欄寫「—」，但發言時長／
+    佔比／則數照列不省略。議程超時（remaining 為負）要顯示「已超時」。"""
+    stats = _stats(
+        [("沈禾", 30.0, 999.0, True)],
+        now=100.0, remaining=-20.0, chair_seconds=3.0, chair_interventions=1,
+    )
+    prompt = build_critique_prompt([], stats)
+    assert "議程剩 已超時 00:20" in prompt
+    assert "| 沈禾（已離會） | 00:30 | 91% | 0 | — |" in prompt
+
+
+def test_build_critique_prompt_intervention_lines_hard_and_soft():
+    """[時間] 硬打斷/軟插入【kind→target】「原文」；target 為 None 只印【kind】；
+    只列 outcome=="spoken"，作廢/失敗的不列。"""
+    events = [
+        Event("queued", 8.0, {"kind": "有人被冷落", "target": "沈禾",
+                               "text": "沈禾好像還沒說到話，想聽聽你的看法。", "hard": False}),
+        Event("spoken", 8.5, {"kind": "有人被冷落", "target": "沈禾",
+                               "text": "沈禾好像還沒說到話，想聽聽你的看法。"}),
+        Event("queued", 15.0, {"kind": "議程超時", "target": None,
+                                "text": "時間差不多了，我們加快一點。", "hard": True}),
+        Event("dropped", 15.2, {"kind": "議程超時", "target": None,
+                                 "text": "時間差不多了，我們加快一點。", "reason": "收尾"}),
+        Event("queued", 19.0, {"kind": "離題", "target": None,
+                                "text": "我們先回到報表匯出這一題。", "hard": True}),
+        Event("spoken", 19.3, {"kind": "離題", "target": None,
+                                "text": "我們先回到報表匯出這一題。"}),
+    ]
+    prompt = build_critique_prompt(events, _stats([], now=20.0))
+    assert '[00:08] 軟插入【有人被冷落→沈禾】「沈禾好像還沒說到話，想聽聽你的看法。」' in prompt
+    assert '[00:19] 硬打斷【離題】「我們先回到報表匯出這一題。」' in prompt
+    # 被作廢（dropped）的那筆不該出現在輸出裡
+    assert "時間差不多了" not in prompt
 
 
 # ── (b)(c)(d)(e) watch_critique 背景迴圈 ────────────────────────────────
@@ -87,8 +174,8 @@ def test_watch_critique_calls_llm_and_emits_ai_critique(monkeypatch):
     schema（見 critique.CRITIQUE_SYSTEM），不是工作單原始草稿那個陣列形狀。"""
     call_log = []
 
-    def fake_call(events, participants):
-        call_log.append((len(events), list(participants)))
+    def fake_call(events, stats):
+        call_log.append((len(events), [p.name for p in stats.participants]))
         return {
             "meeting": "討論在原地打轉，還沒有人願意先讓步",
             "participants": {"A": "一直重複同一個論點，沒有回應對方的疑慮"},
@@ -110,10 +197,46 @@ def test_watch_critique_calls_llm_and_emits_ai_critique(monkeypatch):
     assert data["participants"] == {"A": "一直重複同一個論點，沒有回應對方的疑慮"}
 
 
+def test_watch_critique_passes_correct_stats_content(monkeypatch):
+    """(交付2/live.py 驗收項) watch_critique() 傳給 `_call_critique_llm` 的
+    `CritiqueStats` 內容要跟 `self.st` 對得上——不是只斷言「有呼叫」，而是斷言
+    呼叫參數本身：發言秒數、距上次發言、離會旗標、主席估算秒數／介入次數、
+    剩餘時間全部來自同一份 `MeetingState`。"""
+    captured = {}
+
+    def fake_call(events, stats):
+        captured["stats"] = stats
+        captured["events"] = events
+        return {"meeting": "", "participants": {}}
+
+    monkeypatch.setattr("meeting_host.critique._call_critique_llm", fake_call)
+
+    session = _session(("A", "B"))
+    _add_utterances(session, live.CRITIQUE_MIN_UTTERANCES)
+    session.st.absent.add("B")
+    session.st.interventions.extend([1.0, 2.0])  # 2 次介入 → chair_seconds = 6.0
+
+    _run_watch_critique_until(session, monkeypatch, min_events=1)
+
+    assert "stats" in captured, "watch_critique 沒有真的呼叫 critique 的 LLM"
+    stats = captured["stats"]
+    now_at_call = session.now  # 呼叫發生在飛行途中，容忍些微時間誤差重新核對邏輯關係
+    assert stats.chair_seconds == 6.0
+    assert stats.chair_interventions == 2
+    assert stats.remaining_seconds == pytest.approx(session.st.duration_min * 60 - stats.now, abs=1.0)
+
+    by_name = {p.name: p for p in stats.participants}
+    assert set(by_name) == {"A", "B"}
+    assert by_name["A"].spoke_seconds == pytest.approx(session.st.spoke_seconds("A"))
+    assert by_name["B"].spoke_seconds == pytest.approx(session.st.spoke_seconds("B"))
+    assert by_name["A"].absent is False
+    assert by_name["B"].absent is True, "session.st.absent 裡的人，stats 沒有標記 absent"
+
+
 def test_watch_critique_skips_llm_call_when_transcript_too_short(monkeypatch):
     call_log = []
     monkeypatch.setattr("meeting_host.critique._call_critique_llm",
-                        lambda events, participants: call_log.append(1) or {})
+                        lambda events, stats: call_log.append(1) or {})
 
     session = _session()
     _add_utterances(session, live.CRITIQUE_MIN_UTTERANCES - 1)
@@ -138,7 +261,7 @@ def test_watch_critique_skips_llm_call_when_transcript_too_short(monkeypatch):
 
 def test_watch_critique_cancellation_is_not_swallowed(monkeypatch):
     monkeypatch.setattr("meeting_host.critique._call_critique_llm",
-                        lambda events, participants: {"meeting": "", "participants": {}})
+                        lambda events, stats: {"meeting": "", "participants": {}})
     monkeypatch.setattr(live, "CRITIQUE_INTERVAL_S", 0.001)
     session = _session()
     _add_utterances(session, live.CRITIQUE_MIN_UTTERANCES)
@@ -158,7 +281,7 @@ def test_watch_critique_suppressed_once_session_is_ending(monkeypatch):
     這筆批判觀察絕對不能再補發。"""
     import time as _time
 
-    def slow_call(events, participants):
+    def slow_call(events, stats):
         _time.sleep(0.05)
         return {"meeting": "不該出現", "participants": {}}
 
@@ -289,3 +412,93 @@ def test_watch_critique_is_scheduled_when_neither_flag_is_set(monkeypatch):
     # 順手核對其他既有 LLM 背景迴圈沒有被這批改動波及（棕地紀律：只加不改）。
     for expected in ("watch_slow", "watch_glossary", "watch_minutes"):
         assert expected in names, f"{expected} 不見了，這批不該動到既有的 --no-llm 任務清單"
+
+
+# ── 交付3：`_compact_transcript()` 長會議逐字稿壓縮（純函式，直接單元測試）──
+#
+# 用假資料直接構造超過門檻的情境，不用真的餵 12,000 字——用事件則數門檻
+# （`CRITIQUE_COMPACT_EVENT_THRESHOLD` = 300）比較好構造。
+
+
+def _utt(i, speaker="A", text=None):
+    text = text if text is not None else f"發言{i}"
+    return Event("utterance", float(i), {"speaker": speaker, "text": text,
+                                          "start": float(i), "end": float(i) + 0.5})
+
+
+def test_compact_transcript_returns_identical_output_below_threshold():
+    """未達門檻：逐字比對，輸出跟原樣完全一致（demo 的 5 分鐘會議走這一支）。"""
+    events = [_utt(i, "A" if i % 2 == 0 else "B") for i in range(10)]
+    result = _compact_transcript(events, now=9.0)
+    assert result == [e for e in events if e.kind == "utterance"]
+
+
+def test_compact_transcript_keeps_tail_window_and_marks_dropped_range():
+    """超過事件則數門檻（純用短文字避免誤觸發錨點1）：最後
+    `CRITIQUE_TAIL_WINDOW_EVENTS` 則逐字保留，更早的整段拿掉、換一行標記。"""
+    n = 320
+    events = [_utt(i, "A" if i % 2 == 0 else "B", text="嗯") for i in range(n)]
+    result = _compact_transcript(events, now=float(n - 1))
+
+    tail_start = n - CRITIQUE_TAIL_WINDOW_EVENTS  # = 200
+    kinds = [e.kind for e in result]
+    assert kinds.count("critique_gap") == 1, "沒有錨點時，被拿掉的段落應該合成一筆標記"
+    assert kinds[0] == "critique_gap"
+    marker = result[0]
+    assert f"共 {tail_start} 則發言略去" in marker.data["text"]
+    assert "見上方發言統計" in marker.data["text"]
+
+    tail = result[1:]
+    assert len(tail) == CRITIQUE_TAIL_WINDOW_EVENTS
+    assert tail == events[tail_start:], "尾窗必須逐字保留、順序不變"
+
+
+def test_compact_transcript_restores_both_anchor_types():
+    """兩類錨點：①每人第一則長度足夠的發言 ②已說出口的介入前緊鄰兩則發言，
+    即使落在被拿掉的舊段裡也要插回原位置。"""
+    n = 305
+    events = [_utt(i, "A" if i % 2 == 0 else "B", text="嗯") for i in range(n)]
+    # 錨點類 1：A、B 各自第一則「夠長」的發言（預設文字太短不會觸發）。
+    events[0] = _utt(0, "A", text="這是甲說的第一句真心話比較長")
+    events[1] = _utt(1, "B", text="這是乙說的第一句真心話比較長")
+    # 錨點類 2 的候選：緊鄰在介入之前的兩則發言，用好認的文字覆蓋。
+    events[48] = _utt(48, "A", text="錨點二之前一")
+    events[49] = _utt(49, "B", text="錨點二之前二")
+    # 一筆已說出口的介入，時間點在第 48/49 則發言之後、尾窗之前。
+    events.append(Event("queued", 49.5, {"kind": "離題", "target": None,
+                                          "text": "我們先回到主題。", "hard": False}))
+    events.append(Event("spoken", 50.0, {"kind": "離題", "target": None,
+                                          "text": "我們先回到主題。"}))
+
+    result = _compact_transcript(events, now=float(n - 1))
+    texts = [e.data.get("text") for e in result]
+
+    assert "這是甲說的第一句真心話比較長" in texts, "A 的錨點1沒有被保留"
+    assert "這是乙說的第一句真心話比較長" in texts, "B 的錨點1沒有被保留"
+    assert "錨點二之前一" in texts, "介入前緊鄰第一則（錨點2）沒有被保留"
+    assert "錨點二之前二" in texts, "介入前緊鄰第二則（錨點2）沒有被保留"
+
+    # 尾窗（最後 120 則）仍然逐字保留。
+    tail_start = n - CRITIQUE_TAIL_WINDOW_EVENTS
+    utterances_only = [e for e in events if e.kind == "utterance"]
+    assert result[-CRITIQUE_TAIL_WINDOW_EVENTS:] == utterances_only[tail_start:]
+
+    # 被拿掉的部分仍然留下至少一筆標記行（舊段沒有被錨點完全填滿）。
+    assert any(e.kind == "critique_gap" for e in result)
+
+
+def test_compact_transcript_dedupes_consecutive_identical_utterances():
+    """同一人連續兩則內容逐字相同 → 只留一則；相似但不同的不能被誤刪。"""
+    n = 301
+    events = [_utt(i, "A" if i % 2 == 0 else "B", text="嗯") for i in range(n)]
+    # 尾窗（最後120則）裡製造一組完全相同的連續重複，跟緊接著一組「相似但不同」的對照。
+    dup_at = n - 5
+    events[dup_at] = _utt(dup_at, "A", text="這句話重複了")
+    events[dup_at + 1] = _utt(dup_at + 1, "A", text="這句話重複了")
+    events[dup_at + 2] = _utt(dup_at + 2, "A", text="這句話重複了嗎")  # 相似但不同，不可刪
+
+    result = _compact_transcript(events, now=float(n - 1))
+    texts = [e.data.get("text") for e in result if e.kind == "utterance"]
+
+    assert texts.count("這句話重複了") == 1, "完全相同的連續發言只該留一則"
+    assert texts.count("這句話重複了嗎") == 1, "相似但不同的發言不可以被誤刪"

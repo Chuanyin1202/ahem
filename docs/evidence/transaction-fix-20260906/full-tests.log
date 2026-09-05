@@ -1,0 +1,34 @@
+....ssssssssss...........ssssss......................................... [  9%]
+........................................................................ [ 18%]
+........................................................................ [ 28%]
+........................................................................ [ 37%]
+........................................................................ [ 47%]
+........ss..........ss.................................................. [ 56%]
+........................................................................ [ 66%]
+..............x...x..................................................... [ 75%]
+.........................s.............................................. [ 85%]
+........................................................................ [ 94%]
+.......................................                                  [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/harness/test_regression_closing_gate_fast_path.py:59: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_closing_gate_fast_path.py:67: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_closing_gate_fast_path.py:108: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_closing_gate_fast_path.py:121: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_closing_gate_fast_path.py:128: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_closing_gate_fast_path.py:155: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_closing_gate_fast_path.py:170: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_overtime_no_repeat.py:162: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_overtime_no_repeat.py:186: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_overtime_no_repeat.py:203: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_stt_deaf_gate.py:176: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_stt_deaf_gate.py:197: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_stt_deaf_gate.py:207: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_stt_deaf_gate.py:228: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_stt_deaf_gate.py:238: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/harness/test_regression_stt_deaf_gate.py:252: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+SKIPPED [1] tests/test_live_shutdown.py:440: 預設不連真實 Discord；設 MEETING_HOST_RUN_REAL_DISCORD=1 才會跑（見本檔 T-I／T20 註解區塊）
+SKIPPED [1] tests/test_live_shutdown.py:465: 預設不連真實 Discord；設 MEETING_HOST_RUN_REAL_DISCORD=1 才會跑（見本檔 T-I／T20 註解區塊）
+SKIPPED [1] tests/test_live_shutdown.py:890: 預設不連真實 Discord；設 MEETING_HOST_RUN_REAL_DISCORD=1 才會跑（見本檔 T-I／T20 註解區塊）
+SKIPPED [1] tests/test_live_shutdown.py:945: 預設不連真實 Discord；設 MEETING_HOST_RUN_REAL_DISCORD=1 才會跑（見本檔 T-I／T20 註解區塊）
+SKIPPED [1] tests/test_score_run.py:82: 需要 experiments/holdout/2026-08-29-two-person 的真實會議資料（不在公開 repo，見 experiments/holdout/README.md）
+736 passed, 21 skipped, 2 xfailed in 44.73s

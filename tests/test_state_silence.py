@@ -1,4 +1,5 @@
 import time
+import pytest
 
 from meeting_host.state import MeetingState, Utterance
 
@@ -56,12 +57,15 @@ def test_ensure_participant_without_now_does_not_record_joined_at():
     assert s.silent_seconds("A", now=100.0) == 100.0
 
 
-def test_ensure_participant_records_joined_at_in_meeting_relative_time():
+@pytest.mark.parametrize('clock_base', [239.199929674, 1_000_000.123456])
+def test_ensure_participant_records_joined_at_in_meeting_relative_time(clock_base):
     """ensure_participant() 收到的 now 是裸 perf_counter（跟 voice_started 一樣），
     要換算成跟 Utterance.start/end 同座標（會議相對時間）存進 joined_at。"""
     s = st()
+    s._t0 = clock_base
     s.ensure_participant("A", now=s._t0 + 60.0)  # 會議開始（_t0）後 60 秒才加入
-    assert s.joined_at["A"] == 60.0
+    # Float subtraction is not bit-exact; 10 ns tolerance, no runtime rounding.
+    assert s.joined_at["A"] == pytest.approx(60.0, rel=0, abs=1e-8)
 
 
 def test_silent_seconds_never_spoken_from_meeting_start_uses_elapsed_time():
@@ -72,20 +76,24 @@ def test_silent_seconds_never_spoken_from_meeting_start_uses_elapsed_time():
     assert s.silent_seconds("A", now=65.0) == 65.0
 
 
-def test_silent_seconds_late_joiner_counts_from_join_time_not_meeting_start():
+@pytest.mark.parametrize('clock_base', [239.199929674, 1_000_000.123456])
+def test_silent_seconds_late_joiner_counts_from_join_time_not_meeting_start(clock_base):
     """驗收 2：會議進行中才加入、從未發言的人，沉默秒數要從他加入的時刻起算，
     不是從會議開始算——否則一進來就被判定「已經沉默了一分鐘」。"""
     s = st()
+    s._t0 = clock_base
     s.ensure_participant("A", now=s._t0 + 60.0)  # 會議開始 60 秒後才加入
-    assert s.silent_seconds("A", now=65.0) == 5.0  # 加入後又過了 5 秒才查詢
+    assert s.silent_seconds("A", now=65.0) == pytest.approx(5.0, rel=0, abs=1e-8)
 
 
-def test_silent_seconds_is_near_zero_right_after_joining():
+@pytest.mark.parametrize('clock_base', [239.199929674, 1_000_000.123456])
+def test_silent_seconds_is_near_zero_right_after_joining(clock_base):
     """驗收 3：剛加入的那一刻沉默秒數 ≈ 0，不會立刻觸發「全場沉默」／
     「有人被冷落」。"""
     s = st()
+    s._t0 = clock_base
     s.ensure_participant("A", now=s._t0 + 30.0)
-    assert s.silent_seconds("A", now=30.0) == 0.0
+    assert s.silent_seconds("A", now=30.0) == pytest.approx(0.0, rel=0, abs=1e-8)
 
 
 def test_silent_seconds_already_spoken_unaffected_by_join_time():

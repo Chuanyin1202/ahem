@@ -224,7 +224,7 @@ PYTHONPATH=src .venv/bin/python -m pytest -q tests
 | Discord | [開發者文件](https://discord.com/developers/docs/intro)、[Developer Terms](https://support-dev.discord.com/hc/en-us/articles/8562894815383) | 真人語音頻道 |
 | Python 相依套件 | [requirements.txt](requirements.txt)（27 項） | 逐一核對過，**全部為寬鬆授權，沒有任何 GPL／AGPL／LGPL**——清單見下表 |
 | 觀戰字型 | [Google Fonts](https://fonts.google.com/)：Noto Sans TC／Noto Serif TC／JetBrains Mono | 由 Google Fonts CDN 載入，repo 內未封裝字型檔。三者皆為 SIL Open Font License 1.1 |
-| 觀戰背景圖 | `src/meeting_host/spectator/assets/bg-watercolor.jpg` | **AI 生成**素材，由團隊成員產出並提供；【待補】生成工具名稱 |
+| 觀戰背景圖 | `src/meeting_host/spectator/assets/bg-watercolor.jpg` | **AI 生成**素材（GPT image），由團隊成員產出並提供 |
 | 合成會議事件與截圖 | [examples/](examples/)、[docs/images/](docs/images/) | 虛構會議，非真實與會者資料 |
 | 引導方法參考 | [docs/prior-art.md](docs/prior-art.md) | 方法論參考，不表示可再散布被引用著作 |
 

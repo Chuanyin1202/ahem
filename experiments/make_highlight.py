@@ -63,6 +63,11 @@ TARGETS = {
     "chair":    (40, 240, 1000, 625),      # 左欄中下段，主席的介入出現在這裡（1.44×）
     "thinking": (640, 60, 800, 500),       # 右欄「AI 即時觀察」與心聲（1.80×）
     "minutes":  (640, 0, 800, 500),        # 右欄「會議產出（預覽）」（1.80×）
+    # 「群體動力」抽屜是 right:0／width:380px 的覆疊層，佔畫面右緣整條高度。
+    # 內容由上到下是：會議節奏（Kaner 菱形）→ 四個 KPI → 時間軸 → 主席的思考
+    # → 發言分佈，一個畫面塞不下，所以拆成上下兩個鏡位。
+    "dyn-top":    (640, 0, 800, 500),      # 會議節奏 ＋ 四個 KPI（1.80×）
+    "dyn-bottom": (640, 400, 800, 500),    # 時間軸 ＋ 主席的思考 ＋ 發言分佈（1.80×）
 }
 
 
@@ -124,15 +129,20 @@ def cut(source: Path, seg: dict, out: Path) -> float:
 
 
 def build(spec: dict, out: Path) -> None:
-    source = Path(spec["source"])
-    if not source.exists():
-        raise SystemExit(f"找不到來源影片 {source}")
+    # 段落可以各自指定 `source`。同一場會議可以錄很多趟（例如一趟關著「群體動力」
+    # 抽屜、一趟開著），事件流一模一樣所以時間軸對得上，剪接時就能在同一條時間軸上
+    # 換鏡位——不需要重開一次會。
+    default = Path(spec["source"])
+    for seg in spec["segments"]:
+        src = Path(seg.get("source", default))
+        if not src.exists():
+            raise SystemExit(f"找不到來源影片 {src}")
     tmp = Path(tempfile.mkdtemp(prefix="highlight-"))
     try:
         parts, total = [], 0.0
         for i, seg in enumerate(spec["segments"]):
             p = tmp / f"{i:02d}.mp4"
-            d = cut(source, seg, p)
+            d = cut(Path(seg.get("source", default)), seg, p)
             total += d
             parts.append(p)
             print(f"  [{i + 1}/{len(spec['segments'])}] {seg['start']:>6.1f}–{seg['end']:<6.1f}"

@@ -81,7 +81,8 @@ def start_spectator(events: Path, port: int, speed: float) -> subprocess.Popen:
     raise SystemExit("觀戰畫面沒有起來")
 
 
-def record(url: str, seconds: float, out_dir: Path) -> Path:
+def record(url: str, seconds: float, out_dir: Path, dynamics: bool = False,
+           scroll_at: float | None = None) -> Path:
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -90,7 +91,23 @@ def record(url: str, seconds: float, out_dir: Path) -> Path:
                                    record_video_size={"width": WIDTH, "height": HEIGHT})
         page = ctx.new_page()
         page.goto(url, wait_until="networkidle")
-        time.sleep(seconds)
+        if dynamics:
+            # 群體動力抽屜預設是關的，所以一般錄影永遠拍不到裡面的東西——
+            # Kaner 菱形、四個 KPI（含「忍住 N 次」）、時間軸、發言分佈。
+            # 那些數字才是主席「有在判斷、只是多半選擇不開口」的直接證據，
+            # 值得單獨錄一趟。抽屜是覆疊式的，會蓋住右欄，所以這是另一趟錄影，
+            # 不是取代原本那趟。
+            page.click("#dyn-handle")
+            page.wait_for_timeout(600)
+        if scroll_at is not None:
+            # 抽屜比視窗高，「發言分佈」永遠落在畫面外。要拍到它就得捲，而捲之前
+            # 得先等資料長出來——所以捲的時機是相對於整段錄影的比例，不是一開始。
+            time.sleep(max(0.0, seconds * scroll_at))
+            page.eval_on_selector("#dyn-drawer", "d => d.scrollTo({top: d.scrollHeight})")
+            page.wait_for_timeout(800)
+            time.sleep(max(0.0, seconds * (1 - scroll_at)))
+        else:
+            time.sleep(seconds)
         ctx.close()                               # close 才會把影片寫完整
         browser.close()
     webm = next(iter(sorted(out_dir.glob("*.webm"))), None)
@@ -117,6 +134,10 @@ def main(argv=None) -> int:
     ap.add_argument("--speed", type=float, default=1.0, help="回放倍速（預設 1＝等時）")
     ap.add_argument("--out", type=Path, default=None, help="輸出的 mp4（預設放 meetings/）")
     ap.add_argument("--keep-webm", action="store_true")
+    ap.add_argument("--dynamics", action="store_true",
+                     help="全程打開「群體動力」抽屜（Kaner 菱形／KPI／時間軸／發言分佈）")
+    ap.add_argument("--dynamics-scroll", type=float, metavar="比例", default=None,
+                     help="錄到這個比例時把抽屜捲到底，讓「發言分佈」進畫面（例：0.6）")
     a = ap.parse_args(argv)
 
     events = events_for(a.latest) if a.latest else a.events
@@ -135,7 +156,8 @@ def main(argv=None) -> int:
     print(f"回放：localhost:{port}　倍速 {a.speed:g}　預計錄 {seconds / 60:.1f} 分鐘")
     proc = start_spectator(events, port, a.speed)
     try:
-        webm = record(f"http://localhost:{port}", seconds, tmp)
+        webm = record(f"http://localhost:{port}", seconds, tmp, dynamics=a.dynamics,
+                       scroll_at=a.dynamics_scroll)
         print(f"轉檔中…（{webm.stat().st_size / 1e6:.1f} MB webm）")
         to_mp4(webm, out)
     finally:

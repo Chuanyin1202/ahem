@@ -72,12 +72,23 @@ def rows(events: list[dict]) -> list[tuple[float, str, str]]:
     return sorted(out, key=lambda r: r[0])
 
 
+NOTE = """> ⚠️ 畫面右欄的「主席思考 N 次｜開口・受阻・忍住」，那個**忍住計數包含每一次
+> 沒有開口的判斷**——一場會議每 5 秒判一次，其中絕大多數是「此刻沒事」
+> （`type=無`）。這份稿刻意**不列那些**，否則一場八分鐘的會議會有上百行雜訊。
+>
+> 稿上的 🤔 只列「**判出了型別、卻仍然沒有開口**」的時刻——那才是值得講的克制：
+> 它認得出這是離題，但剛提醒過（同型退避）、或證據不足以壓過保留意見（三軸未過門檻）。
+> 所以計數器跳動的次數會多於稿上的行數，那是正常的。
+"""
+
+
 def render(rs: list[tuple[float, str, str]], markdown: bool) -> str:
     if not markdown:
-        return "\n".join(f"[{fmt(t)}] {mark} {text}" for t, mark, text in rs)
+        return NOTE.replace("> ", "").replace(">", "") + "\n" + \
+            "\n".join(f"[{fmt(t)}] {mark} {text}" for t, mark, text in rs)
     head = "| 時間 | | 畫面上發生什麼 | 旁白 |\n|---|---|---|---|"
     body = "\n".join(f"| {fmt(t)} | {mark} | {text.replace('|', '／')} | |" for t, mark, text in rs)
-    return head + "\n" + body
+    return NOTE + "\n" + head + "\n" + body
 
 
 def latest_for(name: str) -> Path | None:

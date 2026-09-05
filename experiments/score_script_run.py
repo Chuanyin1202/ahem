@@ -94,7 +94,20 @@ def rule_fire_times(script: dict) -> list[tuple[float, str, str | None]]:
 
 
 def check_windows(script: dict) -> list[str]:
-    """規則型窗口與當下門檻是否仍然一致。回傳問題清單，空的代表沒問題。"""
+    """規則型窗口與當下門檻是否仍然一致。回傳問題清單，空的代表沒問題。
+
+    ⚠️ 乾跑只模擬**快路規則本身**，沒有 Chair——所以它算出來的是「規則什麼時候
+    成立」，不是「主席什麼時候真的講出來」。中間隔著冷卻期、軟插入等停頓、
+    以及排在前面的其他介入。
+
+    這條差異只有一個方向：**Chair 只可能把介入往後推，不可能提前。** 所以：
+
+    - 規則成立的時刻**晚於**窗口尾端 → 真的有問題，窗口在規則能觸發之前就關了
+    - 規則成立的時刻**早於**窗口起點 → 可能只是被前面的介入推遲了，報成提醒不擋
+
+    2026-09-05 實測：demo 的「有人被冷落」乾跑得到 410 秒，實際落在 458.7 秒——
+    中間的議程超時（350.7）與假共識（402.8）各吃掉一段冷卻期。
+    """
     fired = rule_fire_times(script)
     problems = []
     for w in script["windows"]:
@@ -102,12 +115,20 @@ def check_windows(script: dict) -> list[str]:
         if w["kind"] != "opportunity" or et not in fast_path.FAST_KINDS:
             continue          # 慢路型的窗口是內容範圍，不由門檻決定
         lo, hi = w["range_seconds"]
-        hits = [t for t, k, _ in fired if k == et and lo <= t <= hi]
-        if not hits:
-            allt = [f"{t:.0f}s" for t, k, _ in fired if k == et] or ["從未觸發"]
+        times = [t for t, k, _ in fired if k == et]
+        if any(lo <= t <= hi for t in times):
+            continue
+        where = [f"{t:.0f}s" for t in times] or ["從未觸發"]
+        if times and max(times) < lo:
+            problems.append(
+                f"（提醒）{script['name']}／{w['id']}：{et} 的規則在 {where} 就成立，"
+                f"早於窗口 [{lo}, {hi}]。Chair 只會延後不會提前，所以這可能只是被"
+                f"前面的介入推遲——確認一下實際錄影落在哪裡")
+        else:
             problems.append(
                 f"{script['name']}／{w['id']}：期望 {et} 落在 [{lo}, {hi}]，"
-                f"但在檔位 {script.get('style')!r} 下乾跑得到 {allt}")
+                f"但在檔位 {script.get('style')!r} 下乾跑得到 {where}"
+                f"{'（晚於窗口尾端，窗口關太早）' if times else ''}")
     return problems
 
 
@@ -172,8 +193,9 @@ def main(argv=None) -> int:
             bad += check_windows(load_script(SCRIPTS / f"{n}.json"))
         print("  全部一致" if not bad else "\n".join(f"  ⚠️ {b}" for b in bad))
         if a.check:
-            return 1 if bad else 0
-        if bad:
+            hard = [b for b in bad if not b.startswith("（提醒）")]
+            return 1 if hard else 0
+        if [b for b in bad if not b.startswith("（提醒）")]:
             print("\n窗口與門檻對不上，停在這裡——不要拿對不上的窗口去計分。")
             return 2
 

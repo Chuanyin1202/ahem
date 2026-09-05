@@ -14,7 +14,7 @@ Browser plugin not available，依前端測試技能使用既有 Playwright 腳�
 
 | 驗證 | 結果／證據 |
 |---|---|
-| 完整 suite | **651 passed、21 skipped、2 xfailed、0 failed，57.20 秒，exit 0**；[pytest.log](pytest.log) |
+| 完整 suite | **654 passed、21 skipped、2 xfailed、0 failed，61.02 秒，exit 0**；[pytest.log](pytest.log) |
 | 六角色 UI | 六者 pass、page_errors=0、console_errors=0；[browser-results.json](browser-results.json)，exit 0 |
 | 真正整合入口 | Ahem `_write_events_jsonl` → 第一個 bridge CLI 入庫 1 筆 → 第二個 CLI 重試只辨識 1 筆重複 → 已運行 UI 讀到同一筆內容；[bridge-results.json](bridge-results.json)，exit 0 |
 | 寫檔中斷 | 模擬 replace 失敗，舊檔保留、不發布半檔、temporary 清除；`tests/test_enterprise_bridge.py` |
@@ -24,6 +24,14 @@ Browser plugin not available，依前端測試技能使用既有 Playwright 腳�
 
 21 skipped：17 個私有 holdout 缺失、4 個真實 Discord opt-in；不是本次刻意省略。
 2 xfailed 為上游既有預期失敗。安裝 enterprise 依賴後本次沒有 enterprise skip。
+第一次 fork Linux CI 為 651 passed（[run](https://github.com/billiswen-png/ahem/actions/runs/33949479297)），
+但上游 PR 的兩個 jobs 後續暴露出相同的時鐘浮點斷言問題：
+`59.99999999999997 != 60.0`、`5.000000000000028 != 5.0`
+（[失敗 run](https://github.com/Chuanyin1202/ahem/actions/runs/33949543784)）。
+因此僅修改 `tests/test_state_silence.py` 的三個時間斷言：固定兩個時鐘基準、
+`pytest.approx(rel=0, abs=1e-8)`；額外三個案例令 passed 由 651 變為 654。
+10 ns tolerance 不會掩蓋原本「加入後 5 秒被算成 65 秒」的缺陷，`state.py` 完全不改，
+也沒有加回上游已撤回的 rounding。最新上游 CI 請讀取 PR checks，不沿用第一次 success。
 僅安裝核心套件的環境會明確 skip enterprise 模組測試；新增專用 CI 強制安裝
 enterprise 與瀏覽器依賴，不能把核心-only skip 當作後台測試通過。
 

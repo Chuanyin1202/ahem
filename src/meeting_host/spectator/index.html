@@ -161,6 +161,20 @@
   .section-title { font-size: 13px; font-weight: 700; color: var(--text); }
   .section-hint { font-size: 11px; color: var(--muted); }
 
+  /* 會議產出（預覽）：設計稿之外新增，沿用「主席的思考」同一種版面語言
+     （左細線＋兩行內容），只用既有色票，不發明新樣式。 */
+  .minutes-live { display: flex; flex-direction: column; gap: 12px; }
+  .ml-group { display: flex; flex-direction: column; gap: 6px; }
+  .ml-group-title { font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+  .ml-list { display: flex; flex-direction: column; gap: 6px; list-style: none; margin: 0; padding: 0; }
+  .ml-list li {
+    font-size: 12px; line-height: 1.55; color: var(--text);
+    padding-left: 12px; border-left: 2px solid var(--track);
+  }
+  .ml-who { font-weight: 700; margin-right: 6px; }
+  .ml-muted { color: var(--muted); }
+  .ml-empty { font-size: 12px; color: var(--muted); }
+
   .judge-list { display: flex; flex-direction: column; gap: 10px; }
   .judge { display: grid; grid-template-columns: 40px 1fr; gap: 10px; font-size: 12px; line-height: 1.55; }
   .judge .jt { color: var(--accent); }
@@ -285,6 +299,18 @@
   </div>
 
   <div class="right">
+    <!-- 會議產出（預覽）：設計稿之外新增的獨立區塊，見 docs/design/README.md
+         的偏離註記。不動下面既有的 4 組（KPI／時間軸／主席的思考／發言分佈）。 -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">會議產出（預覽）</div>
+        <div class="section-hint">進行中即時更新 · 非正式版</div>
+      </div>
+      <div class="minutes-live" id="minutes-live"></div>
+    </div>
+
+    <div class="rule"></div>
+
     <div class="stats">
       <div class="stat">
         <div class="stat-label">主席開口</div>
@@ -469,7 +495,10 @@
     connectionLost: false,
     needToken: false,
     ended: false,
-    minutes: null,          // minutes 事件的 payload（兩份 md 全文＋四路徑）
+    minutes: null,          // minutes 事件的 payload（兩份 md 全文＋四路徑，final=true 那份）
+    minutesLive: null,      // 進行中預覽（final=false）最近一次的 decisions/todos/unresolved；
+                             // 只被預覽事件更新，final=true 到達時刻意不覆蓋——鎖畫面當下
+                             // 那一刻的預覽內容留在畫面上，不會突然清空（見 renderMinutesLive）
 
     spokenKinds: {},        // 介入類型 -> 次數（含問候；「主席開口」那格顯示時排除問候）
     segments: [],           // 每個人的發言區間 {start, end}；「實際發言」用區間聯集算，
@@ -984,6 +1013,41 @@
     }).join("");
   }
 
+  // ── 右欄：會議產出（預覽）── 設計稿之外新增的區塊（見 docs/design/README.md
+  // 的偏離註記），只用既有色票／既有的 .section 版面語言，不發明新樣式。
+  // 讀 state.minutesLive（只被 final=false 的預覽更新，final=true 到達時
+  // 刻意不清空——見 state 宣告處與 handleEvent 的 "minutes" 分支）。
+  function renderMinutesGroup(title, items, renderItem) {
+    if (!items.length) return "";
+    return '<div class="ml-group"><div class="ml-group-title">' + esc(title) + '</div>' +
+      '<ul class="ml-list">' + items.map(function (it) {
+        return "<li>" + renderItem(it) + "</li>";
+      }).join("") + '</ul></div>';
+  }
+
+  function renderMinutesLive() {
+    var data = state.minutesLive;
+    var decisions = (data && data.decisions) || [];
+    var todos = (data && data.todos) || [];
+    var unresolved = (data && data.unresolved) || [];
+    if (!decisions.length && !todos.length && !unresolved.length) {
+      el("minutes-live").innerHTML = '<div class="ml-empty">尚無資料</div>';
+      return;
+    }
+    el("minutes-live").innerHTML =
+      renderMinutesGroup("決議事項", decisions, function (d) {
+        return (d.who ? '<span class="ml-who">' + esc(d.who) + '</span>' : "") +
+          esc(d.what || "") + (d.by ? '<span class="ml-muted">　' + esc(d.by) + ' 前</span>' : "");
+      }) +
+      renderMinutesGroup("待辦事項", todos, function (t) {
+        return (t.owner ? '<span class="ml-who">' + esc(t.owner) + '</span>' : "") + esc(t.task || "");
+      }) +
+      renderMinutesGroup("未解決事項", unresolved, function (u) {
+        return esc(u.topic || "") +
+          (u.chair_ruling ? '<span class="ml-muted">　' + esc(u.chair_ruling) + '</span>' : "");
+      });
+  }
+
   // ── 兩顆按鈕 ──
   // 匯出＝下載 minutes 事件帶回來的 LLM 會議記錄（決議／待辦／未解決／每人立場）。
   // minutes 只在會議收尾時產生，還沒有的時候按下去用按鈕自己的文字提示，不改版面。
@@ -1257,10 +1321,18 @@
         renderShare();
         break;
       case "minutes":
-        // T3a 在收尾時發的最後一筆事件，帶兩份 md 全文與四個路徑。
-        state.minutes = data;
-        setEnded();
-        renderTranscript();
+        // final=true：T3a 在收尾時發的最後一筆事件，帶兩份 md 全文與四個路徑，
+        // 鎖畫面、鎖匯出按鈕。final=false：會議進行中的預覽，只更新內容，不鎖定
+        // ——兩者共用同一個 event kind，靠 final 分辨（見 live._emit_minutes／
+        // Session.watch_minutes）。
+        if (data.final) {
+          state.minutes = data;
+          setEnded();
+          renderTranscript();
+        } else {
+          state.minutesLive = data;
+          renderMinutesLive();
+        }
         break;
     }
   }
@@ -1281,6 +1353,7 @@
     state.lastSpokenAt = null;
     state.share = {};
     state.minutes = null;
+    state.minutesLive = null;
     state.spokenKinds = {};
     state.segments = [];
     state.chairMarks = [];
@@ -1336,6 +1409,7 @@
       renderTimeline();
       renderTop();
       renderAlerts();
+      renderMinutesLive();
     });
     KINDS.forEach(function (kind) {
       source.addEventListener(kind, function (e) { handleEvent(JSON.parse(e.data)); });
@@ -1350,6 +1424,7 @@
   renderShare();
   renderTimeline();
   renderAlerts();
+  renderMinutesLive();
 })();
 </script>
 </body>

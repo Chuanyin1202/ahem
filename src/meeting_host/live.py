@@ -43,6 +43,17 @@ HELLO_AUDIO_TIMEOUT_SECONDS = 8.0
 # glossary.BATCH_MIN_UTTERANCES／BATCH_MAX_WAIT_SECONDS 決定。提示卡完全靜默、
 # 不經過主席，所以延遲不重要——這裡刻意取得比 TICK 慢。
 GLOSSARY_POLL_SECONDS = 10.0
+# 會議進行中的「決議／待辦／未解決事項」預覽節奏：跟 watch_glossary 同一種背景
+# 迴圈形狀，只是這次問的是 minutes.py 那支 LLM（`_call_minutes_llm`）。跟正式收尾
+# （`write_minutes`，只在 shutdown 時跑一次、會寫兩份 md）共用同一支呼叫，這裡只是
+# 頻率不同、不寫檔案。
+# Demo 前若發現這個功能不穩，把這個數字調很大（例如 999999）就等於直接關掉它，
+# 不影響其他任何背景迴圈——這是刻意留的安全閥。
+MINUTES_PREVIEW_INTERVAL_S = 90.0
+# 逐字稿要累積到這麼多句「發言」事件才值得跑一次預覽；會議剛開場幾乎沒人講話時
+# 先不跑，省一次注定沒內容的 LLM 呼叫。跟 glossary 的 BATCH_MIN_UTTERANCES（12）
+# 同一種判斷，這裡取一半——預覽是給畫面看的即時性功能，早一點有內容比精確更重要。
+MINUTES_PREVIEW_MIN_UTTERANCES = 6
 
 
 def fmt(t: float) -> str:
@@ -994,6 +1005,47 @@ class Session:
             except Exception as e:  # noqa: BLE001
                 print(f"    ⚠️ 提示卡失敗（不影響快路／慢路）：{type(e).__name__}: {e}")
 
+    async def watch_minutes(self) -> None:
+        """會議進行中的「決議／待辦／未解決事項」預覽：定期重問一次
+        `minutes.py` 的 LLM（`_call_minutes_llm`），跟正式收尾用的
+        `_try_write_minutes`／`write_minutes` 共用同一支呼叫，只是頻率不同、
+        不寫檔——預覽跑得比收尾頻繁很多，寫檔案沒有意義，只會在 meetings/
+        底下堆一堆用不到的中繼檔（`write_minutes` 本身不改，見工單限制）。
+
+        沿用既有的 `minutes` 這個 SSE event kind，靠 `final` 欄位分辨這是
+        預覽（False）還是會議結束時的正式版（True，見 `_emit_minutes`）——
+        不新增管道。payload 只帶 `decisions`／`todos`／`unresolved`／
+        `stances` 四個 LLM 回傳的清單，不寫檔也不帶路徑欄位。
+
+        隔離：整段包在 try/except（比照 `watch_glossary`）——LLM 失敗、逾時、
+        JSON 壞掉都只印一行跳過，不拖垮其他背景迴圈；`CancelledError` 原樣
+        往外拋，那是收尾路徑，不是錯誤。
+        """
+        while True:
+            await asyncio.sleep(MINUTES_PREVIEW_INTERVAL_S)
+            try:
+                n_utterances = sum(1 for e in self.events if e.kind == "utterance")
+                if n_utterances < MINUTES_PREVIEW_MIN_UTTERANCES:
+                    continue
+                from .minutes import _call_minutes_llm
+                events_snapshot = list(self.events)  # 同一個 event loop，複製期間不會被改
+                payload = await asyncio.to_thread(_call_minutes_llm, events_snapshot)
+                if self.ending:
+                    # 這通 LLM 呼叫飛行期間會議已經進入收尾——正式版 `final:True`
+                    # 可能已經送出，這筆預覽絕對不能排在它後面把畫面蓋回半成品。
+                    continue
+                self.emit("minutes", {
+                    "final": False,
+                    "decisions": payload.get("decisions") or [],
+                    "todos": payload.get("todos") or [],
+                    "unresolved": payload.get("unresolved") or [],
+                    "stances": payload.get("stances") or {},
+                })
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:  # noqa: BLE001
+                print(f"    ⚠️ 會議產出預覽失敗（不影響正式收尾）：{type(e).__name__}: {e}")
+
 
 def install_shutdown_signal_handlers(main_task: asyncio.Task) -> None:
     """把 SIGINT／SIGTERM 都接管到 `main_task.cancel()`。
@@ -1108,6 +1160,10 @@ async def main_async(args) -> None:
         # 提示卡：靜默、不經過 Chair、不影響冷卻期（見 Session.watch_glossary）。
         # 跟慢路一樣掛在 --no-llm 底下——它也是靠 LLM 抽詞的。
         tasks.append(asyncio.create_task(session.watch_glossary()))
+        # 會議產出預覽：跟提示卡一樣是靜默的 LLM 背景迴圈，掛在 --no-llm 底下
+        # （見 Session.watch_minutes）。正式收尾的 minutes 事件不受 --no-llm
+        # 影響，summary() 一律照舊嘗試。
+        tasks.append(asyncio.create_task(session.watch_minutes()))
     if hello_gate is not None:
         tasks.append(asyncio.create_task(session.watch_hello(hello_gate)))
     if args.spectator_port:
@@ -1315,8 +1371,13 @@ def _emit_minutes(s: Session, paths: tuple[Path, Path] | None,
     """把兩份 md 的完整內容與四個檔案路徑（相對 cwd）發成 `minutes` 事件。
 
     UI 直接吃事件裡的 md 內容，不用另外開檔——觀戰頁面跟 live.py 可能不在同一台。
+
+    `final: True` 標這是會議真正結束時的正式版，跟 `watch_minutes` 進行中發的
+    預覽（`final: False`，只帶 decisions/todos/unresolved/stances，不寫檔、
+    沒有這四個路徑欄位）共用同一個事件種類，靠這個欄位分辨。
     """
     data = {
+        "final": True,
         "host_md": "", "minutes_md": "",
         "host_path": "", "minutes_path": "",
         "log_path": str(log_path), "events_path": str(events_path),

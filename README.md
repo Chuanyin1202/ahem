@@ -2,7 +2,7 @@
 
 > 咳咳。它不做記錄，它做主持：分配發言、拉回離題、在時間內推進決策。
 
-[![tests](https://img.shields.io/badge/tests-625%20passed-brightgreen)](#5-測試)
+[![tests](https://img.shields.io/badge/tests-608%20passed-brightgreen)](#5-測試)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 - 主專案：[Chuanyin1202/ahem](https://github.com/Chuanyin1202/ahem)
@@ -82,7 +82,7 @@ flowchart TD
 | 音訊 | discord.py、discord-ext-voice_recv、PyNaCl、NumPy、audioop | Discord 每人一軌收音／發聲、重採樣與切幀 |
 | 中文處理 | OpenCC（`s2twp`） | Scribe 輸出為簡體，統一轉台灣正體 |
 | 資料 | JSONL、Markdown | 事件流與會後記錄；**不需要資料庫** |
-| 測試與工具 | pytest、Playwright、ffmpeg | 625 項回歸測試、瀏覽器驗證、會議錄影 |
+| 測試與工具 | pytest、Playwright、ffmpeg | 631 項回歸測試、瀏覽器驗證、會議錄影與精華剪接 |
 | Sponsor 技術 | **ElevenLabs**（Scribe STT ＋ 串流 TTS） | 參加 **ElevenLabs Sponsor Challenge**；主賽道 **02 AI for Everyday Life** |
 
 ---
@@ -165,7 +165,11 @@ AZURE_TTS_GENDER=female     # male = 雲哲
 PYTHONPATH=src .venv/bin/python -m pytest -q tests
 ```
 
-本機實測 **625 passed / 4 skipped / 2 xfailed**。skip 的是需要私有 holdout 會議資料或真實 Discord 的項目（那些資料不在公開 repo，見「資料政策」）。
+**clone 下來直接跑會得到 608 passed / 21 skipped / 2 xfailed**——這是任何人重現得了的數字，徽章寫的也是它。
+21 個 skip 分兩種：17 個要回放真實會議錄音，資料放進 `experiments/holdout/` 後會自己啟用（不在公開 repo，見「資料政策」）；
+另外 4 個要連真實 Discord，得設 `MEETING_HOST_RUN_REAL_DISCORD=1`。
+
+把 holdout 資料補齊之後是 **625 passed / 4 skipped / 2 xfailed**。兩個數字都列出來，是因為只寫後者會讓人以為 clone 下來就該看到 625。
 
 ---
 

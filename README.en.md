@@ -94,7 +94,7 @@ Tests:
 .venv/bin/python -m pytest tests/ -q
 ```
 
-Without real meeting data this is 494 passed, 23 skipped, 2 xfailed: 17 skips are regressions that replay a real recording and enable themselves once data is placed under `experiments/holdout/` (see [Data policy](#data-policy)); the other 6 need `playwright`.
+A fresh clone gives **608 passed, 21 skipped, 2 xfailed** — the figure on the badge, because it is the one anyone can reproduce. Of the skips, 17 replay a real recording and enable themselves once data is placed under `experiments/holdout/` (see [Data policy](#data-policy)); the other 4 need a live Discord connection and `MEETING_HOST_RUN_REAL_DISCORD=1`. With the holdout data in place it is 625 passed, 4 skipped, 2 xfailed.
 
 ## Where it stands
 
@@ -143,13 +143,18 @@ src/meeting_host/
   phase.py            phase detection (LLM readings with hysteresis; suggests by default)
   style.py            chairing style presets (three fast-path threshold sets, untuned)
   speaker.py          chime, TTS, Chair state machine      glossary.py   silent term cards
+  script_source.py    scripted participants, so the chair can be tested without a room full of people
   events.py           event schema (the seam between modules)   minutes.py    the two records
   spectator.py        spectator view and replay server     state.py      meeting state
 examples/
+  hackathon-planning.events.jsonl        the meeting in the submission video, screenshot and public demo
   synthetic-meeting.events.jsonl         event log of a fictional meeting, for replay and as a format sample
   synthetic-phases.events.jsonl          a fictional three-phase meeting with phase suggestion and switch events
+  scripts/                               scripted meetings that drive the chair without STT
 experiments/
   rescore_slow_path.py / score_run.py    re-scoring and window-based scoring
+  score_script_run.py                    scoring a scripted run against its expected windows
+  record_replay.py / make_highlight.py   film any past meeting; cut it into a highlight reel
   holdout/                               your own meeting data (not versioned)
 docs/  (Chinese)
   product-definition.md    positioning: why a chair, versus Teams Facilitator
@@ -172,6 +177,20 @@ Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). Re
 
 ## About
 
-Built for FUTUREMODE BUILDMODE GEN-AI HACKATHON 2026 (Taipei, 4–6 September).
+Built for FUTUREMODE BUILDMODE GEN-AI HACKATHON 2026 (Taipei, 4–6 September)
+by team **分身有術** (T043), on the **AI for Everyday Life** track, for the
+**ElevenLabs** sponsor challenge.
 
-License: [MIT](LICENSE).
+| Name | Role |
+| --- | --- |
+| Alex Huang (contact) | Core |
+| 周逸達 | Front-end UI |
+| Billis | Back-end UI |
+| Jax | Testing |
+
+Live demo: <https://ahem.eighti.app> — a permanent replay of the meeting above.
+
+License: [MIT](LICENSE). Every dependency, font and asset is listed with its
+licence in the Chinese [README](README.md#第三方服務資料與素材); all 27 packages
+are permissive and none are copyleft. That table is maintained in one place
+rather than duplicated here, so it cannot drift between the two languages.

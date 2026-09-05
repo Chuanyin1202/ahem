@@ -83,7 +83,7 @@ flowchart TD
 | 中文處理 | OpenCC（`s2twp`） | Scribe 輸出為簡體，統一轉台灣正體 |
 | 資料 | JSONL、Markdown | 事件流與會後記錄；**不需要資料庫** |
 | 測試與工具 | pytest、Playwright、ffmpeg | 625 項回歸測試、瀏覽器驗證、會議錄影 |
-| Sponsor 技術 | **ElevenLabs**（實際使用：Scribe STT ＋ 串流 TTS） | 主賽道 **02 AI for Everyday Life**；Sponsor 資格認定依主辦規則 |
+| Sponsor 技術 | **ElevenLabs**（Scribe STT ＋ 串流 TTS） | 參加 **ElevenLabs Sponsor Challenge**；主賽道 **02 AI for Everyday Life** |
 
 ---
 
@@ -177,6 +177,11 @@ PYTHONPATH=src .venv/bin/python -m pytest -q tests
 - **原始碼**：<https://github.com/Chuanyin1202/ahem>
 
 ![觀戰畫面](docs/images/spectator.png)
+
+*回放 [`examples/hackathon-planning.events.jsonl`](examples/hackathon-planning.events.jsonl)——跟評選影片同一場，並打開了「群體動力」抽屜。這場**只有主席是真的**：四位與會者與他們說的每一句話都出自腳本，所以這份錄影能證明的只有主席的判斷。要自己跑一次：*
+```bash
+PYTHONPATH=src python -m meeting_host.spectator --replay examples/hackathon-planning.events.jsonl --public-read
+```
 
 ---
 
@@ -286,7 +291,7 @@ for n in sorted(set(names)):
 
 | 姓名 | 分工 | GitHub |
 | --- | --- | --- |
-| Alex Huang | 核心 | [Chuanyin1202](https://github.com/Chuanyin1202) |
+| Alex Huang（主要聯絡人） | 核心 | [Chuanyin1202](https://github.com/Chuanyin1202) |
 | 周逸達 | 前端 UI | [Zeal Chou](https://github.com/zealchou) |
 | Billis | 後端 UI | [BillisWen](https://github.com/BillisWen) |
 | Jax | 測試 | — |

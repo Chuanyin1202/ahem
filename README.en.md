@@ -8,7 +8,7 @@ It is not a meeting assistant. Assistants take notes, track the agenda and summa
 
 ![Ahem spectator view: the chair quotes what was said to pull a drifting discussion back on topic; on the right, every decision it made and the speaking share](docs/images/spectator.png)
 
-*Spectator view replaying [`examples/synthetic-meeting.events.jsonl`](examples/synthetic-meeting.events.jsonl), a fictional three-person meeting; participants and dialogue are synthetic.*
+*Spectator view replaying [`examples/hackathon-planning.events.jsonl`](examples/hackathon-planning.events.jsonl), the same meeting as the submission video, with the group-dynamics drawer opened. Only the chair is real: the four participants and every line they speak come from a script, so the chair's judgements are the only thing the recording is evidence of.*
 
 ## Why a chair
 

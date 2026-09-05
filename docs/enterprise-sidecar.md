@@ -35,6 +35,8 @@ introduced by the sidecar. Enterprise crypto is an explicit optional dependency.
 
 ## Implemented local workflows
 
+Five-day demo credentials and role screenshots: [demo-access.md](demo-access.md).
+
 - Management: numeric meeting summaries, filters, pagination, date/import trends.
 - Enterprise: separate local identities, sessions, grants, revocation, expiry,
   credential rotation and audit. No automatic mapping from Discord participants.
@@ -59,7 +61,7 @@ introduced by the sidecar. Enterprise crypto is an explicit optional dependency.
 3. For a new **synthetic-only** local workspace:
 
    ```sh
-   PYTHONPATH=src python scripts/enterprise_local_demo.py --directory /absolute/new-private-demo
+   PYTHONPATH=src python scripts/enterprise_local_demo.py --directory /absolute/new-private-demo --days 5 --port 8907
    PYTHONPATH=src AHEM_KEK_FILE=/absolute/new-private-demo/kek python -m meeting_host.enterprise \
      --identities /absolute/new-private-demo/identities.json \
      --database /absolute/new-private-demo/enterprise.db --port 8907 --demo-mode

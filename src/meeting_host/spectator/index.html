@@ -183,16 +183,31 @@
     flex-grow: 1; min-height: 0; overflow-x: hidden; overflow-y: auto;
   }
   .u-line { display: grid; grid-template-columns: 64px 1fr; gap: 20px; }
-  .u-time { font-size: 12px; color: var(--dim); padding-top: 5px; }
+  /* Zeal 2026-09-05 明確要求：時間與講者名換紅色高亮＋加粗，讓掃視逐字稿時
+     一眼認得出「誰、什麼時候」。用既有 --accent（主席專屬強調色），不新增
+     裸 hex——主席那一行原本就靠這個顏色跟其他行區分，現在其他行的時間/
+     名字也用同一色，兩者的視覺區隔改成靠下面 .u-chair 的底色遮罩，不再
+     只靠顏色（見 .u-chair 註解）。 */
+  .u-time { font-size: 12px; color: var(--accent); font-weight: 700; padding-top: 5px; }
   .u-text { font-size: 16px; line-height: 1.75; color: var(--body); min-width: 0; overflow-wrap: anywhere; }
   /* 設計稿的逐字稿沒有講者名（那場只有一個人）。多人會議不寫名字會讀不懂，
-     所以保留講者名——這是刻意偏離，用 --muted／500 讓它退在內文後面。 */
-  .u-speaker { font-weight: 500; color: var(--muted); }
+     所以保留講者名——這是刻意偏離。原本用 --muted／500 讓它退在內文後面，
+     2026-09-05 改成跟時間戳同一組紅色高亮＋加粗（理由同上）。 */
+  .u-speaker { font-weight: 700; color: var(--accent); }
   .u-line.now { align-items: center; }
   .u-line.now .u-time { padding-top: 0; }
   .u-line.now .u-text { font-size: 13px; color: var(--dim); }
-  .u-line.chair .u-time { color: var(--accent); }
-  .u-chair { display: flex; flex-direction: column; gap: 8px; padding-left: 18px; border-left: 2px solid var(--accent); min-width: 0; }
+  /* 主席行的時間色已經跟其他行一致（見上面 .u-time），這裡不用再重複覆寫。 */
+  /* Zeal 2026-09-05：主席發言原本只靠左邊 2px 細線區分，他覺得不夠明顯——
+     加一層淺灰底色遮罩當作真正的「這是主席在說話」的視覺容器，而不是只靠
+     一條細線。用既有 --track（設計稿裡本來就是「淺灰」語意的那個變數，時間軸
+     底軌用的就是它），不新增裸 hex。加了背景就要補右/上/下 padding 跟圓角，
+     不然背景色只會貼著文字邊緣，不像一個容器。 */
+  .u-chair {
+    display: flex; flex-direction: column; gap: 8px; min-width: 0;
+    padding: 12px 16px 12px 18px; border-left: 2px solid var(--accent);
+    background: var(--track); border-radius: 0 6px 6px 0;
+  }
   .u-chair .who { font-size: 11px; letter-spacing: 0.18em; color: var(--accent); }
   .u-chair .say { font-size: 17px; line-height: 1.7; color: var(--text); overflow-wrap: anywhere; }
 
@@ -342,7 +357,16 @@
   .obs-list {
     display: flex; flex-direction: column; gap: 10px;
     padding: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-    font-size: 12px; line-height: 1.6; flex-grow: 1; min-height: 60px; overflow-y: auto;
+    font-size: 12px; line-height: 1.6; flex-grow: 1; min-height: 60px;
+    /* Zeal 2026-09-05 截圖指出：這個框本來就該是「框架固定、內容自己捲」——
+       原本沒設 max-height，flex-grow 在 auto-height 的父層裡不會真的產生
+       可捲動空間（scrollHeight==clientHeight，實測過），於是整個 .right
+       欄位跟著長高變成外層在捲，「結束會議」按鈕會被推出視窗（.right 本來
+       就有這個已知風險，見上面 .right 的說明）。加 max-height 讓這裡自己
+       變成會捲動的那個框，配合下面既有的 `box.scrollTop = box.scrollHeight`
+       自動貼齊最新一筆——舊的觀察會捲上去、捲出視窗消失，框本身大小不動。
+       用 vh 當上限是為了 RWD：矮視窗（筆電）自動縮小，不會反過來把版面撐爆。 */
+    max-height: min(320px, 34vh); overflow-y: auto;
   }
   .obs-empty { color: var(--muted); }
   .obs-row .ot { color: var(--dim); }

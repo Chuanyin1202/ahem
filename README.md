@@ -221,11 +221,50 @@ PYTHONPATH=src .venv/bin/python -m pytest -q tests
 | OpenAI API | [文件](https://platform.openai.com/docs)、[服務協議](https://openai.com/policies/services-agreement/) | 語意判斷與文字生成 |
 | Azure Speech | [文件](https://learn.microsoft.com/azure/ai-services/speech-service/) | **選用**語音合成 |
 | Discord | [開發者文件](https://discord.com/developers/docs/intro)、[Developer Terms](https://support-dev.discord.com/hc/en-us/articles/8562894815383) | 真人語音頻道 |
-| Python 相依套件 | [requirements.txt](requirements.txt)（27 項） | **各套件各有授權，不一律等同本專案的 MIT**；【待補】完整再散布授權清單 |
-| 觀戰字型 | [Google Fonts](https://fonts.google.com/)：Noto Sans TC／Noto Serif TC／JetBrains Mono | 由 Google Fonts 載入，未封裝字型檔；【待補】各字型 LICENSE 核對 |
-| 觀戰背景圖 | `src/meeting_host/spectator/assets/bg-watercolor.jpg` | 【待補】素材來源與授權（AI 生成或第三方？由提供者確認） |
+| Python 相依套件 | [requirements.txt](requirements.txt)（27 項） | 逐一核對過，**全部為寬鬆授權，沒有任何 GPL／AGPL／LGPL**——清單見下表 |
+| 觀戰字型 | [Google Fonts](https://fonts.google.com/)：Noto Sans TC／Noto Serif TC／JetBrains Mono | 由 Google Fonts CDN 載入，repo 內未封裝字型檔。三者皆為 SIL Open Font License 1.1 |
+| 觀戰背景圖 | `src/meeting_host/spectator/assets/bg-watercolor.jpg` | **AI 生成**素材，由團隊成員產出並提供；【待補】生成工具名稱 |
 | 合成會議事件與截圖 | [examples/](examples/)、[docs/images/](docs/images/) | 虛構會議，非真實與會者資料 |
 | 引導方法參考 | [docs/prior-art.md](docs/prior-art.md) | 方法論參考，不表示可再散布被引用著作 |
+
+
+### Python 相依套件的授權
+
+以本專案 `requirements.txt` 的 27 項逐一核對套件 metadata（PEP 639 `License-Expression`
+優先，其次 Trove classifier）。**沒有任何 copyleft（GPL／AGPL／LGPL）授權**，因此
+不對本專案的 MIT 散布產生額外義務。
+
+| 套件 | 授權 | | 套件 | 授權 |
+| --- | --- | --- | --- | --- |
+| aiohappyeyeballs | PSF-2.0 | | opencc-python-reimplemented | Apache-2.0 |
+| aiohttp | Apache-2.0 AND MIT | | packaging | Apache-2.0 OR BSD-2-Clause |
+| aiosignal | Apache-2.0 | | pluggy | MIT |
+| attrs | MIT | | propcache | Apache-2.0 |
+| audioop-lts | 【待補】僅 Python 3.13 安裝，本環境未安裝故未讀取 | | pycparser | BSD-3-Clause |
+| cffi | MIT-0 | | Pygments | BSD-2-Clause |
+| davey | MIT | | PyNaCl | Apache-2.0 |
+| discord-ext-voice_recv | MIT | | pytest | MIT |
+| discord.py | MIT | | python-dotenv | BSD-3-Clause |
+| frozenlist | Apache-2.0 | | sounddevice | MIT |
+| idna | BSD-3-Clause | | typing_extensions | PSF-2.0 |
+| iniconfig | MIT | | websockets | BSD-3-Clause |
+| multidict | Apache-2.0 | | yarl | Apache-2.0 |
+| numpy | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | | | |
+
+盤點方式可重現：
+
+```bash
+.venv/bin/python -c "
+import importlib.metadata as md, re, pathlib
+names=[re.split(r'[=<>;\\[]', l.strip())[0] for l in
+       pathlib.Path('requirements.txt').read_text().splitlines()
+       if l.strip() and not l.startswith('#')]
+for n in sorted(set(names)):
+    m=md.metadata(n)
+    print(n, m.get('License-Expression') or
+          [c.rsplit('::',1)[-1].strip() for c in (m.get_all('Classifier') or [])
+           if c.startswith('License ::')])"
+```
 
 **真實會議資料不在本 repo。** 逐字稿含與會者真實對話，只保留在本機（見「資料政策」）。
 

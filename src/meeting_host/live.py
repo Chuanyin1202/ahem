@@ -43,6 +43,25 @@ HELLO_AUDIO_TIMEOUT_SECONDS = 8.0
 # glossary.BATCH_MIN_UTTERANCES／BATCH_MAX_WAIT_SECONDS 決定。提示卡完全靜默、
 # 不經過主席，所以延遲不重要——這裡刻意取得比 TICK 慢。
 GLOSSARY_POLL_SECONDS = 10.0
+# 會議進行中的「決議／待辦／未解決事項」預覽節奏：跟 watch_glossary 同一種背景
+# 迴圈形狀，只是這次問的是 minutes.py 那支 LLM（`_call_minutes_llm`）。跟正式收尾
+# （`write_minutes`，只在 shutdown 時跑一次、會寫兩份 md）共用同一支呼叫，這裡只是
+# 頻率不同、不寫檔案。
+# Demo 前若發現這個功能不穩，把這個數字調很大（例如 999999）就等於直接關掉它，
+# 不影響其他任何背景迴圈——這是刻意留的安全閥。
+MINUTES_PREVIEW_INTERVAL_S = 90.0
+# 逐字稿要累積到這麼多句「發言」事件才值得跑一次預覽；會議剛開場幾乎沒人講話時
+# 先不跑，省一次注定沒內容的 LLM 呼叫。跟 glossary 的 BATCH_MIN_UTTERANCES（12）
+# 同一種判斷，這裡取一半——預覽是給畫面看的即時性功能，早一點有內容比精確更重要。
+MINUTES_PREVIEW_MIN_UTTERANCES = 6
+# T-G：AI 主席的「心聲」——跟會議產出預覽同一種背景迴圈形狀，只是問的是
+# critique.py 那支 LLM（`_call_critique_llm`）。比會議產出預覽（90 秒）快一點：
+# demo 只有 5 分鐘，心聲觀察是比較短的一句話評語，風險相對低，值得抓緊一點頻率
+# 讓評審看得到它在動。跟 MINUTES_PREVIEW_INTERVAL_S 一樣是刻意留的安全閥——
+# demo 前若發現不穩，調很大的數字就等於直接關掉，不影響其他背景迴圈。
+CRITIQUE_INTERVAL_S = 45.0
+# 逐字稿門檻比 minutes 的 6 略低：心聲觀察不需要看到完整決議脈絡才有東西可講。
+CRITIQUE_MIN_UTTERANCES = 4
 
 
 def fmt(t: float) -> str:
@@ -1018,6 +1037,112 @@ class Session:
             except Exception as e:  # noqa: BLE001
                 print(f"    ⚠️ 提示卡失敗（不影響快路／慢路）：{type(e).__name__}: {e}")
 
+    async def watch_minutes(self) -> None:
+        """會議進行中的「決議／待辦／未解決事項」預覽：定期重問一次
+        `minutes.py` 的 LLM（`_call_minutes_llm`），跟正式收尾用的
+        `_try_write_minutes`／`write_minutes` 共用同一支呼叫，只是頻率不同、
+        不寫檔——預覽跑得比收尾頻繁很多，寫檔案沒有意義，只會在 meetings/
+        底下堆一堆用不到的中繼檔（`write_minutes` 本身不改，見工單限制）。
+
+        沿用既有的 `minutes` 這個 SSE event kind，靠 `final` 欄位分辨這是
+        預覽（False）還是會議結束時的正式版（True，見 `_emit_minutes`）——
+        不新增管道。payload 只帶 `decisions`／`todos`／`unresolved`／
+        `stances` 四個 LLM 回傳的清單，不寫檔也不帶路徑欄位。
+
+        隔離：整段包在 try/except（比照 `watch_glossary`）——LLM 失敗、逾時、
+        JSON 壞掉都只印一行跳過，不拖垮其他背景迴圈；`CancelledError` 原樣
+        往外拋，那是收尾路徑，不是錯誤。
+        """
+        while True:
+            await asyncio.sleep(MINUTES_PREVIEW_INTERVAL_S)
+            try:
+                n_utterances = sum(1 for e in self.events if e.kind == "utterance")
+                if n_utterances < MINUTES_PREVIEW_MIN_UTTERANCES:
+                    continue
+                from .minutes import _call_minutes_llm
+                events_snapshot = list(self.events)  # 同一個 event loop，複製期間不會被改
+                payload = await asyncio.to_thread(_call_minutes_llm, events_snapshot)
+                if self.ending:
+                    # 這通 LLM 呼叫飛行期間會議已經進入收尾——正式版 `final:True`
+                    # 可能已經送出，這筆預覽絕對不能排在它後面把畫面蓋回半成品。
+                    continue
+                self.emit("minutes", {
+                    "final": False,
+                    "decisions": payload.get("decisions") or [],
+                    "todos": payload.get("todos") or [],
+                    "unresolved": payload.get("unresolved") or [],
+                    "stances": payload.get("stances") or {},
+                })
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:  # noqa: BLE001
+                print(f"    ⚠️ 會議產出預覽失敗（不影響正式收尾）：{type(e).__name__}: {e}")
+
+    async def watch_critique(self) -> None:
+        """T-G：AI 主席的「心聲」——會議整體與每個與會者的真實判斷，定期重問一次
+        `critique.py` 的 LLM（`_call_critique_llm`）。跟 `watch_minutes()` 完全同一種
+        背景迴圈骨架，只是問的問題不同、event kind 不同：這裡發 `"ai_critique"`，
+        不塞進既有的 `"minutes"` kind——概念不同（會議產出 vs 心聲觀察），混在一起
+        會讓前端分不清這句話是什麼性質。（event kind／方法名／旗標維持 `critique`
+        命名不改，只有面板顯示文字是「心聲」，見 2026-09-05 中途拍板。）
+
+        保險栓見 `main_async` 組 `tasks` 的地方（`--no-critique`／`--no-llm`）；
+        這個方法本身不知道旗標，也不用知道——排不排這個 task 完全由呼叫端決定。
+
+        隔離：整段包在 try/except（比照 `watch_minutes`）——LLM 失敗、逾時、
+        JSON 壞掉都只印一行跳過，不拖垮其他背景迴圈；`CancelledError` 原樣
+        往外拋，那是收尾路徑，不是錯誤。
+
+        2026-09-06 Track H：`CRITIQUE_SYSTEM` 承諾的主席介入紀錄與發言統計，由
+        這裡負責從 `self.st`／`self.now` 換算成 `critique.CritiqueStats`（純
+        資料，不含 `Session`／`MeetingState` 物件本身）再傳給 `_call_critique_llm`
+        ——`build_critique_prompt()` 因此仍是不依賴 `Session` 的純函式，單元測試
+        不用建一整個 Session 就能餵假資料。佔比分母沿用 `emit_share()` 那一套
+        （`chair_seconds = len(st.interventions) * 3.0`），不是 `state.share()`
+        （見 `emit_share()` docstring）。
+        """
+        while True:
+            await asyncio.sleep(CRITIQUE_INTERVAL_S)
+            try:
+                n_utterances = sum(1 for e in self.events if e.kind == "utterance")
+                if n_utterances < CRITIQUE_MIN_UTTERANCES:
+                    continue
+                from .critique import CritiqueStats, ParticipantSpeechStat, _call_critique_llm
+                events_snapshot = list(self.events)  # 同一個 event loop，複製期間不會被改
+                now = self.now
+                chair_seconds = len(self.st.interventions) * 3.0  # 同 emit_share() 的估算
+                stats = CritiqueStats(
+                    now=now,
+                    remaining_seconds=self.st.remaining_seconds(now),
+                    participants=[
+                        ParticipantSpeechStat(
+                            name=p,
+                            spoke_seconds=self.st.spoke_seconds(p),
+                            silent_seconds=self.st.silent_seconds(p, now),
+                            absent=p in self.st.absent,
+                        )
+                        for p in self.st.participants
+                    ],
+                    chair_seconds=chair_seconds,
+                    chair_interventions=len(self.st.interventions),
+                )
+                payload = await asyncio.to_thread(_call_critique_llm, events_snapshot, stats)
+                if self.ending:
+                    # 跟 watch_minutes 同一個理由：這通 LLM 呼叫飛行期間會議已經進入
+                    # 收尾，這筆心聲觀察不該再補發、蓋掉已經在收尾的畫面。
+                    continue
+                # payload 形狀（CRITIQUE_SYSTEM 的 JSON schema，2026-09-05 定案）：
+                # {"meeting": str, "participants": {名字: 評語}}——participants 是
+                # 物件（人名→評語），不是陣列；根據不足時 LLM 會省略該人，不會塞 null。
+                self.emit("ai_critique", {
+                    "meeting": payload.get("meeting") or "",
+                    "participants": payload.get("participants") or {},
+                })
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:  # noqa: BLE001
+                print(f"    ⚠️ AI 心聲觀察失敗（不影響其他背景迴圈）：{type(e).__name__}: {e}")
+
 
 def install_shutdown_signal_handlers(main_task: asyncio.Task) -> None:
     """把 SIGINT／SIGTERM 都接管到 `main_task.cancel()`。
@@ -1235,6 +1360,15 @@ async def main_async(args) -> None:
         # 提示卡：靜默、不經過 Chair、不影響冷卻期（見 Session.watch_glossary）。
         # 跟慢路一樣掛在 --no-llm 底下——它也是靠 LLM 抽詞的。
         tasks.append(asyncio.create_task(session.watch_glossary()))
+        # 會議產出預覽：跟提示卡一樣是靜默的 LLM 背景迴圈，掛在 --no-llm 底下
+        # （見 Session.watch_minutes）。正式收尾的 minutes 事件不受 --no-llm
+        # 影響，summary() 一律照舊嘗試。
+        tasks.append(asyncio.create_task(session.watch_minutes()))
+        # T-G：AI 主席的「心聲」，需要 LLM，所以 --no-llm 本來就該連帶關掉它；
+        # --no-critique 是專門只關這一個功能的細粒度保險栓——出問題時用這個關，
+        # 不影響會議產出/提示卡等其他 LLM 功能。兩個旗標都要生效，見 Session.watch_critique。
+        if not args.no_critique:
+            tasks.append(asyncio.create_task(session.watch_critique()))
     if hello_gate is not None:
         tasks.append(asyncio.create_task(session.watch_hello(hello_gate)))
     if script:
@@ -1449,8 +1583,13 @@ def _emit_minutes(s: Session, paths: tuple[Path, Path] | None,
     """把兩份 md 的完整內容與四個檔案路徑（相對 cwd）發成 `minutes` 事件。
 
     UI 直接吃事件裡的 md 內容，不用另外開檔——觀戰頁面跟 live.py 可能不在同一台。
+
+    `final: True` 標這是會議真正結束時的正式版，跟 `watch_minutes` 進行中發的
+    預覽（`final: False`，只帶 decisions/todos/unresolved/stances，不寫檔、
+    沒有這四個路徑欄位）共用同一個事件種類，靠這個欄位分辨。
     """
     data = {
+        "final": True,
         "host_md": "", "minutes_md": "",
         "host_path": "", "minutes_path": "",
         "log_path": str(log_path), "events_path": str(events_path),
@@ -1558,6 +1697,8 @@ def main() -> None:
     ap.add_argument("--script", default=None, metavar="PATH",
                     help="腳本測試台：讀一份劇本 JSON 取代 STT，與會者全是假的、"
                          "只有主席是真的（見 docs/specs/2026-09-05-script-harness-design.md）")
+    ap.add_argument("--no-critique", action="store_true",
+                    help="關掉 AI 主席的「心聲」觀察（保險栓；出問題時用這個關，不影響會議產出/提示卡等其他 LLM 功能）")
     ap.add_argument("--say-hello", action="store_true", help="進頻道後主席先開口問候")
     ap.add_argument("--spectator-port", type=int, default=0, help="觀戰 UI 監聽埠（0＝不開）")
     ap.add_argument("--spectator-token", default="",

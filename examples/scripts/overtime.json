@@ -30,6 +30,17 @@
       ],
       "expect_type": "發言超時",
       "why": "達哥自 42 秒起不間斷發言，中間無人插話或應聲；test 檔位門檻 60 秒"
+    },
+    {
+      "id": "X1",
+      "kind": "no_intervention",
+      "range_seconds": [
+        120,
+        370
+      ],
+      "scored": false,
+      "excluded_reason": "達哥壟斷發言權的必然後果——Alex 與 Billis 真的被冷落、發言權真的失衡，主席在這裡開口是正確行為，但不是這個劇本要量的東西。沿用 holdout 的 scored:false 慣例。",
+      "why": "排除區間，不計分"
     }
   ],
   "lines": [

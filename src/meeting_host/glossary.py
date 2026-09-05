@@ -243,21 +243,38 @@ def is_printable(card: Card) -> bool:
 
 _EXTRACT_SYSTEM = """你在幫一場進行中的會議挑出「值得在旁邊補一張說明卡」的詞。
 
-只挑這三種：
-1. 專有名詞——公司、產品、品牌、服務、地名、活動名、專案代號
-2. 專業術語或行話——某個領域才會這樣用的詞
-3. 外語詞——夾在中文裡的英文或日文詞，且不是招呼語或語助詞
+**判準是受眾，不是詞本身。** 這張卡是給**這場會議的與會者**看的，不是給外行看的。
+同一個詞在不同會議可能該挑也可能不該挑：「轉換率」在行銷團隊的會議不用挑，
+在一場工程師的會議可能要挑。
 
-絕對不要挑：
-- 一般常用詞、動詞、形容詞（開會、準備、比賽、講話、厲害）
+每次都先問自己一句：**如果不補這張卡，在場有沒有人會聽不懂這句話？**
+答案是「不會」就不要挑。
+
+該挑的只有兩種：
+1. **具體的專有名詞**——某一家公司、某個產品或專案的代號、某份文件的名字、
+   某個活動的名稱。要具體到「查得到那一個東西」，不是一整類東西。
+2. **跨領域的專業術語**——話題碰到了在場的人不熟的領域。
+   例：一群行銷人談到「施工日報」「監造」；一群工程師談到「權責發生制」。
+   判準是**聽到這個詞會不會不知道它指什麼**。「週報」「贊助商」「企業流程」
+   「資料來源」不算——任何行業的人都知道那是什麼，只是不知道**這一份**週報
+   的內容。**不知道內容不需要卡片，不知道詞義才需要。**
+
+**絕對不要挑**：
+- **這場會議的議題，以及議題裡出現的詞**。議題是：{topic}
+- **與會者這個團隊的日常用語**。他們每天在講的行話不需要卡片——
+  行銷團隊的「渠道」「轉換率」「素材」「曝光量」；工程團隊的「部署」「重構」
+- **常識性的縮寫、工具名、公司名**（AI、Excel、Google、demo、KPI、QA、Q4、Zoom）
+- **普通的複合名詞**（審核流程、必填欄位、資料來源、審核時間、發言時間）
+- 一般常用詞、動詞、形容詞（開會、準備、比賽、講話、厲害、外包、遠端）
 - 語助詞與招呼語（OK、so、yeah、哈囉、拜拜）
 - 代名詞、時間詞、數量詞（我們、明天、三次）
+- **地名**，除非那個地點本身就是討論的標的
 - 情緒用語與髒話
 - 在場參與者的名字
 - 句子或片語——只挑「詞」，不挑一整句
 - 看起來被聽錯、拼錯、意思不通的字（逐字稿來自語音辨識，本來就會有錯字）
 
-寧可少挑也不要濫挑：一段對話挑出 0 個詞是完全正常、也是最常見的結果。
+寧可少挑也不要濫挑：**一段對話挑出 0 個詞是完全正常、也是最常見的結果。**
 每個詞必須**原封不動**照抄逐字稿裡出現的字，不要改寫、不要補字、不要翻譯。"""
 
 _EXTRACT_USER = """在場參與者（他們的名字不要挑）：{participants}
@@ -279,8 +296,12 @@ def format_batch(utterances: Sequence[Utterance]) -> str:
 
 
 def extract_terms(utterances: Sequence[Utterance], known: Sequence[str],
-                  participants: Sequence[str]) -> list[str]:
+                  participants: Sequence[str], topic: str = "") -> list[str]:
     """打一次 LLM，回傳候選詞（**未驗證**）。
+
+    `topic` 是新加的（2026-09-05）。沒有它的時候，模型不可能排除「議題本身及其
+    組成詞」——它連議題是什麼都不知道。實測後果：議題「Q4 行銷預算分配」的場次，
+    `Q4` 在 4 個劇本 × 3 輪裡被挑了 6 次，是所有詞裡最多的。
 
     驗證一律由呼叫端的 `build_card()` 做——這裡回什麼都不重要，回不存在的詞
     只會在下一步被丟掉。例外不在這裡吞，交給 `Glossary.run_batch`。
@@ -290,7 +311,7 @@ def extract_terms(utterances: Sequence[Utterance], known: Sequence[str],
         "model": MODEL,
         "reasoning_effort": EFFORT,
         "messages": [
-            {"role": "system", "content": _EXTRACT_SYSTEM},
+            {"role": "system", "content": _EXTRACT_SYSTEM.format(topic=topic or "（不詳）")},
             {"role": "user", "content": _EXTRACT_USER.format(
                 participants="、".join(participants) or "（不詳）",
                 known="、".join(known) or "（無）",
@@ -379,7 +400,7 @@ def look_up(term: str, context: str) -> tuple[str | None, list[Source]]:
 
 
 # ── 追蹤器：一場會議一個實例 ─────────────────────────────────────────────
-Extractor = Callable[[Sequence[Utterance], Sequence[str], Sequence[str]], list[str]]
+Extractor = Callable[..., list[str]]
 Lookup = Callable[[str, str], "tuple[str | None, list[Source]]"]
 
 
@@ -410,7 +431,7 @@ class Glossary:
         return "\n".join(f"{u.speaker}：{u.text}" for u in hits[:2])
 
     def run_batch(self, batch: Sequence[Utterance], utterances: Sequence[Utterance],
-                  participants: Sequence[str] = ()) -> list[Card]:
+                  participants: Sequence[str] = (), topic: str = "") -> list[Card]:
         """處理一批新發言，回傳這一批要印的卡（可能是空的，那是正常結果）。
 
         會打網路（抽取一次；每個新詞最多一次補充查詢），所以呼叫端要丟到
@@ -420,7 +441,7 @@ class Glossary:
         if len(self.printed) >= self.max_cards:
             return []
         cards: list[Card] = []
-        for term in self.extractor(batch, list(self.printed), list(participants)):
+        for term in self.extractor(batch, list(self.printed), list(participants), topic):
             if len(self.printed) + len(cards) >= self.max_cards:
                 break
             if not looks_like_term(term, participants) or not self._is_new(term):

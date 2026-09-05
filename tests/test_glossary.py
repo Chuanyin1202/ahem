@@ -194,7 +194,7 @@ def test_web_lookup_budget_is_capped():
         seen.append(term)
         return None, []
 
-    book = g.Glossary(extractor=lambda b, k, p: [f"詞{i}" for i in range(6)],
+    book = g.Glossary(extractor=lambda b, k, p, t="": [f"詞{i}" for i in range(6)],
                       lookup=lookup, max_web_lookups=2)
     book.run_batch(utts, utts, [])
     assert len(seen) == 2
@@ -203,7 +203,7 @@ def test_web_lookup_budget_is_capped():
 
 def test_card_budget_is_capped():
     utts = [u("A", f"詞{i} 就是一個測試用的東西啦", i * 10.0) for i in range(6)]
-    book = g.Glossary(extractor=lambda b, k, p: [f"詞{i}" for i in range(6)],
+    book = g.Glossary(extractor=lambda b, k, p, t="": [f"詞{i}" for i in range(6)],
                       lookup=None, max_cards=3)
     assert len(book.run_batch(utts, utts, [])) == 3
     assert book.run_batch(utts, utts, []) == []
@@ -261,7 +261,7 @@ def test_silent_never_asks_the_chair_to_speak(monkeypatch):
     chair = FakeChair()
     session.chair = chair
 
-    cards = _run_one_glossary_pass(session, monkeypatch, lambda b, k, p: ["RTP"])
+    cards = _run_one_glossary_pass(session, monkeypatch, lambda b, k, p, t="": ["RTP"])
 
     assert cards, "應該要有卡片，否則這個測試什麼都沒證明"
     assert chair.requested == []          # 沒有任何 Intervention 被排入
@@ -280,7 +280,7 @@ def test_silent_does_not_shorten_the_cooldown(monkeypatch):
     session.chair = FakeChair()
 
     before = list(st.interventions)
-    _run_one_glossary_pass(session, monkeypatch, lambda b, k, p: ["RTP"])
+    _run_one_glossary_pass(session, monkeypatch, lambda b, k, p, t="": ["RTP"])
     assert st.interventions == before
     assert st.since_last_intervention(130.0) == 30.0   # 與沒有這個功能時完全相同
 
@@ -289,7 +289,7 @@ def test_silent_runs_even_without_a_chair(monkeypatch):
     """提示卡不經過 Chair，所以 bot 還沒進頻道（chair is None）也照印。"""
     session = Session(state_with(TRANSCRIPT))
     assert session.chair is None
-    assert _run_one_glossary_pass(session, monkeypatch, lambda b, k, p: ["RTP"])
+    assert _run_one_glossary_pass(session, monkeypatch, lambda b, k, p, t="": ["RTP"])
 
 
 # ── 6. 失敗隔離 ─────────────────────────────────────────────────────────
@@ -303,7 +303,7 @@ def test_failure_in_extractor_is_isolated(monkeypatch, capsys):
 
     calls = []
 
-    def boom(batch, known, participants):
+    def boom(batch, known, participants, topic=""):
         calls.append(1)
         raise RuntimeError("LLM 掛了")
 
@@ -340,7 +340,7 @@ def test_failure_in_lookup_degrades_to_transcript_only(monkeypatch):
         raise TimeoutError("web search 逾時")
 
     cards = _run_one_glossary_pass(
-        session, monkeypatch, lambda b, k, p: ["RTP"], lookup=timeout)
+        session, monkeypatch, lambda b, k, p, t="": ["RTP"], lookup=timeout)
 
     assert len(cards) == 1
     assert cards[0].data["gloss"] is None and cards[0].data["sources"] == []
@@ -359,7 +359,7 @@ def test_failed_batch_is_retried_not_swallowed(monkeypatch):
 
     batches = []
 
-    def flaky(batch, known, participants):
+    def flaky(batch, known, participants, topic=""):
         batches.append([x.text for x in batch])
         if len(batches) == 1:
             raise RuntimeError("第一次掛掉")
@@ -410,7 +410,7 @@ def test_replay_roundtrip_through_events_jsonl(monkeypatch):
         return "RTP 是即時傳輸協定", [g.Source("維基百科", "https://zh.wikipedia.org/wiki/RTP")]
 
     events = _run_one_glossary_pass(
-        session, monkeypatch, lambda b, k, p: ["RTP"], lookup=lookup)
+        session, monkeypatch, lambda b, k, p, t="": ["RTP"], lookup=lookup)
     assert len(events) == 1
 
     line = json.dumps(dataclasses.asdict(events[0]), ensure_ascii=False)
@@ -432,7 +432,7 @@ def test_subscriber_sees_glossary_like_any_other_event(monkeypatch):
     session = Session(state_with(TRANSCRIPT))
     seen = []
     session.subscribers.append(seen.append)
-    _run_one_glossary_pass(session, monkeypatch, lambda b, k, p: ["RTP"])
+    _run_one_glossary_pass(session, monkeypatch, lambda b, k, p, t="": ["RTP"])
     assert [e.kind for e in seen] == ["glossary"]
 
 

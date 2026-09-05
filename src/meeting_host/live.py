@@ -1003,7 +1003,8 @@ class Session:
                     continue
                 last_run = now
                 cards = await asyncio.to_thread(
-                    book.run_batch, batch, snapshot, list(self.st.participants))
+                    book.run_batch, batch, snapshot, list(self.st.participants),
+                    self.st.topic)
                 # 成功了才把這批標成處理過——跟慢路「失敗時 last_n 不推進、下一輪
                 # 用同一批重試」同一個原則。標在呼叫之前的話，抽取失敗的那一批會
                 # 被靜默吃掉，那些發言裡的術語整場再也不會被看到。

@@ -31,3 +31,27 @@ claimed proven. Follow-up full-suite evidence is recorded in the PR checks/logs.
 
 No changes to upstream state, spectator, speaker, or requirements.txt. Linux/Pi
 deployment and real Discord voice remain separate acceptance gates.
+
+## Final validation
+
+- Upstream Linux CI without font interception: **657 passed, 21 skipped, 2 xfailed,
+  37.49 seconds**, success: https://github.com/Chuanyin1202/ahem/actions/runs/33950755596
+- Upstream existing demo check also succeeded:
+  https://github.com/Chuanyin1202/ahem/actions/runs/33950755577
+- Local retry without font isolation still had 2 Page.goto timeouts (655 passed).
+  The spectator references external Google Fonts CSS. The opt-in
+  `scripts/browser_test_profile.py` selects installed Chrome and serves empty CSS
+  **only for fonts.googleapis.com** during tests, leaving all app/API/auth requests
+  untouched. No production page or runtime logic is changed by this plugin.
+- With this test profile: **657 passed, 21 skipped, 2 xfailed, 30.90 seconds,
+  exit 0**. This supports an external-resource dependency explanation but does
+  not claim proof of every timeout cause or validate external font appearance.
+
+```sh
+PYTHONPATH=src:scripts python -m pytest -p browser_test_profile -q -rs tests
+```
+
+Full local log: [credential-review-pytest.log](credential-review-pytest.log).
+The 21 skips remain 17 private holdout + 4 real Discord opt-in; 2 existing xfails.
+No functionality/security tests were skipped to obtain this result. The optional
+profile requires Playwright and installed Chrome; standard Linux CI uses Chromium.

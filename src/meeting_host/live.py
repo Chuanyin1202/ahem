@@ -1030,6 +1030,10 @@ class Session:
                 from .minutes import _call_minutes_llm
                 events_snapshot = list(self.events)  # 同一個 event loop，複製期間不會被改
                 payload = await asyncio.to_thread(_call_minutes_llm, events_snapshot)
+                if self.ending:
+                    # 這通 LLM 呼叫飛行期間會議已經進入收尾——正式版 `final:True`
+                    # 可能已經送出，這筆預覽絕對不能排在它後面把畫面蓋回半成品。
+                    continue
                 self.emit("minutes", {
                     "final": False,
                     "decisions": payload.get("decisions") or [],

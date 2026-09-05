@@ -131,6 +131,43 @@ def test_cancellation_is_not_swallowed(monkeypatch):
     asyncio.run(drive())
 
 
+def test_preview_suppressed_once_session_is_ending(monkeypatch):
+    """回歸測試（對抗審計抓到的競態）：LLM 呼叫飛行中若會議已經進入收尾
+    （`session.ending=True`，通常代表 `final=True` 已經送出），這筆預覽絕對
+    不能再補發、把畫面／匯出內容蓋回半成品。"""
+    import time as _time
+
+    def slow_call(events):
+        _time.sleep(0.05)  # 模擬 LLM 還在飛行中
+        return {"decisions": [], "todos": [], "unresolved": [], "stances": {}}
+
+    monkeypatch.setattr("meeting_host.minutes._call_minutes_llm", slow_call)
+    monkeypatch.setattr(live, "MINUTES_PREVIEW_INTERVAL_S", 0.001)
+
+    session = _session()
+    _add_utterances(session, live.MINUTES_PREVIEW_MIN_UTTERANCES)
+    got = []
+    session.subscribers.append(lambda e: got.append(e))
+
+    async def go():
+        task = asyncio.create_task(session.watch_minutes())
+        await asyncio.sleep(0.01)   # 讓迴圈醒來、開始跑 slow_call（尚未回來）
+        session.ending = True        # 模擬 shutdown() 已經把 final=True 送出
+        await asyncio.sleep(0.15)    # 讓 slow_call 回來
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+    asyncio.run(go())
+
+    assert not [e for e in got if e.kind == "minutes"], (
+        "session.ending=True 之後，預覽仍然發出了 minutes 事件——"
+        "正是對抗審計抓到的那個競態（會蓋掉正式版 final=True 的內容）"
+    )
+
+
 # ── 正常收尾路徑：final=True 不受這支新的預覽迴圈影響 ──────────────────────
 
 

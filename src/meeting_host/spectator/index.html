@@ -1305,8 +1305,8 @@
         // 鎖畫面、鎖匯出按鈕。final=false：會議進行中的預覽，只更新內容，不鎖定
         // ——兩者共用同一個 event kind，靠 final 分辨（見 live._emit_minutes／
         // Session.watch_minutes）。
-        state.minutes = data;
         if (data.final) {
+          state.minutes = data;
           setEnded();
           renderTranscript();
         } else {

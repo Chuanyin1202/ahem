@@ -67,6 +67,8 @@ TARGETS = {
 
 
 FPS = 30
+HOLD_SECONDS = 0.4   # 段落開頭先停在全景，讓觀眾知道自己在看什麼
+PUSH_SECONDS = 0.9   # 推近本身的長度，推完就停住不再動
 
 
 def seg_filter(zoom: str, dur: float) -> str:
@@ -77,17 +79,23 @@ def seg_filter(zoom: str, dur: float) -> str:
     else:
         tx, ty, tw, th = t
         zmax = W / tw                       # 目標區域佔畫面寬度的倒數 = 放大倍率
-        frames = max(1, int(dur * FPS))
-        step = (zmax - 1.0) / frames        # 每格遞增，跑滿整段
         # zoompan 的 x/y 是可視區域的**左上角**，範圍 0..(iw-iw/zoom)。所以錨點要用
         # 「目標左上角佔可移動範圍的比例」，不是「目標中心佔全畫面的比例」——後者會
         # 讓偏離畫面中心的目標整個位移掉（實測右欄被推到只剩左半邊在畫面內）。
         fx = tx / (W - tw) if W > tw else 0.0
         fy = ty / (H - th) if H > th else 0.0
+        # 推近要「短促一下就停」，不要攤在整段上慢慢爬。兩個理由：
+        # 1. 觀感：24 秒的緩推看起來是拖，不是強調。
+        # 2. 抖動：zoompan 每格把 iw/zoom 取整數像素，倍率緩慢爬升時裁切框會間歇
+        #    跳 1px，慢速下這個跳格看得一清二楚。推得快，跳格被運動本身蓋掉；
+        #    推完停住之後倍率是常數，裁切框固定，完全不抖。
         # 用輸出幀號 `on` 直接算倍率，不要用 `zoom+step` 這種累加寫法：`zoom` 讀的是
         # 上一格的值，但在 `d=1`（一格進一格出）底下它每格都被重置回 1，推近永遠不會
         # 發生（2026-09-05 實測：24 秒的段落跑到最後一格仍是原尺寸）。
-        vf = (f"zoompan=z='min(1+{step:.8f}*on,{zmax:.4f})'"
+        n0, n1 = int(HOLD_SECONDS * FPS), max(1, int(PUSH_SECONDS * FPS))
+        # ease-out cubic：進場快、收尾緩，停住那一刻不會有硬煞車感
+        prog = f"(1-pow(1-clip((on-{n0})/{n1},0,1),3))"
+        vf = (f"zoompan=z='1+{zmax - 1:.4f}*{prog}'"
               f":x='(iw-iw/zoom)*{fx:.4f}':y='(ih-ih/zoom)*{fy:.4f}'"
               f":d=1:s={W}x{H}:fps={FPS}")
     # `fps` 要放在 zoompan 之前：zoompan 的 `fps=` 只是宣告輸出幀率，不會補幀，

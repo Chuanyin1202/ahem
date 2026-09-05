@@ -148,6 +148,46 @@ def build(spec: dict, out: Path) -> None:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def mmss(x: float) -> str:
+    return f"{int(x) // 60}:{int(x) % 60:02d}"
+
+
+def sheet(spec: dict, events_path: Path, offset: float = 2.0) -> str:
+    """把事件檔映到精華版的時間軸上，產生配音用的稿子。
+
+    精華版是無聲的（TTS 那一軌刻意不留，由人事後配音），所以配音的人需要知道
+    「精華版第 N 秒畫面上是什麼」。原始事件的時間是會議時間，中間被剪掉的段落
+    會讓兩者對不上，所以每一段都要各自換算。
+
+    `offset` 是錄影比回放起點晚的秒數：瀏覽器要先載入頁面才開始錄。
+    """
+    ev = [json.loads(l) for l in events_path.read_text(encoding="utf-8").splitlines() if l.strip()]
+    out, lines = 0.0, [
+        f"# 精華版配音時間軸　{Path(spec['source']).name} → 精華版", "",
+        "影片無聲。左欄時間是**精華版**的時間，不是原始會議時間。", "",
+    ]
+    for seg in spec["segments"]:
+        s, e = float(seg["start"]), float(seg["end"])
+        lines += ["", f"## {mmss(out)}–{mmss(out + (e - s))}　{seg.get('note', '')}",
+                  f"（原片 {mmss(s)}–{mmss(e)}，鏡頭：{seg.get('zoom', 'none')}）", ""]
+        for x in ev:
+            t = x["t"] + offset
+            if not (s <= t < e):
+                continue
+            d, at = x["data"], mmss(out + (t - s))
+            if x["kind"] == "utterance":
+                lines.append(f"- `{at}` **{d.get('speaker', '?')}**　{d.get('text', '')}")
+            elif x["kind"] == "spoken":
+                lines.append(f"- `{at}` **主席・{d.get('kind', '')}**　{d.get('text', '')}")
+            elif x["kind"] == "slow_score":
+                lines.append(f"- `{at}` *判讀*　{d.get('type', '')}／{d.get('verdict', '')}"
+                             f"（正 {d.get('positive')}・負 {d.get('negative')}・無 {d.get('none')}）")
+            elif x["kind"] == "ai_critique":
+                lines.append(f"- `{at}` *心聲*　{d.get('meeting', '')}")
+        out += e - s
+    return "\n".join(lines) + "\n"
+
+
 def auto_spec(name: str, source: Path) -> dict:
     """從事件檔自動挑段落：每次主席開口前後各留一段，加上開場與結尾產出。
 
@@ -177,6 +217,8 @@ def main(argv=None) -> int:
     ap.add_argument("--source", type=Path, default=Path("meetings/ahem-demo-v2.mp4"))
     ap.add_argument("--auto", action="store_true", help="從事件檔自動挑段落")
     ap.add_argument("--out", type=Path, default=Path("meetings/ahem-highlight.mp4"))
+    ap.add_argument("--events", type=Path, help="事件檔；給了就一併產出配音時間軸")
+    ap.add_argument("--sheet-only", action="store_true", help="只產配音稿，不重新渲染影片")
     a = ap.parse_args(argv)
 
     if a.spec:
@@ -185,7 +227,12 @@ def main(argv=None) -> int:
         spec = auto_spec(a.latest, a.source)
     else:
         ap.error("要給 --spec，或 --latest <劇本名> --auto")
-    build(spec, a.out)
+    if not a.sheet_only:
+        build(spec, a.out)
+    if a.events:
+        md = a.out.with_name(a.out.stem + "-配音稿.md")
+        md.write_text(sheet(spec, a.events), encoding="utf-8")
+        print(f"配音時間軸：{md}")
     return 0
 
 

@@ -1501,7 +1501,7 @@ def main() -> None:
     ap.add_argument("--keyterms", nargs="*", default=None, help="專有名詞提示")
     ap.add_argument("--no-llm", action="store_true", help="只跑快路")
     ap.add_argument("--no-critique", action="store_true",
-                    help="關掉 AI 批判觀察（保險栓；出問題時用這個關，不影響會議產出/提示卡等其他 LLM 功能）")
+                    help="關掉 AI 主席的「心聲」觀察（保險栓；出問題時用這個關，不影響會議產出/提示卡等其他 LLM 功能）")
     ap.add_argument("--say-hello", action="store_true", help="進頻道後主席先開口問候")
     ap.add_argument("--spectator-port", type=int, default=0, help="觀戰 UI 監聽埠（0＝不開）")
     ap.add_argument("--spectator-token", default="",

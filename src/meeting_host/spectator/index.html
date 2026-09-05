@@ -28,7 +28,24 @@
     --accent: #A65D3F;        /* 主席唯一強調色 */
     --accentHover: #7F4530;
     --onAccent: #F4EFE7;
+
+    /* ── Track D 新增：主席狀態徽章三態底/字色，逐值抄自設計稿
+       docs/design 提案 MainWithSidebar.dc.html 的 renderVals() table 物件
+       （發言中 fg 剛好等於既有 --accent，直接重用，不重複定義）。 */
+    --pill-speaking-bg: #F3E7DE;
+    --pill-holding-bg: #EFEAE0;
+    --pill-holding-fg: #6B6459;
+    --pill-warning-bg: #FBE7DD;
+    --pill-warning-fg: #C34A1E;
+    /* AI 即時觀察內文與抽屜把手直立字：設計稿同一個值出現在兩處，收成一個具名變數。 */
+    --body-soft: #4A453F;
+    /* 抽屜把手／抽屜本體的陰影，逐值抄自設計稿；整條 box-shadow 值收進變數，
+       不留裸 rgba() 字面值在規則裡。 */
+    --handle-shadow: -6px 0 16px rgba(43, 38, 34, 0.06);
+    --drawer-shadow: -12px 0 32px rgba(43, 38, 34, 0.08);
   }
+
+  @keyframes ahem-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -92,6 +109,29 @@
   .phase-item { padding: 7px 16px; font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; white-space: nowrap; }
   .phase-item:hover { background: var(--track); color: var(--text); }
   .phase-item.active { color: var(--accent); }
+
+  /* ── 主席狀態徽章（Track D，D1；提案圖 MainWithSidebar.dc.html 行 32-44/236-260）──
+     三態＝發言中／忍住中／可能異常，決定邏輯見 currentChairStatus() 與
+     chairBadgeAnomaly()（沿用既有 renderAlerts() 的兩個真實故障訊號）。
+     顏色收在 :root 的 --pill-* 具名變數，不留裸 hex。位置放在既有 .status
+     那行「之上」，不取代它——.status 仍然是可點的階段切換控制項，這裡只是
+     新增一個更醒目的狀態指示，兩者資訊有重疊是刻意的（各自的用途不同：
+     一個是控制項，一個是給投影看的觀察指標）。 */
+  .chair-badge {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px 5px 9px; border-radius: 999px;
+  }
+  .chair-badge[hidden] { display: none; }
+  .chair-badge-icon { display: none; }
+  .chair-badge--speaking .chair-badge-icon[data-mode="speaking"],
+  .chair-badge--holding .chair-badge-icon[data-mode="holding"],
+  .chair-badge--warning .chair-badge-icon[data-mode="warning"] { display: inline-flex; }
+  .chair-badge--speaking { background: var(--pill-speaking-bg); color: var(--accent); }
+  .chair-badge--holding { background: var(--pill-holding-bg); color: var(--pill-holding-fg); }
+  .chair-badge--warning { background: var(--pill-warning-bg); color: var(--pill-warning-fg); }
+  .chair-badge-label { font-size: 12px; font-weight: 600; }
+  .chair-badge-caption { font-size: 11px; color: var(--muted); }
+  .chair-badge-caption.warn { color: var(--pill-warning-fg); }
 
   /* ── 主席故障告示 ──
      設計稿沒有這個元件（它是一切正常的靜態畫面）。加它的理由是 2026-08-31 那場
@@ -172,29 +212,11 @@
   .section-title { font-size: 13px; font-weight: 700; color: var(--text); }
   .section-hint { font-size: 11px; color: var(--muted); }
 
-  /* Track C：「群體動力」抽屜，把 KPI／時間軸／主席的思考／發言分佈四組包在
-     同一個可收合面板裡，#minutes-live 維持獨立在外層（見下方 HTML 結構註解，
-     這是已定案的 layout 決策）。用原生 <details>/<summary>，不寫 JS 管開關
-     狀態——天生鍵盤可操作（Tab 跳進去、Enter／Space 觸發）、天生記得展開/收合。
-     只用既有色票；箭頭符號沿用 `.status.switchable::after` 已經在用的「▾」
-     寫法，不另外畫 SVG、不新增色碼。 */
-  .drawer { display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
-  .drawer > summary {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    cursor: pointer; user-select: none; list-style: none;
-  }
-  .drawer > summary::-webkit-details-marker { display: none; } /* Chrome/Safari 預設三角形 */
-  .drawer > summary::marker { content: ""; }                    /* Firefox 預設三角形 */
-  .drawer > summary::after {
-    content: "▾"; font-size: 11px; color: var(--muted);
-    transition: transform .15s ease; flex-shrink: 0;
-  }
-  .drawer[open] > summary::after { transform: rotate(180deg); }
-  .drawer-body { display: flex; flex-direction: column; gap: 26px; }
-
-  /* 抽屜裡真正的次要指標（時間軸／發言分佈）標題退到 --muted；「主席的思考」
-     不加這個 class，維持 --text，讓它在抽屜裡仍比純數據更搶眼。 */
-  .section-secondary .section-title { color: var(--muted); }
+  /* Track C 的 `.drawer`／`.drawer > summary`／`.drawer-body`／`.section-secondary`
+     四組規則在這裡被移除：它們唯一的使用者是 `<details class="drawer"
+     id="group-dynamics">` 那個 inline 收合面板，已被 Track D 的滑入式覆疊抽屜
+     （`.dyn-handle`／`.dyn-drawer`，見下方）整個取代，留著就是沒有任何元素會
+     命中的孤兒規則。抽屜殼本身的樣式改看 `.dyn-*`。 */
 
   /* 會議產出（預覽）：設計稿之外新增，沿用「主席的思考」同一種版面語言
      （左細線＋兩行內容），只用既有色票，不發明新樣式。 */
@@ -272,6 +294,62 @@
   .share .fill.chair { background: var(--accent); }
   .share .pct { text-align: right; color: var(--muted); }
 
+  /* ── AI 即時觀察（Track D，D2；提案圖行 108-122）──
+     內容全部是規則從既有已算好的數字/事件換算出來的一句話，不呼叫 LLM，
+     見 index.html 開頭的說明與 renderObservations() 系列函式。 */
+  .obs-panel { flex-grow: 1; min-height: 140px; }
+  .obs-head { align-items: center; }
+  .obs-live { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); }
+  .obs-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--muted); animation: ahem-pulse 1.6s ease-in-out infinite; }
+  .obs-list {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    font-size: 12px; line-height: 1.6; flex-grow: 1; min-height: 60px; overflow-y: auto;
+  }
+  .obs-empty { color: var(--muted); }
+  .obs-row .ot { color: var(--dim); }
+  .obs-row .ok { font-weight: 700; color: var(--text); }
+  .obs-row .ox { color: var(--body-soft); overflow-wrap: anywhere; }
+  .obs-cursor { color: var(--body-soft); animation: ahem-pulse 1s step-end infinite; }
+  .obs-note { font-size: 10px; color: var(--muted); }
+
+  /* ── 群體動力：滑入式覆疊抽屜（Track D，D3；提案圖行 19-21/126-233）──
+     內容＝既有的 KPI／時間軸／主席的思考／發言分佈四塊，資料與渲染邏輯完全
+     不變，只是從常駐版面搬進這個抽屜殼（見下方 #dyn-drawer 內的原始標記）。
+     生產版的 .head 只蓋在左欄之上（跟提案圖的通版標題列不同），所以抽屜從
+     視窗最頂端開始也不會蓋到主席徽章——不需要照抄提案圖的 `top:160px` 硬座標。 */
+  .dyn-handle {
+    position: fixed; top: calc(50% + 80px); right: 0; transform: translateY(-50%);
+    z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    padding: 14px 9px; background: var(--panel); border: 1px solid var(--border-strong); border-right: none;
+    border-radius: 10px 0 0 10px; cursor: pointer; box-shadow: var(--handle-shadow);
+    font: inherit; color: inherit; appearance: none;
+  }
+  .dyn-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dyn-handle-icon { color: var(--muted); }
+  .dyn-handle-label { writing-mode: vertical-rl; font-size: 12px; font-weight: 600; letter-spacing: 0.2em; color: var(--body-soft); }
+  .dyn-chevron { color: var(--dim); transition: transform 0.2s; }
+  .dyn-handle[aria-expanded="true"] .dyn-chevron { transform: rotate(180deg); }
+
+  .dyn-drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 380px; z-index: 6;
+    box-sizing: border-box; display: flex; flex-direction: column; gap: 22px;
+    padding: 30px 32px 26px 32px; background: var(--panel); border-left: 1px solid var(--border-strong);
+    box-shadow: var(--drawer-shadow); transform: translateX(100%); transition: transform 0.28s ease;
+    overflow-y: auto;
+  }
+  .dyn-drawer.open { transform: translateX(0); }
+  .dyn-drawer-head { display: flex; align-items: flex-start; gap: 12px; }
+  .dyn-drawer-title { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: var(--text); }
+  .dyn-drawer-sub { font-size: 10px; color: var(--dim); }
+  .dyn-close {
+    display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+    margin: -6px -8px 0 0; border-radius: 8px; color: var(--muted); cursor: pointer;
+    background: none; border: 0; font: inherit;
+  }
+  .dyn-close:hover { background: var(--track); }
+  .dyn-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
   .actions { display: flex; gap: 10px; flex-shrink: 0; }
   .btn { flex-grow: 1; padding: 11px 0; text-align: center; font-size: 13px; border-radius: 6px; cursor: pointer; user-select: none; }
   .btn-ghost { border: 1px solid var(--border-strong); color: var(--text); }
@@ -324,6 +402,14 @@
           <div class="clock mono" id="clock">00:00</div>
           <div class="clock-total mono" id="clock-total">/ --:--</div>
         </div>
+        <!-- 主席狀態徽章：三態圖示疊在同一個位置，CSS 依 .chair-badge--<mode> 顯示對應那個 -->
+        <div class="chair-badge" id="chair-badge" hidden>
+          <svg class="chair-badge-icon" data-mode="speaking" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="9" x2="5" y2="15"></line><line x1="12" y1="5" x2="12" y2="19"></line><line x1="19" y1="9" x2="19" y2="15"></line></svg>
+          <svg class="chair-badge-icon" data-mode="holding" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="8" y1="5" x2="8" y2="19"></line><line x1="16" y1="5" x2="16" y2="19"></line></svg>
+          <svg class="chair-badge-icon" data-mode="warning" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L22 20 L2 20 Z"></path><line x1="12" y1="9.5" x2="12" y2="14"></line><circle cx="12" cy="16.8" r="0.9" fill="currentColor" stroke="none"></circle></svg>
+          <span class="chair-badge-label" id="chair-badge-label">忍住中</span>
+        </div>
+        <div class="chair-badge-caption mono" id="chair-badge-caption"></div>
         <div class="status" id="status">等待會議開始</div>
         <!-- 階段切換選單，預設收起；顯示文字＝發想／拉鋸／決定，data-phase 是內部值 -->
         <div class="phase-menu" id="phase-menu" hidden>
@@ -339,10 +425,9 @@
   </div>
 
   <div class="right">
-    <!-- 會議產出（預覽）：獨立在下面「群體動力」抽屜之外——這是結果／待辦，
-         抽屜裡是過程／動態訊號，概念不同。這是已定案的 layout 決策，不要併
-         進抽屜。設計稿之外新增的獨立區塊，見 docs/design/README.md 的偏離
-         註記。 -->
+    <!-- 會議產出（預覽）：獨立於下面「AI 即時觀察」之外——這是結果／待辦，
+         AI 即時觀察是過程／動態訊號，概念不同，不要合併成同一塊。設計稿之外
+         新增的獨立區塊，見 docs/design/README.md 的偏離註記。 -->
     <div class="section">
       <div class="section-head">
         <div class="section-title">會議產出（預覽）</div>
@@ -353,96 +438,22 @@
 
     <div class="rule"></div>
 
-    <!-- 群體動力抽屜：KPI／時間軸／主席的思考／發言分佈四組，同一顆按鈕開關。
-         原生 <details>/<summary>，不寫 JS 管開關狀態；預設展開（open）
-         保持既有畫面不變。 -->
-    <details class="drawer" id="group-dynamics" open>
-      <summary>
-        <div class="section-head">
-          <div class="section-title">群體動力</div>
-          <div class="section-hint">數據與判斷紀錄</div>
-        </div>
-      </summary>
-      <div class="drawer-body">
-        <div class="stats">
-          <div class="stat">
-            <div class="stat-label">主席開口</div>
-            <div class="stat-value mono" id="s-iv">0</div>
-            <div class="stat-sub" id="s-iv-sub">—</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">實際發言</div>
-            <div class="stat-value mono" id="s-talk">0.0<span class="stat-unit"> 分</span></div>
-            <div class="stat-sub" id="s-talk-sub">—</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">最長沉默</div>
-            <div class="stat-value mono" id="s-silence">0″</div>
-            <div class="stat-sub" id="s-silence-sub">未觸發超時</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">主席思考</div>
-            <div class="stat-value mono" id="s-slow">0<span class="stat-unit"> 次</span></div>
-            <div class="stat-sub" id="s-slow-sub">—</div>
-          </div>
-        </div>
-
-        <div class="rule"></div>
-
-        <div class="section section-secondary">
-          <div class="section-head">
-            <div class="section-title">時間軸</div>
-            <div class="section-hint">發言 · 主席開口 · 忍住 · 階段</div>
-          </div>
-          <svg id="timeline" width="304" height="86" viewBox="0 0 304 86" style="display: block;"></svg>
-        </div>
-
-        <div class="rule"></div>
-
-        <div class="section">
-          <div class="section-head">
-            <div class="section-title">主席的思考</div>
-            <div class="section-hint">每 5 秒想一次要不要開口 · 最近三次</div>
-          </div>
-          <div class="judge-list" id="judge-list"></div>
-        </div>
-
-        <div class="rule"></div>
-
-        <div class="section section-secondary">
-          <div class="section-title">發言分佈</div>
-          <div class="share-list" id="share-list"></div>
-        </div>
+    <!-- AI 即時觀察（Track D，D2）：規則從既有數據推導的一句話，不呼叫 LLM，
+         見 renderObservations() 系列函式；原本 Track C 常駐在這裡的
+         KPI/時間軸/主席的思考/發言分佈四塊，已搬進下面的「群體動力」
+         滑入抽屜（Track D，D3；把手見本檔案 <body> 結尾附近），這裡不再
+         常駐顯示，改由那顆抽屜按鈕開關。 -->
+    <div class="section obs-panel">
+      <div class="section-head obs-head">
+        <div class="section-title">AI 即時觀察</div>
+        <div class="spacer"></div>
+        <div class="obs-live"><span class="obs-dot"></span>持續判讀中</div>
       </div>
-    </details>
-    <script>
-      // Track C：Tab／Space 對這顆 <summary> 完全是原生行為，不需要任何 JS。
-      // 唯一補的是 Enter 鍵——實測（isolated <details>/<summary> 對照組，加上
-      // 這個頁面本身，都用 headless Chrome＋CDP 送真實鍵盤事件、重複多次驗證，
-      // 不是憑印象）發現目前 Chrome 的原生 <summary> 只綁 Space 觸發開關，
-      // 不含 Enter；同一支測試對一個原生 <button> 送同樣的 Enter 事件會正常
-      // 觸發 click，排除是送鍵方式的問題。開關狀態仍然是原生 details.open
-      // 屬性，這裡沒有另外自己管一份布林 state。
-      //
-      // 2026-09-05 補記：獨立審計曾用另一套CDP測試宣稱「原生已支援Enter，這段
-      // 是多餘的」，前台一度照做刪掉；刪掉後在同一台機器、同一個Chrome上，
-      // 對一個完全空白的<details>/<summary>重測兩種CDP事件寫法，Enter都無法
-      // 觸發開關（Space可以）——推翻了那次審計對這一點的判斷，已把這段加回來。
-      // 這是「合併後才發現獨立審計本身有一項判斷是錯的」的真實案例，不是猜測。
-      (function () {
-        var summary = document.getElementById("group-dynamics").querySelector("summary");
-        summary.addEventListener("keydown", function (e) {
-          if (e.key !== "Enter") return;
-          e.preventDefault();
-          this.parentElement.open = !this.parentElement.open;
-        });
-        // 保險：如果瀏覽器對 Enter 另外還排了一個在 keyup 時機的原生預設動作，
-        // 這裡把它吃掉，避免「keydown 開／keyup 又關回去」變成按了等於沒按。
-        summary.addEventListener("keyup", function (e) {
-          if (e.key === "Enter") e.preventDefault();
-        });
-      })();
-    </script>
+      <div class="obs-list" id="obs-list">
+        <div class="obs-empty">尚無觀察</div>
+      </div>
+      <div class="obs-note">依既有規則從即時數據推導，非語意理解</div>
+    </div>
 
     <div class="spacer"></div>
 
@@ -450,6 +461,84 @@
       <div class="btn btn-ghost" id="btn-export">匯出紀錄</div>
       <div class="btn btn-solid" id="btn-end">結束會議</div>
     </div>
+  </div>
+</div>
+
+<!-- 群體動力：常駐把手 + 滑入式覆疊抽屜（Track D，D3）。
+     用真正的 <button> 元素，Tab／Enter／Space 天生就會動，不必重寫 keydown 判斷。 -->
+<button type="button" class="dyn-handle" id="dyn-handle" aria-expanded="false" aria-controls="dyn-drawer">
+  <svg class="dyn-handle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 L21 12 L12 21 L3 12 Z"></path></svg>
+  <span class="dyn-handle-label">群體動力</span>
+  <svg class="dyn-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="14 6 8 12 14 18"></polyline></svg>
+</button>
+
+<div class="dyn-drawer" id="dyn-drawer" aria-hidden="true">
+  <div class="dyn-drawer-head">
+    <div style="display: flex; flex-direction: column; gap: 3px;">
+      <div class="dyn-drawer-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 L21 12 L12 21 L3 12 Z"></path></svg>
+        群體動力
+      </div>
+      <div class="dyn-drawer-sub">Kaner 參與式決策模型</div>
+    </div>
+    <div class="spacer"></div>
+    <button type="button" class="dyn-close" id="dyn-close" aria-label="關閉群體動力面板">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
+    </button>
+  </div>
+
+  <!-- 以下四塊資料／渲染邏輯完全不變（id 不變，renderStats/renderTimeline/
+       renderJudgments/renderShare 照舊運作），只是從常駐版面搬進抽屜殼。
+       提案圖另外附了一個 Kaner 菱形 SVG 節奏圖，本批未做——見
+       docs/DEFERRED_DEFECTS.md。 -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">主席開口</div>
+      <div class="stat-value mono" id="s-iv">0</div>
+      <div class="stat-sub" id="s-iv-sub">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">實際發言</div>
+      <div class="stat-value mono" id="s-talk">0.0<span class="stat-unit"> 分</span></div>
+      <div class="stat-sub" id="s-talk-sub">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">最長沉默</div>
+      <div class="stat-value mono" id="s-silence">0″</div>
+      <div class="stat-sub" id="s-silence-sub">未觸發超時</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">主席思考</div>
+      <div class="stat-value mono" id="s-slow">0<span class="stat-unit"> 次</span></div>
+      <div class="stat-sub" id="s-slow-sub">—</div>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">時間軸</div>
+      <div class="section-hint">發言 · 主席開口 · 忍住 · 階段</div>
+    </div>
+    <svg id="timeline" width="304" height="86" viewBox="0 0 304 86" style="display: block;"></svg>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">主席的思考</div>
+      <div class="section-hint">每 5 秒想一次要不要開口 · 最近三次</div>
+    </div>
+    <div class="judge-list" id="judge-list"></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="section">
+    <div class="section-title">發言分佈</div>
+    <div class="share-list" id="share-list"></div>
   </div>
 </div>
 
@@ -623,6 +712,14 @@
     hearing: null,
     ttsFailStreak: 0,       // 距上一次成功 spoken 以來，連續幾次 TTS 失敗
     lastTtsFail: null,      // 最後一次失敗的 {t, reason, kind}，給告示顯示細節
+
+    // ── AI 即時觀察（見 renderObservations）────────────────────────────
+    // 三類（觀察/判斷/留意）各自的「上一次推播文字」，內容沒變就不重推。
+    obsLastText: { observe: null, judge: null, notice: null },
+    observations: [],       // {t, kind, text}，新→舊
+    phaseTransitions: [],   // {t, from, to}：真的發生過的階段切換，判斷類規則要用
+                             // 「拉鋸→決定」這種轉換方向，既有的 phaseMarks 只記
+                             // 切到哪一階段、不記從哪裡切過來，所以另開一份。
   };
 
   // ── 頂列 ──
@@ -630,6 +727,53 @@
     if (state.pendingQueued.length > 0) return "等停頓";
     if (state.lastSpokenAt != null && state.serverNow - state.lastSpokenAt < 6) return "發言中";
     return "聆聽中";
+  }
+
+  // ── 主席狀態徽章（Track D，D1）────────────────────────────────────────
+  // 三態：發言中／忍住中／可能異常。「可能異常」沿用 renderAlerts() 的兩個
+  // 真實故障訊號（主席聽不到／連續講不出話），不是提案圖那種憑空的秒數門檻。
+  // 額外加了 maxSilence 觸發既有 SILENCE_LIMIT 超時門檻當第三個觸發條件——
+  // 這不是新發明的判斷，SILENCE_LIMIT 本來就是「有人被冷落」快路的既有門檻，
+  // 畫面上 s-silence-sub 已經用它顯示「曾觸發超時」，這裡只是把同一個既有事實
+  // 也反映到頂部徽章（工作單 D1 明講這條可加、但要寫清楚理由，理由如上）。
+  function chairBadgeAnomaly() {
+    if (state.hearing && state.hearing.ok === false) return "hearing";
+    if (state.ttsFailStreak >= TTS_FAIL_ALERT) return "tts";
+    if (state.maxSilence >= SILENCE_LIMIT) return "silence";
+    return null;
+  }
+
+  // 「等停頓」（已排進佇列、正等一個空檔開口）算「忍住」而不是「發言中」：
+  // 這一刻主席還沒真的發出聲音，跟聆聽中一樣是安靜的，只是安靜的原因不同
+  // （見工作單 D1：只能三態，不能為它另開第四種）。
+  function renderChairBadge() {
+    var badge = el("chair-badge");
+    var captionEl = el("chair-badge-caption");
+    if (!state.meeting || state.ended) { badge.hidden = true; captionEl.textContent = ""; return; }
+    badge.hidden = false;
+    var anomaly = chairBadgeAnomaly();
+    var since = state.lastSpokenAt == null ? state.serverNow : Math.max(0, state.serverNow - state.lastSpokenAt);
+    var mode, caption;
+    if (anomaly) {
+      mode = "warning";
+      if (anomaly === "hearing") {
+        caption = "主席聽不到逐字稿" + (state.hearing.reason ? "（" + state.hearing.reason + "）" : "");
+      } else if (anomaly === "tts") {
+        caption = "連續 " + state.ttsFailStreak + " 次開口失敗";
+      } else {
+        caption = "已 " + fmtSpan(state.maxSilence) + " 沒有人開口，超過既有超時門檻";
+      }
+    } else if (currentChairStatus() === "發言中") {
+      mode = "speaking";
+      caption = "本次發言已 " + Math.round(since) + " 秒";
+    } else {
+      mode = "holding";
+      caption = "已忍住 " + Math.round(since) + " 秒 · 忍住是設計，不是故障";
+    }
+    badge.className = "chair-badge chair-badge--" + mode;
+    el("chair-badge-label").textContent = mode === "speaking" ? "發言中" : mode === "holding" ? "忍住中" : "可能異常";
+    captionEl.textContent = caption;
+    captionEl.classList.toggle("warn", mode === "warning");
   }
 
   // 主席故障告示：回答現場最急的那個問題——**主席現在是「不想講」還是壞了**。
@@ -664,6 +808,7 @@
       return '<div class="alert"><div class="a-title">' + esc(r.title) + '</div>'
         + '<div class="a-detail">' + esc(r.detail) + '</div></div>';
     }).join("");
+    renderChairBadge();   // 兩個真實故障訊號的來源就是上面算的 rows，同步更新頂部徽章
   }
 
   function renderTop() {
@@ -686,12 +831,15 @@
       var phase = PHASE_LABEL[m.phase] || m.phase;
       var hint = state.phaseHint && state.phaseHint.phase !== m.phase
         ? "　（建議：" + (PHASE_LABEL[state.phaseHint.phase] || state.phaseHint.phase) + "）" : "";
-      statusEl.textContent = phase + "階段 · 主席" + currentChairStatus() + hint;
+      // 主席狀態改由上面新增的頂部徽章（chair-badge）顯示，這裡不再重複
+      // 「· 主席聆聽中」——避免同一件事在畫面上出現兩份、其中一份用字還不同。
+      statusEl.textContent = phase + "階段" + hint;
     }
 
     document.querySelectorAll("#phase-menu .phase-item").forEach(function (item) {
       item.classList.toggle("active", !!m && item.dataset.phase === m.phase);
     });
+    renderChairBadge();
   }
 
   // ── 操作權杖 ──
@@ -1130,6 +1278,96 @@
       });
   }
 
+  // ── AI 即時觀察（Track D，D2）──────────────────────────────────────────
+  // 三類全部是規則從既有已經算好的原子事實換算成一句話，不呼叫 LLM、不做語意
+  // 理解（見檔案開頭工作單背景的說明）。每類各自跟「上一次推播的文字」比對，
+  // 內容沒變就不重推，避免同一句話洗版。
+  var SHARE_DOMINANCE_THRESHOLD = 0.65;  // 65%：夠高值得提醒，又不會在正常討論中亂觸發（可調）
+  var DEADLOCK_COOLDOWN_S = 60;          // 僵局介入之後 60 秒沒有再介入，視為「已解除」（可調）
+  var NOTICE_TIME_LEFT_RATIO = 0.3;      // 剩餘時間低於這個比例才提醒風險（可調）
+
+  // 觀察類：發言分佈某人佔比過高。
+  function computeObservation() {
+    var names = Object.keys(state.share).filter(function (n) { return n !== "主席"; });
+    if (!names.length) return null;
+    var top = names[0];
+    names.forEach(function (n) { if (state.share[n] > state.share[top]) top = n; });
+    var pct = state.share[top] || 0;
+    if (pct < SHARE_DOMINANCE_THRESHOLD) return null;
+    var quiet = names.filter(function (n) { return n !== top && !(state.share[n] > 0); });
+    var tail = quiet.length ? quiet.join("、") + "尚未表態" : "其他人參與偏少";
+    return top + " 主導度偏高（" + Math.round(pct * 100) + "%），" + tail;
+  }
+
+  // 判斷類：階段轉換（拉鋸→決定）優先，其次是「僵局介入之後冷靜了一段時間」。
+  function computeJudgment() {
+    var trans = state.phaseTransitions;
+    var last = trans.length ? trans[trans.length - 1] : null;
+    if (last && last.from === "呻吟區" && last.to === "收斂期") {
+      return "拉鋸結束，會議正式進入決定階段";
+    }
+    var lastDeadlock = null;
+    for (var i = state.transcript.length - 1; i >= 0; i--) {
+      var it = state.transcript[i];
+      if (it.kind === "chair" && it.type === "僵局") { lastDeadlock = it.t; break; }
+    }
+    if (lastDeadlock != null && state.serverNow - lastDeadlock >= DEADLOCK_COOLDOWN_S) {
+      return "僵局已解除，對話進入收斂節奏";
+    }
+    return null;
+  }
+
+  // 留意類：剩餘時間少、且即時決議預覽裡仍有沒收掉的未解決事項。
+  // 合併 Track A 之後照原註記改讀真正的未解決清單（state.minutesLive.unresolved）。
+  // 原本的代理值 state.spokenKinds["僵局"] 是「主席介入僵局的次數」，只增不減：
+  // 僵局後來被談攏了它也不會回頭扣，所以會跟上面 computeJudgment() 的
+  // 「僵局已解除」在同一塊面板裡同時出現、自相矛盾。minutesLive 是 LLM 每
+  // MINUTES_PREVIEW_INTERVAL_S 重算一次的當下快照，收掉的項目會真的消失。
+  // 它在 --no-llm 模式與開場前幾次預覽之前是 null，這時候不提醒——沒有資料就
+  // 不講話，比拿一個語意不同的數字硬湊一句誠實（Track A 的面板同樣顯示尚無資料）。
+  function computeNotice() {
+    if (!state.meeting) return null;
+    var total = state.meeting.duration_min * 60;
+    if (!total) return null;
+    var remaining = total - state.serverNow;
+    if (remaining / total >= NOTICE_TIME_LEFT_RATIO) return null;
+    var unresolved = ((state.minutesLive && state.minutesLive.unresolved) || []).length;
+    if (!unresolved) return null;
+    var mins = Math.max(0, Math.round(remaining / 60));
+    return "仍有 " + unresolved + " 項未解決事項，剩餘 " + mins + " 分鐘";
+  }
+
+  function pushObservation(kind, text) {
+    if (!text || state.obsLastText[kind] === text) return;
+    state.obsLastText[kind] = text;
+    state.observations.unshift({ t: state.serverNow, kind: kind, text: text });
+    state.observations = state.observations.slice(0, 20);
+  }
+
+  var OBS_LABEL = { observe: "觀察", judge: "判斷", notice: "留意" };
+
+  function renderObservations() {
+    var box = el("obs-list");
+    if (!box) return;
+    pushObservation("observe", computeObservation());
+    pushObservation("judge", computeJudgment());
+    pushObservation("notice", computeNotice());
+    if (!state.observations.length) {
+      box.innerHTML = '<div class="obs-empty">尚無觀察</div>';
+      return;
+    }
+    // state.observations 是新→舊；畫面照設計稿由舊到新往下排，最新一則帶打字游標。
+    var rows = state.observations.slice(0, 8).slice().reverse();
+    box.innerHTML = rows.map(function (o, i) {
+      return '<div class="obs-row"><span class="ot mono">' + esc(fmtEventTime(o.t)) + '</span>' +
+        '&nbsp; <span class="ok">' + esc(OBS_LABEL[o.kind]) + '：</span>' +
+        '<span class="ox">' + esc(o.text) + '</span>' +
+        (i === rows.length - 1 ? '<span class="obs-cursor mono">▍</span>' : '') +
+        '</div>';
+    }).join("");
+    box.scrollTop = box.scrollHeight;
+  }
+
   // ── 兩顆按鈕 ──
   // 匯出＝下載 minutes 事件帶回來的 LLM 會議記錄（決議／待辦／未解決／每人立場）。
   // minutes 只在會議收尾時產生，還沒有的時候按下去用按鈕自己的文字提示，不改版面。
@@ -1240,6 +1478,9 @@
         // 階段真的變了才記一筆時間軸標記；第一筆 meeting 是初始階段，不算切換。
         // `phase` 事件（人或偵測器切換）也會推標記；meeting 重送時若最後一筆已是同階段就不重畫。
         if (state.meeting && state.meeting.phase !== data.phase && !lastMarkIs(data.phase)) {
+          // AI 即時觀察的「判斷類」規則要看轉換方向（例如拉鋸→決定），phaseMarks
+          // 只記切到哪一階段、不記從哪來，所以另開一份帶 from/to 的紀錄。
+          state.phaseTransitions.push({ t: ev.t, from: state.meeting.phase, to: data.phase });
           state.phaseMarks.push({ t: ev.t, phase: data.phase });
           renderTimeline();
         }
@@ -1380,7 +1621,12 @@
         break;
       case "phase":
         // 階段真的改了（人或偵測器）：更新現況、時間軸標記、清掉建議提示
-        if (state.meeting) state.meeting.phase = data.phase;
+        if (state.meeting) {
+          if (state.meeting.phase !== data.phase) {
+            state.phaseTransitions.push({ t: ev.t, from: state.meeting.phase, to: data.phase });
+          }
+          state.meeting.phase = data.phase;
+        }
         if (!lastMarkIs(data.phase)) state.phaseMarks.push({ t: ev.t, phase: data.phase });
         state.phaseHint = null;
         renderTop(); renderTimeline();
@@ -1417,6 +1663,9 @@
         }
         break;
     }
+    // AI 即時觀察：全部規則都是從上面已經更新完的 state 算出來的原子事實，
+    // 所以放在 switch 之後統一算一次，不用每個 case 各自呼叫一遍。
+    renderObservations();
   }
 
   // snapshot 是伺服器端「權威全量」——每次新連線／重連都重送一次從頭到現在的
@@ -1453,6 +1702,11 @@
     state.hearing = null;
     state.ttsFailStreak = 0;
     state.lastTtsFail = null;
+    // AI 即時觀察也是「跟著事件累積」出來的，同一批理由：不清空重連會讓去重
+    // 比對讀到上一輪連線留下的舊文字，或讓 observations 陣列無限疊上去。
+    state.obsLastText = { observe: null, judge: null, notice: null };
+    state.observations = [];
+    state.phaseTransitions = [];
     renderedCount = 0;
     nodes = [];
     el("transcript").innerHTML = "";
@@ -1492,6 +1746,7 @@
       renderTop();
       renderAlerts();
       renderMinutesLive();
+      renderObservations();
     });
     KINDS.forEach(function (kind) {
       source.addEventListener(kind, function (e) { handleEvent(JSON.parse(e.data)); });
@@ -1507,6 +1762,25 @@
   renderTimeline();
   renderAlerts();
   renderMinutesLive();
+  renderObservations();
+
+  // ── 群體動力：把手 + 抽屜開合（Track D，D3）──────────────────────────
+  // 用真正的 <button>，Tab 能定位、Enter／Space 天生會觸發 click，不必自己
+  // 寫 keydown 判斷（見 docs/DEFERRED_DEFECTS.md 第 1 項那次的教訓）。
+  (function () {
+    var handle = el("dyn-handle");
+    var drawer = el("dyn-drawer");
+    var closeBtn = el("dyn-close");
+    function setOpen(open) {
+      drawer.classList.toggle("open", open);
+      drawer.setAttribute("aria-hidden", open ? "false" : "true");
+      handle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    handle.addEventListener("click", function () {
+      setOpen(!drawer.classList.contains("open"));
+    });
+    closeBtn.addEventListener("click", function () { setOpen(false); });
+  })();
 })();
 </script>
 </body>

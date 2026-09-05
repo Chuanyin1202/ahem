@@ -6,6 +6,8 @@
 - 2026-09-05 — Track A（會議產出即時預覽）完工＋獨立審計抓到一個競態並修復，已合併。細節見下。
 - 2026-09-05 — Track C（收合抽屜＋配色分層＋背景圖可見度）完工，獨立審計放行（無阻塞性問題），已合併。細節見下。
 - 2026-09-05 — Track B 補做獨立審計（原本合併時漏了這一關）。細節見下。
+- 2026-09-05 — Track D（主席狀態徽章＋AI 即時觀察面板＋群體動力滑入抽屜）完工。細節見下。
+- 2026-09-05 — Track D 以 `git rebase main` 併回主線，4 處衝突人工合併＋覆核，順手修掉 DEFERRED_DEFECTS 第 5 項。細節見下。
 
 ---
 
@@ -95,3 +97,198 @@
 - **審計過程本身的插曲**：審計進行到一半main分支被Track C合併（HEAD從`c05b026`動到`af87934`再到`2030d1b`），一度讓同一組像素比對測試出現前後矛盾的數字；審核員自己多跑一組「同一畫面連拍兩張」的對照才抓到問題出在檔案本身變了、不是量測誤差，沒有把錯的數字報出來。**這是「審計跑的時候不要改稿」這條老毛病第二次發生**，下次派審計要考慮凍結分支或明確告知審計者本批可能被合併。
 
 - **另一個要注意的**：審核員在main分支上沒有現成的`.venv`，是借用旁邊worktree的（Python 3.12.3），而這個repo的CI宣告用Python 3.13——**demo正式機器上機前建議確認一次實際跑的Python版本**，避免版本落差在最後一刻出狀況。
+
+## 2026-09-05 15:19–15:41 — Track D：觀戰畫面補完整版（主席徽章／AI觀察／群體動力抽屜）
+
+**誰做的**：Track D 施工者（worktree `agent-a01c2165924ad3f87`），依
+`track_d_work_order.md` 施工，設計提案原始碼來自
+`extracted_MainWithSidebar.dc.html`（Zeal 核准的完整版提案）。
+
+**做了什麼**：
+
+1. **開工前棕地探勘**：發現工作單引用的「Track A 的 `#minutes-live` 決議/待辦/
+   未解決面板」與「Track C 的 `<details>` 群體動力」在**這個 worktree 裡都不存在**
+   ——本 worktree 是從 main 直接切出來的獨立 git worktree，Track A/C 的改動顯然還
+   留在它們各自的 worktree 裡未合併回 main。這不是我能修的範圍（worktree 隔離，
+   我的沙箱明確拒絕跨 worktree 操作），所以 Track D 直接對著「本 worktree 目前真
+   實的 `index.html`」施工，沒有假裝那兩塊東西存在。**合併時要注意**：D2 的
+   「留意類」規則原本該讀 Track A 的即時未解決事項數，這裡改用結構性代理值（見
+   下方「跳過/替代」）；D3 沒有既有 `<details>` 要拆，直接新建滑入抽屜。
+2. **D1 主席狀態徽章**：新增 `#chair-badge`（三態：發言中/忍住中/可能異常），放在
+   `.head-clock` 裡、`.status` 之上。決定邏輯：
+   - 發言中／忍住中：沿用既有 `currentChairStatus()`；「等停頓」（已排隊等空檔開口）
+     歸進「忍住中」——理由是兩者都還沒真的發出聲音，跟工作單「不要另創第四態」的
+     要求一致，這是我自己判斷的小幅澄清，寫在這裡明講。
+   - 可能異常：沿用 `renderAlerts()` 的兩個真實訊號（`hearing.ok===false`／
+     `ttsFailStreak>=TTS_FAIL_ALERT`），**額外加了 `maxSilence>=SILENCE_LIMIT`**
+     當第三觸發條件——工作單允許加但要求寫理由：這不是新發明的門檻，`s-silence-sub`
+     本來就用同一個 `SILENCE_LIMIT` 顯示「曾觸發超時」，這裡只是把同一個既有事實
+     也反映到頂部徽章。
+   - 新色票收進 `:root`：`--pill-speaking-bg/--pill-holding-bg/--pill-holding-fg/
+     --pill-warning-bg/--pill-warning-fg`（逐值抄自提案圖 `renderVals()` 的
+     `table` 物件），沒有裸 hex 散落在標記或規則裡。
+   - 為了不讓同一件事在畫面上講兩遍，把舊的 `.status` 文字從「決定階段 · 主席聆聽中」
+     簡化成「決定階段」——主席狀態改由新徽章顯示。這是一個小偏離，寫在這裡供人知道。
+3. **D2 AI 即時觀察面板**：新增 `#obs-list`，三類規則**全部不呼叫 LLM**：
+   - 觀察類：發言分佈某人佔比 ≥ 65%（`SHARE_DOMINANCE_THRESHOLD`，我自己定的門檻，
+     可調）就生一則。
+   - 判斷類：偵測到「呻吟區→收斂期」的階段轉換（新增 `state.phaseTransitions`
+     追蹤，既有的 `phaseMarks` 只記切到哪個階段、不記從哪來），或「僵局介入之後
+     60 秒（`DEADLOCK_COOLDOWN_S`）沒有再介入」。
+   - 留意類：剩餘時間 < 30%（`NOTICE_TIME_LEFT_RATIO`）且**有僵局介入尚未收斂**。
+     工作單原文舉例用「未解決事項數」，但那份資料結構（Track A 的即時決議面板）
+     這個 worktree沒有，改用既有的 `spokenKinds["僵局"]` 次數當代理值——一樣是
+     後端已經算好的原子事實，語意也貼近「還沒被共識收斂掉的爭點」，但不是完整的
+     待辦/未解決清單。**合併後如果 Track A 的面板已經在，這裡應該改回讀真正的
+     未解決事項數**（已補一筆進 `docs/DEFERRED_DEFECTS.md`）。
+   - 三類各自跟「上一次推播文字」比對，內容沒變就不重推；最新一則帶打字游標
+     （複用提案圖的 `ahem-pulse` keyframe，`step-end` timing）。
+4. **D3 群體動力滑入抽屜**：新增 `<button id="dyn-handle">`（真正的 `<button>`
+   元素，Tab／Enter／Space 天生就會動，沒有重寫 keydown 判斷）+ `#dyn-drawer`
+   （`position:fixed`、`transform:translateX`，不推擠版面）。既有的
+   KPI（`.stats`）／時間軸（`#timeline`）／主席的思考（`#judge-list`）／
+   發言分佈（`#share-list`）四塊**原樣搬進抽屜**，id 與 render 函式完全沒動。
+   **`top` 座標刻意沒有照抄提案圖的 `160px`**：提案圖是通版標題列蓋住左右兩欄，
+   生產版的 `.head` 只蓋在左欄之上，右欄（含抽屜）從 `top:0` 開始本來就不會蓋到
+   左欄的主席徽章，硬抄那個數字反而是套錯前提。
+   Kaner 菱形節奏 SVG（提案圖第 156-169 行）**沒有做**——見下方跳過清單。
+
+**實測證據**：
+- `.venv/bin/python -m pytest tests/ -q` → **559 passed, 21 skipped, 2 xfailed**
+  （改動前後兩次都跑過，數字一致，沒有連坐；`tests/test_spectator_phase.py`／
+  `test_spectator_chair_broken.py`／`test_spectator_three_state.py` 這三份會真的
+  開 Chromium 執行前端 JS 的測試也全過）。這台環境原本沒裝任何 pip 依賴，我在
+  worktree 裡自己建了 `.venv` 並裝了 `requirements.txt` + `playwright`
+  （`playwright install chromium`，沒裝系統依賴也能跑，`--with-deps` 需要 sudo
+  裝不了，改用純瀏覽器二進位）。
+- 用 `PYTHONPATH=src .venv/bin/python -m meeting_host.spectator --replay
+  examples/synthetic-meeting.events.jsonl --port 8877 --speed 1000000
+  --public-read` 起真的觀戰伺服器，寫了一支 Playwright 腳本
+  （`/tmp/.../scratchpad/verify_track_d.py`）用真瀏覽器打開頁面：
+  - 三態徽章：用 `window.__spectator.handleEvent(...)` 灌真事件（`hearing`／
+    `failed`／`fast_timer`）強制切三態拍照，**不是**用零 JS 對照組推論。截圖見
+    `scratchpad/track_d_screens/02~05_badge_*.png`。過程中**用真瀏覽器測試抓到
+    一個真的 bug**：`computeObservation/computeJudgment/computeNotice` 回傳字串
+    自己帶了「觀察：/判斷：/留意：」前綴，`renderObservations()` 又加了一次，
+    畫面上印出「觀察：觀察：林同…」——已修好（拿掉 compute 函式裡的前綴，
+    只在 render 端印一次），修完重新截圖確認正常，見
+    `07_obs_panel_after_dominant_share.png`／`08_obs_panel_after_deadlock_resolved.png`。
+  - AI 觀察面板：灌一筆主導度 82% 的假 `share` 事件、一筆僵局介入+時間推進 61 秒，
+    畫面真的各生出一則新的觀察/判斷，不是靜態文字。
+  - 群體動力抽屜：`page.keyboard.press("Tab")` 迴圈找到 `#dyn-handle`
+    （`found_handle_by_tab: true`），按 `Enter` 開啟（`aria-expanded=true`、
+    class 多了 `open`），抽屜內 `.stats`/`#timeline`/`#judge-list`/`#share-list`
+    確認都在且有內容（`judgeListHtmlLen:321`／`shareListHtmlLen:499`，不是空殼）。
+    開啟時再按 `Tab` 落在 `#dyn-close`，按 `Enter` 關閉；重新 focus 把手後按
+    `Space` 也能開——**Tab/Enter/Space 三者都用真瀏覽器測過**，不是推論。量
+    `.right` 的 `getBoundingClientRect()` 在抽屜開/關前後完全相同
+    （`right_layout_unaffected_by_drawer: true`），證明「蓋在內容上、不推擠」。
+    截圖見 `09~12_drawer_*.png`。
+  - 全程 `page.on("pageerror")` 收集：**零筆 JS 例外**。
+- 沒有新增任何 hex 顏色字面值散落在標記/規則裡：`grep -n "#[0-9A-Fa-f]\{3,6\}"`
+  只命中 `:root` 裡新舊變數定義，以及既有、這批完全沒碰過的 `renderTimeline()`
+  SVG 字串（那是既有程式碼，不是這批新增的）。
+
+**卡住或未完的**：
+- Kaner 菱形節奏 SVG 沒做（時間關係，工作單本來就允許跳過）——見
+  `docs/DEFERRED_DEFECTS.md`。
+- D2「留意類」目前讀的是「僵局介入次數」代理值，不是 Track A 真正的未解決事項數
+  （因為那份資料結構在本 worktree 不存在）——見 `docs/DEFERRED_DEFECTS.md`。
+- Track A/C 的成果如何跟這批合併（尤其 D2 面板要不要跟 `#minutes-live` 合併、
+  合併後留意類規則要不要換資料源）沒有在這批處理，需要合併時的人決定。
+
+**下一關該知道什麼**：
+- 合併分支時，如果 Track A 的 `#minutes-live` 真的併進來，記得把
+  `computeNotice()` 的 `state.spokenKinds["僵局"]` 換成真正的未解決事項數。
+- `.status` 的文字從這批開始不再包含「主席聆聽中」——只寫階段名（+ 建議提示）；
+  如果有別的 Track 依賴那段舊文字格式做斷言，需要知道這個變化（本批跑過的
+  `tests/test_spectator_phase.py` 只用 `startswith("決定階段")`，沒斷言完整字串，
+  所以沒有測試因此變紅，但別的 Track 若自己寫過類似斷言要注意）。
+- 三個新的可調參數都在 `index.html` 裡用具名常數宣告、旁邊有註解寫調整理由：
+  `SHARE_DOMINANCE_THRESHOLD`(0.65)／`DEADLOCK_COOLDOWN_S`(60)／
+  `NOTICE_TIME_LEFT_RATIO`(0.3)／`CHAIR_ANOMALY_SILENCE` 判斷式裡的 `SILENCE_LIMIT`
+  重用（既有值 300）。demo 前如果覺得太靈敏/不夠靈敏，改這幾個數字就好。
+- 本批新建的 `.venv`（含 playwright + chromium 瀏覽器二進位）留在這個 worktree
+  裡，`.gitignore` 應該已經排除它（沒有另外檢查，但 Python 專案的 venv 目錄
+  通常都在忽略清單裡）；合併/部署到正式 demo 機器時仍要照 README 的步驟自己
+  建一份，不要以為這個 `.venv` 會被帶過去。
+
+---
+
+## 2026-09-05 — Track D 併回 main（`git rebase main`）：4 處衝突人工合併＋覆核
+
+**誰做的**：合併執行者（general-purpose agent），在 worktree
+`agent-a01c2165924ad3f87` 上跑 `git rebase main`（把 `3b88338` 重放到 `440afff`）。
+前 2 處衝突由前台 Sonnet 先手動解掉，本次負責解剩下 2 處 ＋ 覆核前 2 處。
+
+**做了什麼**：
+
+1. **覆核前台已解的 2 處，抓到 2 個殘留問題**（不是邏輯錯，是清理沒做乾淨）：
+   - **`index.html` 第 1385 行留了一個孤兒 `>>>>>>>` 衝突標記**。前台把 Track A 的
+     `renderMinutesLive()` 與 Track D 的觀察函式兩邊都保留、也補上了正確的收尾大括號，
+     但忘了刪掉那行標記。`git status` 仍顯示 `UU` 所以不會被誤 commit，但它會讓整支
+     `<script>` 語法錯誤、**整個觀戰畫面的 JS 全部不執行**。已刪除。
+   - **Track C 的 4 組 CSS 變成孤兒規則**：`.drawer`、`.drawer > summary`（含
+     `::marker`／`::-webkit-details-marker`／`::after` 三條）、`.drawer-body`、
+     `.section-secondary`。它們唯一的使用者是被 Track D 取代掉的
+     `<details class="drawer" id="group-dynamics">`，移除後沒有任何元素會命中。
+     已刪除並留一段註解說明為什麼消失。
+   - **前台的合併邏輯本身判斷正確**：Track A 的 `#minutes-live`（結果／待辦）與
+     Track D 的 AI 即時觀察面板（過程／動態訊號）確實是兩塊獨立區塊、兩邊都完整保留、
+     沒有互相蓋掉；Track C 的 inline 抽屜連同它的 Enter 鍵補丁 `<script>` 乾淨移除。
+     JS 事件監聽器沒有指向已不存在的 id（`#group-dynamics` 在全檔零命中）。
+2. **解掉剩下 2 處衝突**（都在 `wireSource()` 的 snapshot handler 與開機初始渲染）：
+   兩側都是「各自呼叫自己那個 render 函式」，彼此獨立，**兩邊都保留**，
+   並保留 Track D 那段抽屜開合的 IIFE。
+3. **採用了 Track D 施工者留在 `computeNotice()` 上方的建議**（工作單第 4 點）：
+   改讀 `state.minutesLive.unresolved.length`。覆核時發現原代理值的問題**比原記錄更嚴重**
+   ——`state.spokenKinds["僵局"]` 是只增不減的累計次數，會跟同一塊面板裡
+   `computeJudgment()` 的「僵局已解除」**同時出現、字面互相矛盾**。詳見
+   `docs/DEFERRED_DEFECTS.md` 第 5 項。
+4. **合併兩份小本本與兩份缺陷清單**（add/add 衝突）：兩邊內容都保留，缺陷清單重新編號，
+   並把本次已處理掉的項目標成已修復／已結案。
+
+**實測證據**（全部自己重跑，不採信任何先前回報的數字）：
+
+- `git status` 不再有 `UU`／`AA`；
+  `/usr/bin/grep -n "<<<<<<<\|=======\|>>>>>>>" src/meeting_host/spectator/index.html`
+  → **0 命中**。
+- `node --check` 抽出的 inline script（1,240 行）→ **rc=0**，語法正確；全檔只剩 **1 個**
+  `<script>` 區塊（Track C 那個 Enter 補丁 script 已隨 `<details>` 一起消失）。
+- Python `HTMLParser` 標籤平衡檢查 → **errors: none, unclosed: none**。
+- **完整測試套件**：`.venv/bin/python -m pytest tests/ -q`
+  → **564 passed, 21 skipped, 2 xfailed in 30.53s**，結束碼 0（Python 3.12.3）。
+- **headless Chromium 冒煙測試**（真的開頁面，不是讀程式碼推論）：
+  `#minutes-live`／`#obs-list`／`#dyn-handle`／`#dyn-drawer`／`#dyn-close`／
+  `#chair-badge`／`#s-iv`／`#timeline`／`#judge-list`／`#share-list` 各 1 個；
+  `#group-dynamics` 與 `<details>` 各 **0 個**；兩塊面板都渲染出空狀態文字
+  （「尚無資料」／「尚無觀察」）**證明兩個 render 函式在開機時都真的被呼叫到**——
+  這正是第 2 處衝突要解對的東西。
+  抽屜開合：初始關 → 點把手開（`aria-hidden=false`／`aria-expanded=true`）→
+  點關閉鈕關 → **Enter 開** → **Space 關**，`transform` 實測滑到
+  `matrix(1,0,0,1,0,0)`。**原生 `<button>` 確實 Enter／Space 都吃，
+  證實 Track D「不必自己寫 keydown」的設計成立**，也證實移除 Track C 那 8 行是對的。
+- **端到端驗證 `computeNotice()` 的改動**（掛真的 `spectator._build_app`＋
+  playwright，不是單元測試造假）：
+  ①會議走到第 8 分鐘、僵局早已過去、但預覽還沒到 → 只顯示「判斷：拉鋸結束」，
+  **沒有**矛盾的留意訊息（舊代理值在這一格會噴「仍有 1 項僵局介入未見後續共識」）；
+  ②預覽帶 2 筆未解決事項 → 「留意：仍有 2 項未解決事項，剩餘 2 分鐘」；
+  ③其中一筆被收掉 → **數字真的降成 1**（只增不減的舊代理值做不到這件事）。
+  全程 **JS ERRORS: none**。
+
+**卡住或未完的**：無。rebase 已 `--continue` 完成。
+
+**下一關該知道什麼**：
+
+- 🔴 **`computeNotice()` 的行為變了**：`state.minutesLive` 在 `--no-llm` 模式下永遠是
+  `null`（`watch_minutes` 掛在 `not args.no_llm` 底下），且要累積
+  `MINUTES_PREVIEW_MIN_UTTERANCES`(6) 筆發言、每
+  `MINUTES_PREVIEW_INTERVAL_S`(90 秒) 才送一次。**所以 demo 若跑 `--no-llm`，
+  「留意」這一類不會出現**（「觀察」與「判斷」兩類不受影響，它們讀的是快路資料）。
+  這是刻意的取捨：沒資料就不講話。若 demo 一定要看到留意類，確認不要加 `--no-llm`，
+  且會議長度要夠讓預覽至少送出一輪。
+- 本 worktree 的 `.venv` 是 **Python 3.12.3**，而 repo CI 宣告 3.13——
+  上一批小本本已經提醒過，demo 正式機器上機前再確認一次實際跑的版本。
+- `docs/DEFERRED_DEFECTS.md` 還有 3 項待處理：第 2 項（`background: transparent`
+  建議改 `var(--bg)`）、第 3 項（已因 Track D 改版大致失效，僅剩最低優先度）、
+  第 4 項（Kaner 菱形節奏視覺化未做）。demo 之後再看。

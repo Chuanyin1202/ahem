@@ -291,12 +291,17 @@
 
      用 <img> 不用 CSS background：pointer-events:none 保證不擋任何點擊。
 
-     z-index 用 -1（不是常見寫法的 0）：#view 是 100%/100vh 的不透明實色滿版容器，
-     沒有 position，跟 fixed 定位、z-index:0 的元素比，靜態內容反而會被蓋在下面
-     （CSS 疊層規則：非定位的一般流內容其實排在 z-index:auto/0 的定位元素之後才畫）。
-     實測驗證：z-index:0 會讓整張浮水彩完全蓋住畫面（包含所有文字與按鈕，只是
-     pointer-events:none 讓點擊仍穿透得到底下元素）；z-index:-1 才會讓它退到
-     #view 不透明背景之後——兩者互為對照組，證據見交付報告。
+     z-index 用 -1（不是常見寫法的 0）：#view 沒有 position，跟 fixed 定位、
+     z-index:0 的元素比，靜態內容反而會被蓋在下面（CSS 疊層規則：非定位的一般
+     流內容其實排在 z-index:auto/0 的定位元素之後才畫）。實測驗證：z-index:0
+     會讓整張浮水彩完全蓋住畫面（包含所有文字與按鈕，只是 pointer-events:none
+     讓點擊仍穿透得到底下元素）；z-index:-1 才會讓它退到 #view 背景之後——
+     兩者互為對照組，證據見交付報告。
+     【2026-09-05 Track C 之後更新】原本這裡寫「#view 是 100%/100vh 的不透明
+     實色滿版容器」，Track C 已把它改成 height:calc(100vh - 28px)、body 加了
+     14px padding、body 背景改 transparent，讓這張圖從四邊縫隙露出來——上面
+     那句舊敘述已經不成立，疊層結論（z-index:-1 正確）不受影響，只是描述
+     #view 現況的那句話過期了，已在這裡更正，不要再照抄舊的那句。
 
      src 用內嵌 base64 data URI、不用相對路徑指到 assets/ 資料夾：
      spectator.py 的 aiohttp app 只註冊了 /、/health、/events、/phase、/end

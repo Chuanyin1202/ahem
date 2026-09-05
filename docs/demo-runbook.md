@@ -5,17 +5,18 @@
 ## 會前（前一晚 ＋ 當天早上各跑一次）
 
 ```bash
-ssh pi5
-cd ~/meeting-host-agent
-grep -c '=' .env                              # 應為 3：ELEVENLABS_API_KEY、OPENAI_API_KEY、DISCORD_BOT_TOKEN
+ssh <DEPLOY_HOST>            # 部署主機，見下方「部署環境變數」
+cd <DEPLOY_PATH>
+grep -c '=' .env                              # 至少要有 ELEVENLABS_API_KEY、OPENAI_API_KEY、DISCORD_BOT_TOKEN、AHEM_PUBLIC_URL、AHEM_CHANNEL_ID
 PYTHONPATH=src .venv/bin/python -c "from meeting_host import live, phase, style; print('載入 OK')"
 # ElevenLabs：這把 key 還有額度嗎（需要 user_read 權限的 key）
 K=$(grep '^ELEVENLABS_API_KEY=' .env | cut -d= -f2-); curl -s -H "xi-api-key: $K" https://api.elevenlabs.io/v1/user/subscription | grep -o '"character_count":[0-9]*,"character_limit":[0-9]*'
 ```
 
-- Discord：bot 已在伺服器裡、對語音頻道有連線與發言權限；記下頻道 ID（Meeting Room：`1542595146527412357`，**開會前再確認一次**）。
-- 投影：觀戰畫面 `https://ahem.eighti.app`（Cloudflare Tunnel 指到 Pi5 的 `localhost:8765`），用 1440×900 以上的解析度；瀏覽器先開好、確認能連。後端沒起時這個網址回 502，那是正常的。
-  - 手機開會變成橫向捲動（版面最小寬度 1200px），要給評審掃碼看就先知道這件事。
+- Discord：bot 已在伺服器裡、對語音頻道有連線與發言權限。頻道 ID 放在部署主機的 `.env`（`AHEM_CHANNEL_ID`），**不要寫進這份文件或指令**——這個 repo 是公開的。開會前確認 `.env` 裡那個 ID 仍然是要用的頻道。
+- 投影：觀戰畫面的對外網址由部署主機 `.env` 的 `AHEM_PUBLIC_URL` 決定（反向代理／tunnel 指到該機的 `localhost:8765`），用 1440×900 以上的解析度；瀏覽器先開好、確認能連。後端沒起時這個網址回 502，那是正常的。
+  - **啟動橫幅印出來的網址就是要交出去的那個**。若橫幅底下出現「AHEM_PUBLIC_URL 未設定，上面是本機網址」的警告，代表你跑在沒設定的機器上，那串網址只有那台機器連得到——停下來，不要把它交給任何人。
+  - 手機與平板都是單欄流式版面，不會橫向捲動（實測 360–1920px 全段無溢出），掃碼給評審看沒問題。
 - 網路：Pi5 與投影電腦同一網段（或走 tunnel 對外）。
 - 權杖：啟動會印兩個網址。**操作者**那個給自己（可切階段、可結束會議），**參與者**那個只能讀。
   - 畫面會投影，所以前端讀完 `?k=` 就把它從網址列抹掉，權杖不會出現在螢幕上。
@@ -23,13 +24,28 @@ K=$(grep '^ELEVENLABS_API_KEY=' .env | cut -d= -f2-); curl -s -H "xi-api-key: $K
   - **預設是私密的**：沒帶權杖的人開網址只會看到「需要權杖才能觀看」。真實會議把參與者網址貼進該場會議的 Discord 文字聊天即可，範圍自然等於進得了那個頻道的人。
   - **demo 現場評審不在 Discord 頻道裡**，要讓他們自己掃碼看就得加 `--public-read`——那等於完整逐字稿對外公開，只在 demo 用，彩排真實內容時不要加。
 
+## 部署環境變數
+
+機器相關的值全部放在**部署主機自己的 `.env`**，不進版控（這個 repo 是公開的）：
+
+| 變數 | 內容 | 沒設會怎樣 |
+|---|---|---|
+| `AHEM_PUBLIC_URL` | 觀戰畫面對外的 base URL（反向代理／tunnel 的主機名） | 啟動橫幅退回 `http://localhost:<port>` 並印警告——那串只有該機器連得到 |
+| `AHEM_CHANNEL_ID` | 預設加入的 Discord 語音頻道 ID | `--channel` 沒帶就不會自動進頻道 |
+
+`<DEPLOY_HOST>` / `<DEPLOY_PATH>` 是你自己的 ssh 目標與部署路徑，記在本機、不要寫進這份文件。
+
+> **2026-09-05 的事故**：真實會議要跑在部署主機上，卻被跑到開發機上；開發機沒有
+> `AHEM_PUBLIC_URL`，橫幅安靜地印了 `http://localhost:8765/?k=…`，那串網址被交給
+> 外網的人，完全打不開。現在橫幅會在沒設定時明講「這是本機網址」。
+
 ## 開始
 
 ```bash
 cd ~/meeting-host-agent
 PYTHONPATH=src nohup .venv/bin/python -u -m meeting_host.live \
     --topic "<題目>" --duration <分鐘> --say-hello --spectator-port 8765 \
-    --channel 1542595146527412357 --auto-phase suggest \
+    --auto-phase suggest \
     > live-$(date +%m%d-%H%M).out 2>&1 < /dev/null &
 tail -f live-*.out        # 看到「已登入」「加入語音頻道」「觀戰 UI：http://…」才算起來
 ```

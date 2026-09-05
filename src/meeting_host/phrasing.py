@@ -60,6 +60,57 @@ def _has_fabricated_number(text: str) -> bool:
     return any(ch.isdigit() for ch in _SLOT_RE.sub("", text))
 
 
+# ── 模型輸出的字元衛生 ───────────────────────────────────────────────────
+#
+# 2026-09-05 實測：`gpt-5.6-luna` 寫參與者名字「Billis」時，會在 B 與 illis
+# 之間插入雜字元。同一個評分點用真實 state 重跑 15 次，3 次（20%）出現
+# 零寬空格 `B\u200b\u200billis`，另有一次整批跑出喬治亞字母 `Bილის`。
+# 不是我們的程式弄壞的——OpenCC 只作用在 STT 輸入端，`slow_path.phrase()`
+# 從 LLM 回來只做 `.strip()`；事件檔裡記的就是模型回傳的原文。
+#
+# 觀戰畫面會直接把這串字顯示出去，TTS 也會照唸。
+#
+# 分兩層處理，因為這兩種壞法可修復性不同：
+#   零寬字元 → 直接清掉。它們不可見，移除之後得到的就是模型本來要寫的字，
+#             沒有任何語意損失，這不是「刪掉當修好」。
+#   其他外文字母 → 修不回來（把喬治亞字母從 Bილის 拿掉只剩 Bis），
+#             交給呼叫端重生一次。
+
+INVISIBLE = "\u200b\u200c\u200d\ufeff\u2060"
+"""零寬空格／連接符／不換行零寬空格。純粹的傳輸雜訊，一律清掉。"""
+
+# 允許出現在主席話術裡的字元。刻意用白名單，但範圍開得寬——寧可漏掉一種壞法，
+# 也不要誤殺正常內容：
+#   CJK 統一漢字、CJK 標點（含全形空格）、全形字母數字
+#   日文假名（會議裡引用日文詞是合理的，術語卡判準也明文允許）
+#   ASCII 字母數字與常見標點（中英夾雜是這個場景的常態）
+ALLOWED = re.compile(
+    r"[\u4e00-\u9fff"      # CJK 統一漢字
+    r"\u3000-\u303f"       # CJK 標點與全形空格
+    r"\u3040-\u30ff"       # 平假名、片假名
+    r"\uff00-\uffef"       # 全形字母數字與標點
+    r"\u2010-\u2027"       # 連字號、破折號、引號、刪節號
+    r"\u00b0\u00b7\u2103\u2030"   # 度、間隔號、攝氏、千分號
+    r"A-Za-z0-9\s"
+    r"!-/:-@\[-`{-~"        # ASCII 標點全段
+    r"]"
+)
+
+
+def strip_invisible(text: str) -> str:
+    """清掉零寬字元。可逆的那一層——清完就是模型本來要寫的字。"""
+    return text.translate({ord(c): None for c in INVISIBLE})
+
+
+def unexpected_chars(text: str) -> list[str]:
+    """回傳白名單以外的字元（去重、保序）。空 list ＝ 這句話乾淨。
+
+    呼叫端**先** `strip_invisible()` 再問這裡——零寬字元屬於可修復的那一層，
+    不該讓它把整句話判成壞掉。
+    """
+    return list(dict.fromkeys(c for c in text if not ALLOWED.match(c)))
+
+
 def validate_pattern(kind: str, text: str) -> bool:
     """候選句型合不合格。不合格就丟棄，不修補——見模組 docstring。
 
@@ -81,6 +132,12 @@ def validate_pattern(kind: str, text: str) -> bool:
         return False  # 出現規格之外的未知插槽
     if required - found:
         return False  # 缺少必要插槽
+    if unexpected_chars(text):
+        # 這裡刻意**不**先 strip_invisible：句型是重複使用的模板，帶著隱形字元
+        # 會讓之後每一次填值都夾雜它。句型庫一次生 4 個候選，丟掉一個還有別的，
+        # 所以沿用本模組既有的「不合格就丟棄，不修補」政策（見模組 docstring）。
+        # 慢路的單句話術不同——那裡沒有備選，所以才做 strip ＋ 重生一次。
+        return False
     if _has_fabricated_number(text):
         return False  # 插槽以外的數字：可能的捏造事實
     return True

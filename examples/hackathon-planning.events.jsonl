@@ -1,0 +1,824 @@
+{"kind": "meeting", "t": 0.00035720900632441044, "data": {"topic": "黑客松籌備", "duration_min": 12, "phase": "發散期", "participants": ["Alex", "Billis", "達哥", "Jax"], "start_epoch": 1788618598.7267468}}
+{"kind": "spoken", "t": 0.1024113750027027, "data": {"kind": "問候", "target": null, "text": "大家好，我是今天的主席，會議開始。", "hard": true, "at": 0.022927084006369114}}
+{"kind": "share", "t": 0.10242879198631272, "data": {"Alex": 0.0, "Billis": 0.0, "達哥": 0.0, "Jax": 0.0, "主席": 1.0}}
+{"kind": "fast_timer", "t": 1.0026069589948747, "data": {"run": null, "silent": {"Alex": 1.0024118750006892, "Billis": 1.002410916989902, "達哥": 1.0024104999902193, "Jax": 1.0024102090101223}, "remaining": 718.9974353750004}}
+{"kind": "fast_timer", "t": 2.0041404590010643, "data": {"run": null, "silent": {"Alex": 2.0039518749981653, "Billis": 2.003950916987378, "達哥": 2.0039504999876954, "Jax": 2.0039502090075985}, "remaining": 717.9958953750029}}
+{"kind": "voice", "t": 3.002143541991245, "data": {"speaker": "Alex", "active": true}}
+{"kind": "speaking", "t": 3.0021728749852628, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 3.0047912919835653, "data": {"run": {"speaker": "Alex", "seconds": 0.004760084004374221}, "silent": {"Alex": 0.0, "Billis": 3.0046063759946264, "達哥": 3.0046059589949436, "Jax": 3.0046056680148467}, "remaining": 716.9952399159956}}
+{"kind": "partial", "t": 4.004362334002508, "data": {"speaker": "Alex", "text": "今天只有"}}
+{"kind": "speaking", "t": 4.004382084007375, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 4.004990541987354, "data": {"run": {"speaker": "Alex", "seconds": 1.0049611249996815}, "silent": {"Alex": 0.0, "Billis": 4.004807416989934, "達哥": 4.004806999990251, "Jax": 4.004806709010154}, "remaining": 715.9950388750003}}
+{"kind": "partial", "t": 5.004941416991642, "data": {"speaker": "Alex", "text": "今天只有四分鐘，要"}}
+{"kind": "speaking", "t": 5.004963041981682, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 5.005095750006149, "data": {"run": {"speaker": "Alex", "seconds": 2.005066541983979}, "silent": {"Alex": 0.0, "Billis": 5.004912833974231, "達哥": 5.004912416974548, "Jax": 5.004912125994451}, "remaining": 714.994933458016}}
+{"kind": "partial", "t": 6.006804667005781, "data": {"speaker": "Alex", "text": "今天只有四分鐘，要把黑客松"}}
+{"kind": "speaking", "t": 6.006826041993918, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 6.006891208991874, "data": {"run": {"speaker": "Alex", "seconds": 3.006856208987301}, "silent": {"Alex": 0.0, "Billis": 6.006702500977553, "達哥": 6.006702083977871, "Jax": 6.006701792997774}, "remaining": 713.9931437910127}}
+{"kind": "partial", "t": 7.008733291993849, "data": {"speaker": "Alex", "text": "今天只有四分鐘，要把黑客松的題目方向"}}
+{"kind": "speaking", "t": 7.00875420900411, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 7.008799584000371, "data": {"run": {"speaker": "Alex", "seconds": 4.008768458996201}, "silent": {"Alex": 0.0, "Billis": 7.008614750986453, "達哥": 7.00861433398677, "Jax": 7.0086140430066735}, "remaining": 712.9912315410038}}
+{"kind": "partial", "t": 8.010930166987237, "data": {"speaker": "Alex", "text": "今天只有四分鐘，要把黑客松的題目方向定下來，"}}
+{"kind": "speaking", "t": 8.010950750001939, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 8.011008500005119, "data": {"run": {"speaker": "Alex", "seconds": 5.010977208992699}, "silent": {"Alex": 0.0, "Billis": 8.010823500982951, "達哥": 8.010823083983269, "Jax": 8.010822793003172}, "remaining": 711.9890227910073}}
+{"kind": "partial", "t": 9.013045125000644, "data": {"speaker": "Alex", "text": "今天只有四分鐘，要把黑客松的題目方向定下來，下週就要發"}}
+{"kind": "speaking", "t": 9.013060041994322, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 9.013098708994221, "data": {"run": {"speaker": "Alex", "seconds": 6.013077624986181}, "silent": {"Alex": 0.0, "Billis": 9.012923916976433, "達哥": 9.01292349997675, "Jax": 9.012923208996654}, "remaining": 710.9869223750138}}
+{"kind": "utterance", "t": 9.66908599997987, "data": {"speaker": "Alex", "text": "今天只有四分鐘，要把黑客松的題目方向定下來，下週就要發公告。", "start": 3, "end": 9.666666666666668}}
+{"kind": "speaking", "t": 9.669099666993134, "data": {"speaker": "Alex", "active": false}}
+{"kind": "share", "t": 9.669154375005746, "data": {"Alex": 0.6896551724137931, "Billis": 0.0, "達哥": 0.0, "Jax": 0.0, "主席": 0.31034482758620685}}
+{"kind": "voice", "t": 9.66918162498041, "data": {"speaker": "Alex", "active": false}}
+{"kind": "fast_timer", "t": 10.015265249996446, "data": {"run": {"speaker": "Alex", "seconds": 6.666666666666668}, "silent": {"Alex": 0.34856325031917734, "Billis": 10.015076208976097, "達哥": 10.015075791976415, "Jax": 10.015075500996318}, "remaining": 709.9847700830142}}
+{"kind": "fast_timer", "t": 11.017328458983684, "data": {"run": {"speaker": "Alex", "seconds": 6.666666666666668}, "silent": {"Alex": 1.3506317083277573, "Billis": 11.017144666984677, "達哥": 11.017144249984995, "Jax": 11.017143959004898}, "remaining": 708.9827016250056}}
+{"kind": "fast_timer", "t": 12.019149250001647, "data": {"run": {"speaker": "Alex", "seconds": 6.666666666666668}, "silent": {"Alex": 2.352448833339924, "Billis": 12.018961791996844, "達哥": 12.018961374997161, "Jax": 12.018961084017064}, "remaining": 707.9808844999934}}
+{"kind": "fast_timer", "t": 13.02135370898759, "data": {"run": {"speaker": "Alex", "seconds": 6.666666666666668}, "silent": {"Alex": 3.3546532083322127, "Billis": 13.021166166989133, "達哥": 13.02116574998945, "Jax": 13.021165459009353}, "remaining": 706.9786801250011}}
+{"kind": "fast_timer", "t": 14.021855500002857, "data": {"run": {"speaker": "Alex", "seconds": 6.666666666666668}, "silent": {"Alex": 4.35515754232377, "Billis": 14.02167050098069, "達哥": 14.021670083981007, "Jax": 14.02166979300091}, "remaining": 705.9781757910096}}
+{"kind": "fast_timer", "t": 15.022395000007236, "data": {"run": null, "silent": {"Alex": 5.355708208332846, "Billis": 15.022221166989766, "達哥": 15.022220749990083, "Jax": 15.022220459009986}, "remaining": 704.9776251250005}}
+{"kind": "voice", "t": 16.002096042007906, "data": {"speaker": "達哥", "active": true}}
+{"kind": "speaking", "t": 16.002125041995896, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 16.0242396669928, "data": {"run": {"speaker": "達哥", "seconds": 0.024214999983087182}, "silent": {"Alex": 6.357548333316419, "Billis": 16.02406129197334, "達哥": 0.0, "Jax": 16.02406058399356}, "remaining": 703.9757850000169}}
+{"kind": "partial", "t": 17.004269166995073, "data": {"speaker": "達哥", "text": "報名狀況"}}
+{"kind": "speaking", "t": 17.004286499985028, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 17.026413124985993, "data": {"run": {"speaker": "達哥", "seconds": 1.0263778340013232}, "silent": {"Alex": 7.359711167334655, "Billis": 17.026224125991575, "達哥": 0.0, "Jax": 17.026223418011796}, "remaining": 702.9736221659987}}
+{"kind": "partial", "t": 18.00540212498163, "data": {"speaker": "達哥", "text": "報名狀況我先講。目"}}
+{"kind": "speaking", "t": 18.005427166994195, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 18.02745458399295, "data": {"run": {"speaker": "達哥", "seconds": 2.0274197089893278}, "silent": {"Alex": 8.36075304232266, "Billis": 18.02726600097958, "達哥": 0.0, "Jax": 18.0272652929998}, "remaining": 701.9725802910107}}
+{"kind": "partial", "t": 19.005634333996568, "data": {"speaker": "達哥", "text": "報名狀況我先講。目前收到四"}}
+{"kind": "speaking", "t": 19.005648458987707, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 19.027722708997317, "data": {"run": {"speaker": "達哥", "seconds": 3.0276957919995766}, "silent": {"Alex": 9.361029125332909, "Billis": 19.02754208398983, "達哥": 0.0, "Jax": 19.02754137601005}, "remaining": 700.9723042080004}}
+{"kind": "partial", "t": 20.005927583988523, "data": {"speaker": "達哥", "text": "報名狀況我先講。目前收到四十二隊，比"}}
+{"kind": "speaking", "t": 20.005944542004727, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 20.02987829199992, "data": {"run": {"speaker": "達哥", "seconds": 4.0298425419896375}, "silent": {"Alex": 10.36317587532297, "Billis": 20.02968883397989, "達哥": 0.0, "Jax": 20.02968812600011}, "remaining": 699.9701574580104}}
+{"kind": "partial", "t": 21.0080219169904, "data": {"speaker": "達哥", "text": "報名狀況我先講。目前收到四十二隊，比去年多十"}}
+{"kind": "speaking", "t": 21.008027292002225, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 21.031866083998466, "data": {"run": {"speaker": "達哥", "seconds": 5.031837624992477}, "silent": {"Alex": 11.365170958325809, "Billis": 21.03168391698273, "達哥": 0.0, "Jax": 21.03168320900295}, "remaining": 698.9681623750075}}
+{"kind": "partial", "t": 22.01629599998705, "data": {"speaker": "達哥", "text": "報名狀況我先講。目前收到四十二隊，比去年多十隊，但有一"}}
+{"kind": "speaking", "t": 22.01631708399509, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 22.033791499998188, "data": {"run": {"speaker": "達哥", "seconds": 6.03377474998706}, "silent": {"Alex": 12.367108083320392, "Billis": 22.033621041977312, "達哥": 0.0, "Jax": 22.033620333997533}, "remaining": 697.9662252500129}}
+{"kind": "partial", "t": 23.01849483398837, "data": {"speaker": "達哥", "text": "報名狀況我先講。目前收到四十二隊，比去年多十隊，但有一半的隊伍"}}
+{"kind": "speaking", "t": 23.018514666997362, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 23.035954666993348, "data": {"run": {"speaker": "達哥", "seconds": 7.035917750006774}, "silent": {"Alex": 13.369251083340107, "Billis": 23.035764041997027, "達哥": 0.0, "Jax": 23.035763334017247}, "remaining": 696.9640822499932}}
+{"kind": "partial", "t": 24.02019595899037, "data": {"speaker": "達哥", "text": "報名狀況我先講。目前收到四十二隊，比去年多十隊，但有一半的隊伍沒有填技術"}}
+{"kind": "speaking", "t": 24.020214416988892, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 24.036465583980316, "data": {"run": {"speaker": "達哥", "seconds": 8.03643383400049}, "silent": {"Alex": 14.369767167333823, "Billis": 24.036280125990743, "達哥": 0.0, "Jax": 24.036279418010963}, "remaining": 695.9635661659995}}
+{"kind": "utterance", "t": 24.669008416996803, "data": {"speaker": "達哥", "text": "報名狀況我先講。目前收到四十二隊，比去年多十隊，但有一半的隊伍沒有填技術背景。", "start": 16, "end": 24.666666666666664}}
+{"kind": "speaking", "t": 24.66902533400571, "data": {"speaker": "達哥", "active": false}}
+{"kind": "share", "t": 24.669056916987756, "data": {"Alex": 0.3636363636363637, "Billis": 0.0, "達哥": 0.4727272727272726, "Jax": 0.0, "主席": 0.16363636363636364}}
+{"kind": "voice", "t": 24.66906979199848, "data": {"speaker": "達哥", "active": false}}
+{"kind": "fast_timer", "t": 25.03758737500175, "data": {"run": {"speaker": "達哥", "seconds": 8.666666666666664}, "silent": {"Alex": 15.370887208312826, "Billis": 25.037400166969746, "達哥": 0.37088720831282984, "Jax": 25.037399458989967}, "remaining": 694.9624461250205}}
+{"kind": "fast_timer", "t": 26.03849445900414, "data": {"run": {"speaker": "達哥", "seconds": 8.666666666666664}, "silent": {"Alex": 16.371796500335524, "Billis": 26.038309458992444, "達哥": 1.3717965003355275, "Jax": 26.038308751012664}, "remaining": 693.9615368329978}}
+{"kind": "fast_timer", "t": 27.040676333999727, "data": {"run": {"speaker": "達哥", "seconds": 8.666666666666664}, "silent": {"Alex": 17.373979875313427, "Billis": 27.040492833970347, "達哥": 2.373979875313431, "Jax": 27.040492125990568}, "remaining": 692.9593534580199}}
+{"kind": "fast_timer", "t": 28.042232584004523, "data": {"run": {"speaker": "達哥", "seconds": 8.666666666666664}, "silent": {"Alex": 18.37553500033876, "Billis": 28.04204795899568, "達哥": 3.3755350003387647, "Jax": 28.0420472510159}, "remaining": 691.9577983329946}}
+{"kind": "fast_timer", "t": 29.042741166980704, "data": {"run": {"speaker": "達哥", "seconds": 8.666666666666664}, "silent": {"Alex": 19.376040500317078, "Billis": 29.042553458973998, "達哥": 4.376040500317082, "Jax": 29.04255275099422}, "remaining": 690.9572928330163}}
+{"kind": "fast_timer", "t": 30.042858583998168, "data": {"run": null, "silent": {"Alex": 20.376183583333233, "Billis": 30.042696541990153, "達哥": 5.376183583333237, "Jax": 30.042695834010374}, "remaining": 689.9571497500001}}
+{"kind": "fast_timer", "t": 31.045099749986548, "data": {"run": null, "silent": {"Alex": 21.378398042337114, "Billis": 31.044911000994034, "達哥": 6.378398042337118, "Jax": 31.044910293014254}, "remaining": 688.9549352909962}}
+{"kind": "fast_timer", "t": 32.04743612499442, "data": {"run": null, "silent": {"Alex": 22.38074004232961, "Billis": 32.04725300098653, "達哥": 7.380740042329613, "Jax": 32.04725229300675}, "remaining": 687.9525932910037}}
+{"kind": "fast_timer", "t": 33.04969300000812, "data": {"run": null, "silent": {"Alex": 23.382996500314523, "Billis": 33.04950945897144, "達哥": 8.382996500314526, "Jax": 33.04950875099166}, "remaining": 686.9503368330188}}
+{"kind": "fast_timer", "t": 34.05193691700697, "data": {"run": null, "silent": {"Alex": 24.38524375031314, "Billis": 34.05175670897006, "達哥": 9.385243750313144, "Jax": 34.05175600099028}, "remaining": 685.9480895830202}}
+{"kind": "fast_timer", "t": 35.05412724998314, "data": {"run": null, "silent": {"Alex": 25.38744150031319, "Billis": 35.05395445897011, "達哥": 10.387441500313194, "Jax": 35.05395375099033}, "remaining": 684.9458918330201}}
+{"kind": "voice", "t": 36.00058262498351, "data": {"speaker": "Billis", "active": true}}
+{"kind": "speaking", "t": 36.00060170900542, "data": {"speaker": "Billis", "active": true}}
+{"kind": "fast_timer", "t": 36.05551691699657, "data": {"run": {"speaker": "Billis", "seconds": 0.05546954198507592}, "silent": {"Alex": 26.388802875318408, "Billis": 0.0, "達哥": 11.388802875318412, "Jax": 36.05531512599555}, "remaining": 683.9445304580149}}
+{"kind": "partial", "t": 37.00075816700701, "data": {"speaker": "Billis", "text": "沒填背景"}}
+{"kind": "speaking", "t": 37.00077162499656, "data": {"speaker": "Billis", "active": true}}
+{"kind": "fast_timer", "t": 37.0577670839848, "data": {"run": {"speaker": "Billis", "seconds": 1.057732708984986}, "silent": {"Alex": 27.391066042318318, "Billis": 0.0, "達哥": 12.391066042318322, "Jax": 37.05757829299546}, "remaining": 682.942267291015}}
+{"kind": "slow_score", "t": 37.83754887498799, "data": {"positive": 2, "negative": 1, "none": 3, "type": "無", "verdict": "不介入", "utterance": "", "pros": ["目前只有 Alex 與達哥發言，Bilis 與 Jax 尚未實質參與，可適度邀請他們提供看法", "Alex 提到需在四分鐘內定下方向，但目前仍在發散期，應提醒保留不同意見並讓更多相關資訊浮現"], "cons": ["目前討論仍緊扣黑客松籌備，達哥提供報名與技術背景的資訊，沒有離題或破壞秩序", "會議才進行一分鐘，且沒有人連續發言或打斷他人，尚未形成需要立即糾正的失衡"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "partial", "t": 38.00088591699023, "data": {"speaker": "Billis", "text": "沒填背景的話分組會"}}
+{"kind": "speaking", "t": 38.00089629198192, "data": {"speaker": "Billis", "active": true}}
+{"kind": "fast_timer", "t": 38.06002725000144, "data": {"run": {"speaker": "Billis", "seconds": 2.059995916992193}, "silent": {"Alex": 28.393329250325525, "Billis": 0.0, "達哥": 13.393329250325529, "Jax": 38.059841501002666}, "remaining": 681.9400040830078}}
+{"kind": "utterance", "t": 38.889423583983444, "data": {"speaker": "Billis", "text": "沒填背景的話分組會很難排。", "start": 36, "end": 38.888888888888886}}
+{"kind": "speaking", "t": 38.889433667005505, "data": {"speaker": "Billis", "active": false}}
+{"kind": "share", "t": 38.88946416700492, "data": {"Alex": 0.31413612565445037, "Billis": 0.13612565445026165, "達哥": 0.4083769633507853, "Jax": 0.0, "主席": 0.14136125654450266}}
+{"kind": "voice", "t": 38.88947941700462, "data": {"speaker": "Billis", "active": false}}
+{"kind": "fast_timer", "t": 39.06230433398741, "data": {"run": {"speaker": "Billis", "seconds": 2.8888888888888857}, "silent": {"Alex": 29.39560425033172, "Billis": 0.17338202810950065, "達哥": 14.395604250331722, "Jax": 39.06211650100886}, "remaining": 680.9377290830016}}
+{"kind": "fast_timer", "t": 40.064589999994496, "data": {"run": {"speaker": "Billis", "seconds": 2.8888888888888857}, "silent": {"Alex": 30.39788712533967, "Billis": 1.1756649031174504, "達哥": 15.397887125339672, "Jax": 40.06439937601681}, "remaining": 679.9354462079937}}
+{"kind": "fast_timer", "t": 41.06536387500819, "data": {"run": {"speaker": "Billis", "seconds": 2.8888888888888857}, "silent": {"Alex": 31.398680083327537, "Billis": 2.1764578611053196, "達哥": 16.39868008332754, "Jax": 41.06519233400468}, "remaining": 678.9346532500058}}
+{"kind": "fast_timer", "t": 42.06758012500359, "data": {"run": {"speaker": "Billis", "seconds": 2.8888888888888857}, "silent": {"Alex": 32.40087087532932, "Billis": 3.1786486531071034, "達哥": 17.400870875329325, "Jax": 42.06738312600646}, "remaining": 677.932462458004}}
+{"kind": "fast_timer", "t": 43.069900750007946, "data": {"run": {"speaker": "Billis", "seconds": 2.8888888888888857}, "silent": {"Alex": 33.4031876673301, "Billis": 4.180965445107887, "達哥": 18.40318766733011, "Jax": 43.069699918007245}, "remaining": 676.9301456660032}}
+{"kind": "voice", "t": 44.00097145899781, "data": {"speaker": "達哥", "active": true}}
+{"kind": "speaking", "t": 44.00098616699688, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 44.07129399999394, "data": {"run": {"speaker": "達哥", "seconds": 0.07125408400315791}, "silent": {"Alex": 34.40458741733649, "Billis": 5.182365195114272, "達哥": 0.0, "Jax": 44.07109966801363}, "remaining": 675.9287459159968}}
+{"kind": "partial", "t": 45.00191645900486, "data": {"speaker": "達哥", "text": "欸對了，"}}
+{"kind": "speaking", "t": 45.00192991699441, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 45.073378208995564, "data": {"run": {"speaker": "達哥", "seconds": 1.0733416249859147}, "silent": {"Alex": 35.40667495831924, "Billis": 6.184452736097029, "達哥": 0.0, "Jax": 45.07318720899639}, "remaining": 674.9266583750141}}
+{"kind": "slow_score", "t": 45.44673258397961, "data": {"positive": 2, "negative": 1, "none": 4, "type": "無", "verdict": "不介入", "utterance": "", "pros": ["Jax 目前尚未發言，可適度邀請其分享觀點，避免有人尚未參與就被忽略", "討論已從題目方向轉到報名與技術背景，若持續延伸分組問題，可能需要提醒仍要服務於黑客松題目方向"], "cons": ["目前仍在發散期，且內容仍與黑客松籌備相關，不宜催促定案或收斂", "目前僅進行約一分鐘，沒有實質搶話、打斷、重複或把他人排除在外的證據"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "partial", "t": 46.00316720898263, "data": {"speaker": "達哥", "text": "欸對了，尾牙的餐廳"}}
+{"kind": "speaking", "t": 46.00318245898234, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 46.07557687498047, "data": {"run": {"speaker": "達哥", "seconds": 2.0755459170031827}, "silent": {"Alex": 36.40887925033651, "Billis": 7.186657028114297, "達哥": 0.0, "Jax": 46.075391501013655}, "remaining": 673.9244540829968}}
+{"kind": "partial", "t": 47.003602874989156, "data": {"speaker": "達哥", "text": "欸對了，尾牙的餐廳訂了嗎？"}}
+{"kind": "speaking", "t": 47.00361745900591, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 47.077093625004636, "data": {"run": {"speaker": "達哥", "seconds": 3.077041874988936}, "silent": {"Alex": 37.410375208322264, "Billis": 8.18815298610005, "達哥": 0.0, "Jax": 47.07688745899941}, "remaining": 672.9229581250111}}
+{"kind": "partial", "t": 48.00383800000418, "data": {"speaker": "達哥", "text": "欸對了，尾牙的餐廳訂了嗎？上次說要訂"}}
+{"kind": "speaking", "t": 48.00384837499587, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 48.07752962500672, "data": {"run": {"speaker": "達哥", "seconds": 4.0774950420018286}, "silent": {"Alex": 38.41082837533516, "Billis": 9.188606153112943, "達哥": 0.0, "Jax": 48.0773406260123}, "remaining": 671.9225049579982}}
+{"kind": "utterance", "t": 48.66692195899668, "data": {"speaker": "達哥", "text": "欸對了，尾牙的餐廳訂了嗎？上次說要訂那家。", "start": 44, "end": 48.666666666666664}}
+{"kind": "speaking", "t": 48.66693504198338, "data": {"speaker": "達哥", "active": false}}
+{"kind": "share", "t": 48.66696987499017, "data": {"Alex": 0.257510729613734, "Billis": 0.11158798283261794, "達哥": 0.5150214592274678, "Jax": 0.0, "主席": 0.11587982832618028}}
+{"kind": "voice", "t": 48.66699137497926, "data": {"speaker": "達哥", "active": false}}
+{"kind": "fast_timer", "t": 49.07939895900199, "data": {"run": {"speaker": "達哥", "seconds": 4.666666666666664}, "silent": {"Alex": 39.41269887531719, "Billis": 10.190476653094976, "達哥": 0.4126988753171972, "Jax": 49.079211125994334}, "remaining": 670.9206344580161}}
+{"kind": "fast_timer", "t": 50.07994687499013, "data": {"run": {"speaker": "達哥", "seconds": 4.666666666666664}, "silent": {"Alex": 40.41324800033665, "Billis": 11.191025778114437, "達哥": 1.413248000336658, "Jax": 50.079760251013795}, "remaining": 669.9200853329967}}
+{"kind": "fast_timer", "t": 51.080162708996795, "data": {"run": {"speaker": "達哥", "seconds": 4.666666666666664}, "silent": {"Alex": 41.41346658331652, "Billis": 12.191244361094306, "達哥": 2.413466583316527, "Jax": 51.079978833993664}, "remaining": 668.9198667500168}}
+{"kind": "fast_timer", "t": 52.0824014589889, "data": {"run": {"speaker": "達哥", "seconds": 4.666666666666664}, "silent": {"Alex": 42.41570154233098, "Billis": 13.193479320108764, "達哥": 3.4157015423309858, "Jax": 52.08221379300812}, "remaining": 667.9176317910023}}
+{"kind": "fast_timer", "t": 53.08461687498493, "data": {"run": {"speaker": "達哥", "seconds": 4.666666666666664}, "silent": {"Alex": 43.417911375339216, "Billis": 14.195689153117002, "達哥": 4.417911375339223, "Jax": 53.08442362601636}, "remaining": 666.9154219579941}}
+{"kind": "voice", "t": 54.00023816700559, "data": {"speaker": "Jax", "active": true}}
+{"kind": "speaking", "t": 54.00024999998277, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 54.08600212499732, "data": {"run": {"speaker": "Jax", "seconds": 0.08596541700535454}, "silent": {"Alex": 44.41929875033868, "Billis": 15.197076528116469, "達哥": 5.41929875033869, "Jax": 0.0}, "remaining": 665.9140345829946}}
+{"kind": "slow_score", "t": 54.49855070898775, "data": {"positive": 2, "negative": 2, "none": 1, "type": "離題", "verdict": "兩者皆有", "utterance": "達哥的「尾牙的餐廳訂了嗎」先擱著；Jax，你怎麼看題目方向或分組問題？", "pros": ["達哥突然轉向尾牙餐廳，已離開黑客松籌備議題，應拉回議題", "Jax 尚未發言，可在拉回議題時邀請其提供看法，避免討論只由少數人主導"], "cons": ["會議才進行一分鐘，黑客松相關資訊仍在發散，尚未需要收斂或催促結論", "目前發言權尚未構成實質失衡，Alex、Billis 與達哥都已有實質發言，且達哥只是剛連續發言"], "admissible": true, "reason": "", "utterance_seconds": 1.34}}
+{"kind": "queued", "t": 54.49857820899342, "data": {"kind": "離題", "target": null, "text": "達哥的「尾牙的餐廳訂了嗎」先擱著；Jax，你怎麼看題目方向或分組問題？", "hard": false}}
+{"kind": "partial", "t": 55.000305916997604, "data": {"speaker": "Jax", "text": "還沒吧，"}}
+{"kind": "speaking", "t": 55.000318542006426, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 55.088094999984605, "data": {"run": {"speaker": "Jax", "seconds": 1.0880747089977376}, "silent": {"Alex": 45.421408042331066, "Billis": 16.199185820108852, "達哥": 6.421408042331073, "Jax": 0.0}, "remaining": 664.9119252910023}}
+{"kind": "partial", "t": 56.001519541983726, "data": {"speaker": "Jax", "text": "還沒吧，我記得 B"}}
+{"kind": "speaking", "t": 56.001525750005385, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 56.089836291997926, "data": {"run": {"speaker": "Jax", "seconds": 2.0898057089943904}, "silent": {"Alex": 46.42313904232772, "Billis": 17.200916820105505, "達哥": 7.423139042327726, "Jax": 0.0}, "remaining": 663.9101942910056}}
+{"kind": "partial", "t": 57.00176283399924, "data": {"speaker": "Jax", "text": "還沒吧，我記得 Billi"}}
+{"kind": "speaking", "t": 57.00177566698403, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 57.09018070899765, "data": {"run": {"speaker": "Jax", "seconds": 3.0901514169818256}, "silent": {"Alex": 47.423484750315154, "Billis": 18.20126252809294, "達哥": 8.423484750315161, "Jax": 0.0}, "remaining": 662.9098485830182}}
+{"kind": "partial", "t": 58.003429417003645, "data": {"speaker": "Jax", "text": "還沒吧，我記得 Billis 要打電"}}
+{"kind": "speaking", "t": 58.00344120900263, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 58.09207829198567, "data": {"run": {"speaker": "Jax", "seconds": 4.092052916996181}, "silent": {"Alex": 48.42538625032951, "Billis": 19.203164028107295, "達哥": 9.425386250329517, "Jax": 0.0}, "remaining": 661.9079470830038}}
+{"kind": "utterance", "t": 58.444976083992515, "data": {"speaker": "Jax", "text": "還沒吧，我記得 Billis 要打電話。", "start": 54, "end": 58.44444444444444}}
+{"kind": "speaking", "t": 58.44498349999776, "data": {"speaker": "Jax", "active": false}}
+{"kind": "share", "t": 58.445008666982176, "data": {"Alex": 0.2197802197802199, "Billis": 0.09523809523809516, "達哥": 0.4395604395604395, "Jax": 0.1465201465201465, "主席": 0.09890109890109892}}
+{"kind": "voice", "t": 58.44501937497989, "data": {"speaker": "Jax", "active": false}}
+{"kind": "fast_timer", "t": 59.09426449998864, "data": {"run": {"speaker": "Jax", "seconds": 4.444444444444443}, "silent": {"Alex": 49.42756541733009, "Billis": 20.205343195107872, "達哥": 10.427565417330094, "Jax": 0.649787639552315}, "remaining": 660.9057679160032}}
+{"kind": "spoken", "t": 59.59293270899798, "data": {"kind": "離題", "target": null, "text": "達哥的「尾牙的餐廳訂了嗎」先擱著；Jax，你怎麼看題目方向或分組問題？", "hard": false, "at": 59.50673937500687}}
+{"kind": "share", "t": 59.59299083400401, "data": {"Alex": 0.20000000000000007, "Billis": 0.08666666666666659, "達哥": 0.3999999999999999, "Jax": 0.1333333333333333, "主席": 0.18000000000000002}}
+{"kind": "fast_timer", "t": 60.09507704200223, "data": {"run": {"speaker": "Jax", "seconds": 4.444444444444443}, "silent": {"Alex": 50.42837558333606, "Billis": 21.20615336111385, "達哥": 11.42837558333607, "Jax": 1.6505978055582915}, "remaining": 659.9049577499973}}
+{"kind": "fast_timer", "t": 61.09720724998624, "data": {"run": {"speaker": "Jax", "seconds": 4.444444444444443}, "silent": {"Alex": 51.430525917317325, "Billis": 22.20830369509511, "達哥": 12.430525917317333, "Jax": 2.652748139539554}, "remaining": 658.902807416016}}
+{"kind": "voice", "t": 62.000290416995995, "data": {"speaker": "Billis", "active": true}}
+{"kind": "speaking", "t": 62.0003092919942, "data": {"speaker": "Billis", "active": true}}
+{"kind": "fast_timer", "t": 62.09817770900554, "data": {"run": {"speaker": "Billis", "seconds": 0.09813875000691041}, "silent": {"Alex": 52.43147208334024, "Billis": 0.0, "達哥": 13.431472083340246, "Jax": 3.6536943055624675}, "remaining": 657.9018612499931}}
+{"kind": "partial", "t": 63.00115870899754, "data": {"speaker": "Billis", "text": "我今天下"}}
+{"kind": "speaking", "t": 63.00117379199946, "data": {"speaker": "Billis", "active": true}}
+{"kind": "fast_timer", "t": 63.100367417006055, "data": {"run": {"speaker": "Billis", "seconds": 1.1003296669805422}, "silent": {"Alex": 53.43366300031387, "Billis": 0.0, "達哥": 14.433663000313878, "Jax": 4.655885222536099}, "remaining": 656.8996703330195}}
+{"kind": "partial", "t": 64.00325437498395, "data": {"speaker": "Billis", "text": "我今天下午打，他們"}}
+{"kind": "speaking", "t": 64.00327045898302, "data": {"speaker": "Billis", "active": true}}
+{"kind": "fast_timer", "t": 64.10204729199177, "data": {"run": {"speaker": "Billis", "seconds": 2.102009708993137}, "silent": {"Alex": 54.435343042326465, "Billis": 0.0, "達哥": 15.435343042326473, "Jax": 5.657565264548694}, "remaining": 655.8979902910069}}
+{"kind": "partial", "t": 65.00462804199196, "data": {"speaker": "Billis", "text": "我今天下午打，他們說十二月"}}
+{"kind": "speaking", "t": 65.0046394589881, "data": {"speaker": "Billis", "active": true}}
+{"kind": "fast_timer", "t": 65.10241987498011, "data": {"run": {"speaker": "Billis", "seconds": 3.102383083984023}, "silent": {"Alex": 55.43571641731735, "Billis": 0.0, "達哥": 16.43571641731736, "Jax": 6.65793863953958}, "remaining": 654.897616916016}}
+{"kind": "partial", "t": 66.00671091699041, "data": {"speaker": "Billis", "text": "我今天下午打，他們說十二月的位子很搶"}}
+{"kind": "speaking", "t": 66.0067244170059, "data": {"speaker": "Billis", "active": true}}
+{"kind": "fast_timer", "t": 66.10394929198083, "data": {"run": {"speaker": "Billis", "seconds": 4.1038953340030275}, "silent": {"Alex": 56.437228667336356, "Billis": 0.0, "達哥": 17.437228667336363, "Jax": 7.659450889558585}, "remaining": 653.896104665997}}
+{"kind": "utterance", "t": 66.44597233398235, "data": {"speaker": "Billis", "text": "我今天下午打，他們說十二月的位子很搶手。", "start": 62, "end": 66.44444444444444}}
+{"kind": "speaking", "t": 66.44598545899498, "data": {"speaker": "Billis", "active": false}}
+{"kind": "share", "t": 66.44603541700053, "data": {"Alex": 0.17647058823529418, "Billis": 0.19411764705882342, "達哥": 0.35294117647058815, "Jax": 0.1176470588235294, "主席": 0.15882352941176472}}
+{"kind": "voice", "t": 66.44605274999049, "data": {"speaker": "Billis", "active": false}}
+{"kind": "fast_timer", "t": 67.1058397500019, "data": {"run": {"speaker": "Billis", "seconds": 4.444444444444443}, "silent": {"Alex": 57.4391480423413, "Billis": 0.66137026456353, "達哥": 18.43914804234131, "Jax": 8.66137026456353}, "remaining": 652.894185290992}}
+{"kind": "fast_timer", "t": 68.10749112500343, "data": {"run": {"speaker": "Billis", "seconds": 4.444444444444443}, "silent": {"Alex": 58.44078137532536, "Billis": 1.6630035975475863, "達哥": 19.440781375325365, "Jax": 9.663003597547586}, "remaining": 651.892551958008}}
+{"kind": "fast_timer", "t": 69.10780645898194, "data": {"run": {"speaker": "Billis", "seconds": 4.444444444444443}, "silent": {"Alex": 59.44110358333758, "Billis": 2.6633258055598077, "達哥": 20.441103583337586, "Jax": 10.663325805559808}, "remaining": 650.8922297499957}}
+{"kind": "fast_timer", "t": 70.10883766697953, "data": {"run": {"speaker": "Billis", "seconds": 4.444444444444443}, "silent": {"Alex": 60.44212837533753, "Billis": 3.6643505975597606, "達哥": 21.44212837533754, "Jax": 11.66435059755976}, "remaining": 649.8912049579958}}
+{"kind": "fast_timer", "t": 71.10974029198405, "data": {"run": {"speaker": "Billis", "seconds": 4.444444444444443}, "silent": {"Alex": 61.44303529231304, "Billis": 4.66525751453527, "達哥": 22.44303529231305, "Jax": 12.66525751453527}, "remaining": 648.8902980410203}}
+{"kind": "fast_timer", "t": 72.11012825000216, "data": {"run": null, "silent": {"Alex": 62.443431000331955, "Billis": 5.665653222554184, "達哥": 23.443431000331962, "Jax": 13.665653222554184}, "remaining": 647.8899023330014}}
+{"kind": "fast_timer", "t": 73.11182479199488, "data": {"run": null, "silent": {"Alex": 63.445142333327865, "Billis": 6.667364555550094, "達哥": 24.445142333327873, "Jax": 14.667364555550094}, "remaining": 646.8881910000055}}
+{"kind": "voice", "t": 74.00130670898943, "data": {"speaker": "Jax", "active": true}}
+{"kind": "speaking", "t": 74.00132766700699, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 74.11396449999302, "data": {"run": {"speaker": "Jax", "seconds": 0.11392991698812693}, "silent": {"Alex": 64.44726325032146, "Billis": 7.669485472543684, "達哥": 25.447263250321463, "Jax": 0.0}, "remaining": 645.8860700830119}}
+{"kind": "partial", "t": 75.00340966699878, "data": {"speaker": "Jax", "text": "去年那家"}}
+{"kind": "speaking", "t": 75.00342545899912, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 75.11621554198791, "data": {"run": {"speaker": "Jax", "seconds": 1.116176124982303}, "silent": {"Alex": 65.44950945831563, "Billis": 8.67173168053786, "達哥": 26.44950945831564, "Jax": 0.0}, "remaining": 644.8838238750177}}
+{"kind": "partial", "t": 76.00551708400599, "data": {"speaker": "Jax", "text": "去年那家的桌菜其實"}}
+{"kind": "speaking", "t": 76.00553033399046, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 76.11848108400591, "data": {"run": {"speaker": "Jax", "seconds": 2.1184401669888757}, "silent": {"Alex": 66.4517735003222, "Billis": 9.673995722544433, "達哥": 27.45177350032221, "Jax": 0.0}, "remaining": 643.8815598330111}}
+{"kind": "partial", "t": 77.00649608398089, "data": {"speaker": "Jax", "text": "去年那家的桌菜其實普通，要"}}
+{"kind": "speaking", "t": 77.00651020900114, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 77.1189067499945, "data": {"run": {"speaker": "Jax", "seconds": 3.118863749987213}, "silent": {"Alex": 67.45219708332054, "Billis": 10.67441930554277, "達哥": 28.45219708332055, "Jax": 0.0}, "remaining": 642.8811362500128}}
+{"kind": "partial", "t": 78.00761137498193, "data": {"speaker": "Jax", "text": "去年那家的桌菜其實普通，要不要換一家"}}
+{"kind": "speaking", "t": 78.00762266700622, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 78.12092479199055, "data": {"run": {"speaker": "Jax", "seconds": 4.120882249990245}, "silent": {"Alex": 68.45421558332357, "Billis": 11.676437805545802, "達哥": 29.45421558332358, "Jax": 0.0}, "remaining": 641.8791177500098}}
+{"kind": "utterance", "t": 78.22325579199241, "data": {"speaker": "Jax", "text": "去年那家的桌菜其實普通，要不要換一家？", "start": 74, "end": 78.22222222222223}}
+{"kind": "speaking", "t": 78.22326804199838, "data": {"speaker": "Jax", "active": false}}
+{"kind": "share", "t": 78.22330558398971, "data": {"Alex": 0.15873015873015875, "Billis": 0.17460317460317448, "達哥": 0.31746031746031733, "Jax": 0.20634920634920645, "主席": 0.14285714285714285}}
+{"kind": "voice", "t": 78.22332150000148, "data": {"speaker": "Jax", "active": false}}
+{"kind": "fast_timer", "t": 79.12242562498432, "data": {"run": {"speaker": "Jax", "seconds": 4.2222222222222285}, "silent": {"Alex": 69.45572187532282, "Billis": 12.677944097545051, "達哥": 30.45572187532283, "Jax": 0.9001663197672656}, "remaining": 640.8776114580105}}
+{"kind": "fast_timer", "t": 80.12379429198336, "data": {"run": {"speaker": "Jax", "seconds": 4.2222222222222285}, "silent": {"Alex": 70.4571022503272, "Billis": 13.679324472549425, "達哥": 31.457102250327203, "Jax": 1.901546694771639}, "remaining": 639.8762310830061}}
+{"kind": "fast_timer", "t": 81.12441487499746, "data": {"run": {"speaker": "Jax", "seconds": 4.2222222222222285}, "silent": {"Alex": 71.45772925032846, "Billis": 14.679951472550684, "達哥": 32.45772925032846, "Jax": 2.902173694772898}, "remaining": 638.8756040830049}}
+{"kind": "fast_timer", "t": 82.12551429198356, "data": {"run": {"speaker": "Jax", "seconds": 4.2222222222222285}, "silent": {"Alex": 72.4588128333174, "Billis": 15.681035055539624, "達哥": 33.4588128333174, "Jax": 3.9032572777618384}, "remaining": 637.8745205000159}}
+{"kind": "fast_timer", "t": 83.12767779198475, "data": {"run": {"speaker": "Jax", "seconds": 4.2222222222222285}, "silent": {"Alex": 73.46097870833667, "Billis": 16.683200930558897, "達哥": 34.460978708336675, "Jax": 4.905423152781111}, "remaining": 636.8723546249967}}
+{"kind": "fast_timer", "t": 84.12994574999902, "data": {"run": null, "silent": {"Alex": 74.46323895831786, "Billis": 17.685461180540088, "達哥": 35.463238958317866, "Jax": 5.907683402762302}, "remaining": 635.8700943750155}}
+{"kind": "fast_timer", "t": 85.13053058399237, "data": {"run": null, "silent": {"Alex": 75.46382620833658, "Billis": 18.686048430558813, "達哥": 36.46382620833659, "Jax": 6.908270652781027}, "remaining": 634.8695071249967}}
+{"kind": "voice", "t": 86.00209316698601, "data": {"speaker": "Alex", "active": true}}
+{"kind": "speaking", "t": 86.00211116700666, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 86.1317077089916, "data": {"run": {"speaker": "Alex", "seconds": 0.1316711249819491}, "silent": {"Alex": 0.0, "Billis": 19.687226680537506, "達哥": 37.465004458315285, "Jax": 7.909448902759721}, "remaining": 633.868328875018}}
+{"kind": "partial", "t": 87.0023032919853, "data": {"speaker": "Alex", "text": "回到題目"}}
+{"kind": "speaking", "t": 87.00231762498152, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 87.13394037500257, "data": {"run": {"speaker": "Alex", "seconds": 1.1338973339879885}, "silent": {"Alex": 0.0, "Billis": 20.689452889543546, "達哥": 38.467230667321324, "Jax": 8.91167511176576}, "remaining": 632.866102666012}}
+{"kind": "partial", "t": 88.00441587498062, "data": {"speaker": "Alex", "text": "回到題目。四十二隊"}}
+{"kind": "speaking", "t": 88.00442804198246, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 88.13419700000668, "data": {"run": {"speaker": "Alex", "seconds": 2.1341569169890136}, "silent": {"Alex": 0.0, "Billis": 21.68971247254457, "達哥": 39.46749025032235, "Jax": 9.911934694766785}, "remaining": 631.865843083011}}
+{"kind": "partial", "t": 89.00651849998394, "data": {"speaker": "Alex", "text": "回到題目。四十二隊、一半沒"}}
+{"kind": "speaking", "t": 89.00653237500228, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 89.13613608398009, "data": {"run": {"speaker": "Alex", "seconds": 3.1361181249958463}, "silent": {"Alex": 0.0, "Billis": 22.691673680551403, "達哥": 40.46945145832918, "Jax": 10.913895902773618}, "remaining": 630.8638818750042}}
+{"kind": "partial", "t": 90.00716391700553, "data": {"speaker": "Alex", "text": "回到題目。四十二隊、一半沒填背景，我"}}
+{"kind": "speaking", "t": 90.00716924999142, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 90.13676041699364, "data": {"run": {"speaker": "Alex", "seconds": 4.136720459006028}, "silent": {"Alex": 0.0, "Billis": 23.692276014561585, "達哥": 41.470053792339364, "Jax": 11.9144982367838}, "remaining": 629.863279540994}}
+{"kind": "partial", "t": 91.00862270899233, "data": {"speaker": "Alex", "text": "回到題目。四十二隊、一半沒填背景，我們的題目"}}
+{"kind": "speaking", "t": 91.0086350000056, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 91.13908049999736, "data": {"run": {"speaker": "Alex", "seconds": 5.139026541990461}, "silent": {"Alex": 0.0, "Billis": 24.694582097546018, "達哥": 42.4723598753238, "Jax": 12.916804319768232}, "remaining": 628.8609734580095}}
+{"kind": "utterance", "t": 92.00219841700164, "data": {"speaker": "Alex", "text": "回到題目。四十二隊、一半沒填背景，我們的題目要怎麼開？", "start": 86, "end": 92.0}}
+{"kind": "speaking", "t": 92.00220437499229, "data": {"speaker": "Alex", "active": false}}
+{"kind": "share", "t": 92.00222091699834, "data": {"Alex": 0.2638888888888889, "Billis": 0.15277777777777768, "達哥": 0.2777777777777777, "Jax": 0.18055555555555566, "主席": 0.125}}
+{"kind": "voice", "t": 92.00222691698582, "data": {"speaker": "Alex", "active": false}}
+{"kind": "fast_timer", "t": 92.13953583399416, "data": {"run": {"speaker": "Alex", "seconds": 6.0}, "silent": {"Alex": 0.13949124998180196, "Billis": 25.69504680553736, "達哥": 43.47282458331514, "Jax": 13.917269027759573}, "remaining": 627.8605087500182}}
+{"kind": "slow_score", "t": 92.2957949169795, "data": {"positive": 2, "negative": 1, "none": 2, "type": "離題", "verdict": "不介入", "utterance": "", "pros": ["討論已從黑客松報名與分組，轉向尾牙餐廳，屬於與議題無關的閒聊，應適度拉回黑客松籌備", "拉回後可讓團隊繼續處理報名資料不足與分組安排，避免議題在早期就被其他話題帶走"], "cons": ["目前剛進入發散期，黑客松相關的報名與技術背景問題仍未充分展開，不宜催促結論或收斂", "參與者目前都有實質發言，且只是短暫轉入尾牙話題，尚未出現發言權失衡或明顯衝突"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "minutes", "t": 93.04408954200335, "data": {"final": false, "decisions": [], "todos": [{"owner": "Billis", "task": "今天下午致電尾牙餐廳確認訂位"}], "unresolved": [{"topic": "黑客松題目方向與分組問題", "chair_ruling": "先討論題目方向或分組問題；目前尚未定案"}, {"topic": "尾牙餐廳選擇與訂位", "chair_ruling": "先擱置尾牙餐廳議題"}], "stances": {"Alex": "希望在四分鐘內定下黑客松題目方向，因下週要發布公告", "達哥": "回報目前有四十二隊報名，比去年多十隊；指出半數隊伍未填寫技術背景，並詢問尾牙餐廳是否已訂", "Billis": "認為未填技術背景會造成分組困難；表示今天下午會致電餐廳", "Jax": "表示尾牙餐廳似乎尚未訂，並認為去年餐廳的桌菜普通，提議考慮更換餐廳"}}}
+{"kind": "ai_critique", "t": 93.14289699998335, "data": {"meeting": "議題剛轉向尾牙，主席到 00:59 才拉回黑客松，時間已經被非議程內容吃掉一段。", "participants": {"達哥": "先提供報名與資料缺口這個關鍵資訊，卻把討論帶去尾牙，讓剛浮現的分組問題中斷。", "Billis": "指出分組困難，也回應了餐廳進度；但目前仍未把技術背景缺口轉成具體處理方案。", "Jax": "兩次發言都補上現況或選項；被主席邀回主題後仍未實質回應，顯示拉回議程的邀請沒有接住。"}}}
+{"kind": "fast_timer", "t": 93.14293804200133, "data": {"run": {"speaker": "Alex", "seconds": 6.0}, "silent": {"Alex": 1.1429177919926587, "Billis": 26.698473347548216, "達哥": 44.476251125325994, "Jax": 14.92069556977043}, "remaining": 626.8570822080073}}
+{"kind": "fast_timer", "t": 94.14371974999085, "data": {"run": {"speaker": "Alex", "seconds": 6.0}, "silent": {"Alex": 2.1436767499835696, "Billis": 27.699232305539127, "達哥": 45.477010083316905, "Jax": 15.921454527761341}, "remaining": 625.8563232500164}}
+{"kind": "fast_timer", "t": 95.14503283399972, "data": {"run": {"speaker": "Alex", "seconds": 6.0}, "silent": {"Alex": 3.144996999995783, "Billis": 28.70055255555134, "達哥": 46.47833033332912, "Jax": 16.922774777773554}, "remaining": 624.8550030000042}}
+{"kind": "fast_timer", "t": 96.14721520899911, "data": {"run": {"speaker": "Alex", "seconds": 6.0}, "silent": {"Alex": 4.147200834006071, "Billis": 29.70275638956163, "達哥": 47.48053416733941, "Jax": 17.924978611783843}, "remaining": 623.8527991659939}}
+{"kind": "fast_timer", "t": 97.14854441699572, "data": {"run": null, "silent": {"Alex": 5.148505499993917, "Billis": 30.704061055549474, "達哥": 48.48183883332725, "Jax": 18.926283277771688}, "remaining": 622.8514945000061}}
+{"kind": "voice", "t": 98.00206333398819, "data": {"speaker": "達哥", "active": true}}
+{"kind": "speaking", "t": 98.00207891699392, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 98.1503013339825, "data": {"run": {"speaker": "達哥", "seconds": 0.1502559999935329}, "silent": {"Alex": 6.150255999993533, "Billis": 31.70581155554909, "達哥": 0.0, "Jax": 19.928033777771304}, "remaining": 621.8497440000065}}
+{"kind": "partial", "t": 99.00317516698851, "data": {"speaker": "達哥", "text": "我講一個"}}
+{"kind": "speaking", "t": 99.00318729199353, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 99.15123041698826, "data": {"run": {"speaker": "達哥", "seconds": 1.1511862500046846}, "silent": {"Alex": 7.1511862500046846, "Billis": 32.70674180556024, "達哥": 0.0, "Jax": 20.928964027782456}, "remaining": 620.8488137499953}}
+{"kind": "slow_score", "t": 99.8994560840074, "data": {"positive": 2, "negative": 1, "none": 3, "type": "離題", "verdict": "不介入", "utterance": "", "pros": ["話題從黑客松籌備轉到尾牙餐廳，已經明確離題，需要拉回議題", "Alex 已經示範把討論帶回參賽隊伍背景與題目安排，適合支持這種聚焦行為"], "cons": ["Alex 已主動完成拉回議題，當前對話已回到黑客松相關內容，無需再次介入", "發言權有多次易手，且四人近期都有實質發言，沒有發言權失衡或其他明顯群體過程問題"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "partial", "t": 100.00477462500567, "data": {"speaker": "達哥", "text": "我講一個看過的做法"}}
+{"kind": "speaking", "t": 100.0047879999911, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 100.15241595898988, "data": {"run": {"speaker": "達哥", "seconds": 2.1523723749851342}, "silent": {"Alex": 8.152372374985134, "Billis": 33.70792793054069, "達哥": 0.0, "Jax": 21.930150152762906}, "remaining": 619.8476276250149}}
+{"kind": "partial", "t": 101.00604237499647, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場"}}
+{"kind": "speaking", "t": 101.00605320898467, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 101.15318716698675, "data": {"run": {"speaker": "達哥", "seconds": 3.1531395000056364}, "silent": {"Alex": 9.153139500005636, "Billis": 34.70869505556119, "達哥": 0.0, "Jax": 22.930917277783408}, "remaining": 618.8468604999944}}
+{"kind": "partial", "t": 102.00717229198199, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題"}}
+{"kind": "speaking", "t": 102.00718404198415, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 102.15491533398745, "data": {"run": {"speaker": "達哥", "seconds": 4.154874542000471}, "silent": {"Alex": 10.15487454200047, "Billis": 35.71043009755603, "達哥": 0.0, "Jax": 23.932652319778242}, "remaining": 617.8451254579995}}
+{"kind": "partial", "t": 103.00888508398202, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三"}}
+{"kind": "speaking", "t": 103.00889716699021, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 103.15578749999986, "data": {"run": {"speaker": "達哥", "seconds": 5.15574779198505}, "silent": {"Alex": 11.15574779198505, "Billis": 36.71130334754061, "達哥": 0.0, "Jax": 24.93352556976282}, "remaining": 616.844252208015}}
+{"kind": "partial", "t": 104.01098270900548, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層"}}
+{"kind": "speaking", "t": 104.01099554199027, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 104.15661416700459, "data": {"run": {"speaker": "達哥", "seconds": 6.156560792005621}, "silent": {"Alex": 12.156560792005621, "Billis": 37.71211634756118, "達哥": 0.0, "Jax": 25.934338569783392}, "remaining": 615.8434392079944}}
+{"kind": "partial", "t": 105.01295170898084, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層是誰都做"}}
+{"kind": "speaking", "t": 105.01296070899116, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 105.15750512498198, "data": {"run": {"speaker": "達哥", "seconds": 7.157476333988598}, "silent": {"Alex": 13.157476333988598, "Billis": 38.713031889544155, "達哥": 0.0, "Jax": 26.93525411176637}, "remaining": 614.8425236660114}}
+{"kind": "partial", "t": 106.01504899997963, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層是誰都做得完的暖身"}}
+{"kind": "speaking", "t": 106.01505625000573, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 106.1582183749997, "data": {"run": {"speaker": "達哥", "seconds": 8.158203625003807}, "silent": {"Alex": 14.158203625003807, "Billis": 39.713759180559364, "達哥": 0.0, "Jax": 27.93598140278158}, "remaining": 613.8417963749962}}
+{"kind": "partial", "t": 107.01711650000652, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層是誰都做得完的暖身題，第二"}}
+{"kind": "speaking", "t": 107.0171275419998, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 107.15892391698435, "data": {"run": {"speaker": "達哥", "seconds": 9.15888241698849}, "silent": {"Alex": 15.15888241698849, "Billis": 40.71443797254405, "達哥": 0.0, "Jax": 28.93666019476626}, "remaining": 612.8411175830115}}
+{"kind": "partial", "t": 108.01909116699244, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層是誰都做得完的暖身題，第二層要一點領"}}
+{"kind": "speaking", "t": 108.01910816700547, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 108.16123183400487, "data": {"run": {"speaker": "達哥", "seconds": 10.161189374979585}, "silent": {"Alex": 16.161189374979585, "Billis": 41.71674493053514, "達哥": 0.0, "Jax": 29.938967152757357}, "remaining": 611.8388106250204}}
+{"kind": "partial", "t": 109.02085191698279, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層是誰都做得完的暖身題，第二層要一點領域知識，"}}
+{"kind": "speaking", "t": 109.02086604200304, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 109.16351604199735, "data": {"run": {"speaker": "達哥", "seconds": 11.163473166991025}, "silent": {"Alex": 17.163473166991025, "Billis": 42.71902872254658, "達哥": 0.0, "Jax": 30.941250944768797}, "remaining": 610.836526833009}}
+{"kind": "partial", "t": 110.02174979198026, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層是誰都做得完的暖身題，第二層要一點領域知識，第三層是開"}}
+{"kind": "speaking", "t": 110.02176954198512, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 110.16393720899941, "data": {"run": {"speaker": "達哥", "seconds": 12.1638953340007}, "silent": {"Alex": 18.1638953340007, "Billis": 43.719450889556256, "達哥": 0.0, "Jax": 31.94167311177847}, "remaining": 609.8361046659993}}
+{"kind": "partial", "t": 111.02384099998744, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層是誰都做得完的暖身題，第二層要一點領域知識，第三層是開放題完全"}}
+{"kind": "speaking", "t": 111.02385533400229, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 111.16604595899116, "data": {"run": {"speaker": "達哥", "seconds": 13.166005084000062}, "silent": {"Alex": 19.166005084000062, "Billis": 44.72156063955562, "達哥": 0.0, "Jax": 32.943782861777834}, "remaining": 608.8339949159999}}
+{"kind": "partial", "t": 112.02576629200485, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層是誰都做得完的暖身題，第二層要一點領域知識，第三層是開放題完全不給方向。"}}
+{"kind": "speaking", "t": 112.02577929198742, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 112.16759041699697, "data": {"run": {"speaker": "達哥", "seconds": 14.16754291698453}, "silent": {"Alex": 20.16754291698453, "Billis": 45.72309847254009, "達哥": 0.0, "Jax": 33.9453206947623}, "remaining": 607.8324570830155}}
+{"kind": "partial", "t": 113.02738154199324, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層是誰都做得完的暖身題，第二層要一點領域知識，第三層是開放題完全不給方向。隊伍自己"}}
+{"kind": "speaking", "t": 113.02739483400364, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 113.16884341699188, "data": {"run": {"speaker": "達哥", "seconds": 15.168678624992026}, "silent": {"Alex": 21.168678624992026, "Billis": 46.72423418054758, "達哥": 0.0, "Jax": 34.9464564027698}, "remaining": 606.831321375008}}
+{"kind": "partial", "t": 114.02859587498824, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層是誰都做得完的暖身題，第二層要一點領域知識，第三層是開放題完全不給方向。隊伍自己選要挑戰第"}}
+{"kind": "speaking", "t": 114.02860487499856, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 114.17119587498019, "data": {"run": {"speaker": "達哥", "seconds": 16.171139333979227}, "silent": {"Alex": 22.171139333979227, "Billis": 47.726694889534784, "達哥": 0.0, "Jax": 35.948917111757}, "remaining": 605.8288606660208}}
+{"kind": "utterance", "t": 114.66899237499456, "data": {"speaker": "達哥", "text": "我講一個看過的做法。有一場黑客松把題目開成三層：第一層是誰都做得完的暖身題，第二層要一點領域知識，第三層是開放題完全不給方向。隊伍自己選要挑戰第幾層。", "start": 98, "end": 114.66666666666667}}
+{"kind": "speaking", "t": 114.66900695898221, "data": {"speaker": "達哥", "active": false}}
+{"kind": "share", "t": 114.66904887498822, "data": {"Alex": 0.1958762886597938, "Billis": 0.11340206185567002, "達哥": 0.46391752577319584, "Jax": 0.13402061855670108, "主席": 0.09278350515463916}}
+{"kind": "voice", "t": 114.66906445898348, "data": {"speaker": "達哥", "active": false}}
+{"kind": "fast_timer", "t": 115.1722940839827, "data": {"run": {"speaker": "達哥", "seconds": 16.66666666666667}, "silent": {"Alex": 23.172245750000002, "Billis": 48.72780130555556, "達哥": 0.5055790833333305, "Jax": 36.95002352777777}, "remaining": 604.82775425}}
+{"kind": "fast_timer", "t": 116.17458441699273, "data": {"run": {"speaker": "達哥", "seconds": 16.66666666666667}, "silent": {"Alex": 24.17452741699526, "Billis": 49.73008297255082, "達哥": 1.5078607503285895, "Jax": 37.95230519477303}, "remaining": 603.8254725830047}}
+{"kind": "fast_timer", "t": 117.17608954198658, "data": {"run": {"speaker": "達哥", "seconds": 16.66666666666667}, "silent": {"Alex": 25.176036333985394, "Billis": 50.73159188954095, "達哥": 2.5093696673187225, "Jax": 38.953814111763165}, "remaining": 602.8239636660146}}
+{"kind": "fast_timer", "t": 118.18240120899281, "data": {"run": {"speaker": "達哥", "seconds": 16.66666666666667}, "silent": {"Alex": 26.182362874998944, "Billis": 51.7379184305545, "達哥": 3.5156962083322725, "Jax": 39.960140652776715}, "remaining": 601.817637125001}}
+{"kind": "slow_score", "t": 118.54041608399712, "data": {"positive": 2, "negative": 1, "none": 3, "type": "無", "verdict": "不介入", "utterance": "", "pros": ["前段對話已偏離黑客松籌備，轉而討論尾牙餐廳，應適度拉回議題", "達哥目前連續主述，若持續下去可邀請其他人補充，避免討論只沿著單一方案發展"], "cons": ["Alex 已經成功將話題拉回黑客松，達哥的內容也正處於議題範圍內，沒有持續離題", "目前仍是發散期，參與者都有實質發言，尚未出現被打斷後無法參與或只剩應聲的情況"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "fast_timer", "t": 119.18465854198439, "data": {"run": {"speaker": "達哥", "seconds": 16.66666666666667}, "silent": {"Alex": 27.1846239589795, "Billis": 52.74017951453506, "達哥": 4.517957292312829, "Jax": 40.96240173675727}, "remaining": 600.8153760410205}}
+{"kind": "fast_timer", "t": 120.18688004199066, "data": {"run": null, "silent": {"Alex": 28.186858083994593, "Billis": 53.74241363955015, "達哥": 5.520191417327922, "Jax": 41.964635861772365}, "remaining": 599.8131419160054}}
+{"kind": "fast_timer", "t": 121.18917374999728, "data": {"run": null, "silent": {"Alex": 29.189131749997614, "Billis": 54.74468730555317, "達哥": 6.5224650833309425, "Jax": 42.966909527775385}, "remaining": 598.8108682500024}}
+{"kind": "fast_timer", "t": 122.19097604198032, "data": {"run": null, "silent": {"Alex": 30.19094554198091, "Billis": 55.746501097536466, "達哥": 7.524278875314238, "Jax": 43.96872331975868}, "remaining": 597.8090544580191}}
+{"kind": "fast_timer", "t": 123.19257854198804, "data": {"run": null, "silent": {"Alex": 31.192549166997196, "Billis": 56.74810472255275, "達哥": 8.525882500330525, "Jax": 44.97032694477497}, "remaining": 596.8074508330028}}
+{"kind": "fast_timer", "t": 124.19319083399023, "data": {"run": null, "silent": {"Alex": 32.19314995899913, "Billis": 57.748705514554686, "達哥": 9.526483292332458, "Jax": 45.9709277367769}, "remaining": 595.8068500410009}}
+{"kind": "fast_timer", "t": 125.19345308400807, "data": {"run": null, "silent": {"Alex": 33.19342279198463, "Billis": 58.74897834754019, "達哥": 10.52675612531796, "Jax": 46.9712005697624}, "remaining": 594.8065772080154}}
+{"kind": "voice", "t": 126.00046149999253, "data": {"speaker": "Jax", "active": true}}
+{"kind": "speaking", "t": 126.00048766698455, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 126.19476666700211, "data": {"run": {"speaker": "Jax", "seconds": 0.19472141700680368}, "silent": {"Alex": 34.194721417006804, "Billis": 59.75027697256236, "達哥": 11.528054750340132, "Jax": 0.0}, "remaining": 593.8052785829932}}
+{"kind": "partial", "t": 127.00087349998648, "data": {"speaker": "Jax", "text": "分層我覺"}}
+{"kind": "speaking", "t": 127.0008998340054, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 127.19498000000021, "data": {"run": {"speaker": "Jax", "seconds": 1.194962666981155}, "silent": {"Alex": 35.194962666981155, "Billis": 60.75051822253671, "達哥": 12.528296000314484, "Jax": 0.0}, "remaining": 592.8050373330188}}
+{"kind": "partial", "t": 128.00173274998087, "data": {"speaker": "Jax", "text": "分層我覺得有道理"}}
+{"kind": "speaking", "t": 128.00175683398265, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 128.1968692090013, "data": {"run": {"speaker": "Jax", "seconds": 2.1968244169838727}, "silent": {"Alex": 36.19682441698387, "Billis": 61.75237997253943, "達哥": 13.530157750317201, "Jax": 0.0}, "remaining": 591.8031755830161}}
+{"kind": "partial", "t": 129.00192587499623, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反"}}
+{"kind": "speaking", "t": 129.00195708399406, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 129.19865537498845, "data": {"run": {"speaker": "Jax", "seconds": 3.1986204590066336}, "silent": {"Alex": 37.198620459006634, "Billis": 62.75417601456219, "達哥": 14.531953792339962, "Jax": 0.0}, "remaining": 590.8013795409934}}
+{"kind": "partial", "t": 130.00234291699599, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反過來看，"}}
+{"kind": "speaking", "t": 130.00236770900665, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 130.19922462498653, "data": {"run": {"speaker": "Jax", "seconds": 4.19920295898919}, "silent": {"Alex": 38.19920295898919, "Billis": 63.75475851454475, "達哥": 15.532536292322519, "Jax": 0.0}, "remaining": 589.8007970410108}}
+{"kind": "partial", "t": 131.0030810419994, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反過來看，去年我們"}}
+{"kind": "speaking", "t": 131.00310391699895, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 131.19945316700614, "data": {"run": {"speaker": "Jax", "seconds": 5.199420624994673}, "silent": {"Alex": 39.19942062499467, "Billis": 64.75497618055023, "達哥": 16.532753958328, "Jax": 0.0}, "remaining": 588.8005793750053}}
+{"kind": "partial", "t": 132.00331158400513, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反過來看，去年我們沒分層的"}}
+{"kind": "speaking", "t": 132.0033383749833, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 132.2005512919859, "data": {"run": {"speaker": "Jax", "seconds": 6.20052487499197}, "silent": {"Alex": 40.20052487499197, "Billis": 65.75608043054753, "達哥": 17.5338582083253, "Jax": 0.0}, "remaining": 587.799475125008}}
+{"kind": "partial", "t": 133.00489454198396, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反過來看，去年我們沒分層的時候反而"}}
+{"kind": "speaking", "t": 133.0049149999977, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 133.20266079198336, "data": {"run": {"speaker": "Jax", "seconds": 7.202620791998925}, "silent": {"Alex": 41.202620791998925, "Billis": 66.75817634755448, "達哥": 18.535954125332253, "Jax": 0.0}, "remaining": 586.7973792080011}}
+{"kind": "partial", "t": 134.00563908400363, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反過來看，去年我們沒分層的時候反而出現過一"}}
+{"kind": "speaking", "t": 134.00566058399272, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 134.20331737498054, "data": {"run": {"speaker": "Jax", "seconds": 8.203285249997862}, "silent": {"Alex": 42.20328524999786, "Billis": 67.75884080555342, "達哥": 19.53661858333119, "Jax": 0.0}, "remaining": 585.7967147500021}}
+{"kind": "partial", "t": 135.00705495898728, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反過來看，去年我們沒分層的時候反而出現過一隊做出很"}}
+{"kind": "speaking", "t": 135.00707566700294, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 135.20351058398956, "data": {"run": {"speaker": "Jax", "seconds": 9.203487541992217}, "silent": {"Alex": 43.20348754199222, "Billis": 68.75904309754777, "達哥": 20.536820875325546, "Jax": 0.0}, "remaining": 584.7965124580078}}
+{"kind": "partial", "t": 136.00922170898411, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反過來看，去年我們沒分層的時候反而出現過一隊做出很意外的東"}}
+{"kind": "speaking", "t": 136.0092427500058, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 136.20569549998618, "data": {"run": {"speaker": "Jax", "seconds": 10.205666208988987}, "silent": {"Alex": 44.20566620898899, "Billis": 69.76122176454454, "達哥": 21.538999542322316, "Jax": 0.0}, "remaining": 583.794333791011}}
+{"kind": "partial", "t": 137.0113893749949, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反過來看，去年我們沒分層的時候反而出現過一隊做出很意外的東西，如果"}}
+{"kind": "speaking", "t": 137.01141583398567, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 137.2065180419886, "data": {"run": {"speaker": "Jax", "seconds": 11.20648816699395}, "silent": {"Alex": 45.20648816699395, "Billis": 70.7620437225495, "達哥": 22.539821500327278, "Jax": 0.0}, "remaining": 582.793511833006}}
+{"kind": "partial", "t": 138.01310941699194, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反過來看，去年我們沒分層的時候反而出現過一隊做出很意外的東西，如果那時候有"}}
+{"kind": "speaking", "t": 138.0131313339807, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 138.2199649999966, "data": {"run": {"speaker": "Jax", "seconds": 12.219940416980535}, "silent": {"Alex": 46.219940416980535, "Billis": 71.77549597253609, "達哥": 23.553273750313863, "Jax": 0.0}, "remaining": 581.7800595830195}}
+{"kind": "partial", "t": 139.0152107499889, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反過來看，去年我們沒分層的時候反而出現過一隊做出很意外的東西，如果那時候有分層他們"}}
+{"kind": "speaking", "t": 139.01522508400376, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 139.22062954198918, "data": {"run": {"speaker": "Jax", "seconds": 13.220601124980021}, "silent": {"Alex": 47.22060112498002, "Billis": 72.77615668053558, "達哥": 24.55393445831335, "Jax": 0.0}, "remaining": 580.77939887502}}
+{"kind": "utterance", "t": 140.00238666697987, "data": {"speaker": "Jax", "text": "分層我覺得有道理，可是反過來看，去年我們沒分層的時候反而出現過一隊做出很意外的東西，如果那時候有分層他們可能就不會", "start": 126, "end": 140.0}}
+{"kind": "speaking", "t": 140.00240024999948, "data": {"speaker": "Jax", "active": false}}
+{"kind": "share", "t": 140.00244383400423, "data": {"Alex": 0.1610169491525424, "Billis": 0.09322033898305078, "達哥": 0.3813559322033898, "Jax": 0.28813559322033905, "主席": 0.07627118644067796}}
+{"kind": "voice", "t": 140.00245845899917, "data": {"speaker": "Jax", "active": false}}
+{"kind": "voice", "t": 140.0024706669792, "data": {"speaker": "Jax", "active": true}}
+{"kind": "speaking", "t": 140.00248241698137, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 140.2213949589932, "data": {"run": {"speaker": "Jax", "seconds": 14.221358833980048}, "silent": {"Alex": 48.22135883398005, "Billis": 73.7769143895356, "達哥": 25.554692167313377, "Jax": 0.0}, "remaining": 579.77864116602}}
+{"kind": "partial", "t": 141.00310362500022, "data": {"speaker": "Jax", "text": "我是說，"}}
+{"kind": "speaking", "t": 141.00312766700517, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 141.22371279197978, "data": {"run": {"speaker": "Jax", "seconds": 15.223665666999295}, "silent": {"Alex": 49.223665666999295, "Billis": 74.77922122255485, "達哥": 26.556999000332624, "Jax": 0.0}, "remaining": 578.7763343330007}}
+{"kind": "partial", "t": 142.00372937499196, "data": {"speaker": "Jax", "text": "我是說，分層會不會"}}
+{"kind": "speaking", "t": 142.0037526669912, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 142.22600995900575, "data": {"run": {"speaker": "Jax", "seconds": 16.225962333992356}, "silent": {"Alex": 50.225962333992356, "Billis": 75.78151788954791, "達哥": 27.559295667325685, "Jax": 0.0}, "remaining": 577.7740376660076}}
+{"kind": "partial", "t": 143.00584945900482, "data": {"speaker": "Jax", "text": "我是說，分層會不會反而限制"}}
+{"kind": "speaking", "t": 143.0058593339927, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 143.22833962499863, "data": {"run": {"speaker": "Jax", "seconds": 17.22829262498999}, "silent": {"Alex": 51.22829262498999, "Billis": 76.78384818054555, "達哥": 28.56162595832332, "Jax": 0.0}, "remaining": 576.77170737501}}
+{"kind": "utterance", "t": 143.556349416991, "data": {"speaker": "Jax", "text": "我是說，分層會不會反而限制住那種", "start": 140, "end": 143.55555555555554}}
+{"kind": "speaking", "t": 143.55636041698745, "data": {"speaker": "Jax", "active": false}}
+{"kind": "share", "t": 143.55638429199462, "data": {"Alex": 0.1540540540540541, "Billis": 0.08918918918918914, "達哥": 0.3648648648648649, "Jax": 0.3189189189189189, "主席": 0.07297297297297298}}
+{"kind": "voice", "t": 143.55639487499138, "data": {"speaker": "Jax", "active": false}}
+{"kind": "ai_critique", "t": 144.2266650419915, "data": {"meeting": "主席把離題拉回來，也補點了尚未實質回應的 Jax；但目前只有一個成形方案，還沒形成可檢驗的共識。", "participants": {"Alex": "兩次都把討論拉回題目，先鎖定時程與資料問題，讓後續方案有明確背景。", "達哥": "提供了目前唯一具體的題目設計方案，但先後被尾牙插話打斷，主席拉回後才完整說明。", "Jax": "被主席點名後有回到題目方向，提出的三層設計值得追問，但目前仍停在案例轉述，尚未說明適用條件。"}}}
+{"kind": "fast_timer", "t": 144.22899937498732, "data": {"run": {"speaker": "Jax", "seconds": 17.555555555555543}, "silent": {"Alex": 52.2289675840002, "Billis": 77.78452313955576, "達哥": 29.56230091733353, "Jax": 0.673412028444659}, "remaining": 575.7710324159998}}
+{"kind": "fast_timer", "t": 145.23080266700708, "data": {"run": {"speaker": "Jax", "seconds": 17.555555555555543}, "silent": {"Alex": 53.23076370899798, "Billis": 78.78631926455354, "達哥": 30.564097042331312, "Jax": 1.6752081534424406}, "remaining": 574.769236291002}}
+{"kind": "voice", "t": 146.0012529999949, "data": {"speaker": "Alex", "active": true}}
+{"kind": "speaking", "t": 146.00127920898376, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 146.23302395897917, "data": {"run": {"speaker": "Alex", "seconds": 0.23299354198388755}, "silent": {"Alex": 0.0, "Billis": 79.78854909753944, "達哥": 31.566326875317216, "Jax": 2.6774379864283446}, "remaining": 573.7670064580161}}
+{"kind": "slow_score", "t": 146.47384495899314, "data": {"positive": 1, "negative": 1, "none": 5, "type": "無", "verdict": "不介入", "utterance": "", "pros": ["前段曾短暫轉向十二月訂位與換餐廳，雖已被 Alex 拉回黑客松題目，若再延伸才需要維持議題邊界", "Jax 目前連續發言，若持續下去可適度提醒保留空間讓其他人補充"], "cons": ["目前討論已回到黑客松題目設計，Jax 正在提出與分層方案相關的反例，仍屬發散期的有效探索", "沒有實質排除他人或只剩單一人推進的證據，其他成員近期都有提供完整意見"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "partial", "t": 147.00342004199047, "data": {"speaker": "Alex", "text": "這"}}
+{"kind": "speaking", "t": 147.00344370899256, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 147.23383774998365, "data": {"run": {"speaker": "Alex", "seconds": 1.233793291990878}, "silent": {"Alex": 0.0, "Billis": 80.78934884754644, "達哥": 32.56712662532421, "Jax": 3.678237736435335}, "remaining": 572.7662067080091}}
+{"kind": "partial", "t": 148.00553341698833, "data": {"speaker": "Alex", "text": "這個"}}
+{"kind": "speaking", "t": 148.0055531669932, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 148.2361340839998, "data": {"run": {"speaker": "Alex", "seconds": 2.2360889590054285}, "silent": {"Alex": 0.0, "Billis": 81.79164451456099, "達哥": 33.56942229233876, "Jax": 4.6805334034498856}, "remaining": 571.7639110409946}}
+{"kind": "partial", "t": 149.00618183400366, "data": {"speaker": "Alex", "text": "這個我想"}}
+{"kind": "speaking", "t": 149.00620116697974, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 149.2384545840032, "data": {"run": {"speaker": "Alex", "seconds": 3.2383968340000138}, "silent": {"Alex": 0.0, "Billis": 82.79395238955557, "達哥": 34.57173016733334, "Jax": 5.682841278444471}, "remaining": 570.761603166}}
+{"kind": "partial", "t": 150.00644304198795, "data": {"speaker": "Alex", "text": "這個我想過"}}
+{"kind": "speaking", "t": 150.00646387500456, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 150.23983008399955, "data": {"run": {"speaker": "Alex", "seconds": 4.2397729590011295}, "silent": {"Alex": 0.0, "Billis": 83.79532851455669, "達哥": 35.57310629233446, "Jax": 6.684217403445587}, "remaining": 569.7602270409989}}
+{"kind": "partial", "t": 151.00741312498576, "data": {"speaker": "Alex", "text": "這個我想過。分"}}
+{"kind": "speaking", "t": 151.0074322919827, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 151.24100695899688, "data": {"run": {"speaker": "Alex", "seconds": 5.2409640419937205}, "silent": {"Alex": 0.0, "Billis": 84.79651959754928, "達哥": 36.57429737532705, "Jax": 7.6854084864381775}, "remaining": 568.7590359580063}}
+{"kind": "partial", "t": 152.00787566698273, "data": {"speaker": "Alex", "text": "這個我想過。分層"}}
+{"kind": "speaking", "t": 152.00789725000504, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 152.24181183398468, "data": {"run": {"speaker": "Alex", "seconds": 6.241771959001198}, "silent": {"Alex": 0.0, "Billis": 85.79732751455676, "達哥": 37.57510529233453, "Jax": 8.686216403445655}, "remaining": 567.7582280409988}}
+{"kind": "partial", "t": 153.00868870900013, "data": {"speaker": "Alex", "text": "這個我想過。分層的問"}}
+{"kind": "speaking", "t": 153.00870262499666, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 153.2421115420002, "data": {"run": {"speaker": "Alex", "seconds": 7.242067916988162}, "silent": {"Alex": 0.0, "Billis": 86.79762347254372, "達哥": 38.57540125032149, "Jax": 9.68651236143262}, "remaining": 566.7579320830118}}
+{"kind": "partial", "t": 154.00969149998855, "data": {"speaker": "Alex", "text": "這個我想過。分層的問題"}}
+{"kind": "speaking", "t": 154.0097111669893, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 154.2432575839921, "data": {"run": {"speaker": "Alex", "seconds": 8.243211208988214}, "silent": {"Alex": 0.0, "Billis": 87.79876676454377, "達哥": 39.57654454232154, "Jax": 10.687655653432671}, "remaining": 565.7567887910118}}
+{"kind": "slow_score", "t": 154.65945312500116, "data": {"positive": 2, "negative": 1, "none": 3, "type": "無", "verdict": "不介入", "utterance": "", "pros": ["Jax 的話在上一句尚未講完時被截斷，適合輕度介入以保留他的完整想法。", "前段曾出現從黑客松籌備偏到訂位與桌菜的內容，若再度偏離需維持議題邊界。"], "cons": ["目前仍在發散期，Jax 正在提出分層可能限制創意的反例，不應催促收斂或評斷方案。", "目前發言權有多次易手，Alex、Billis、達哥與 Jax 都有實質發言，尚無人被持續排除。"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "partial", "t": 155.0105779999867, "data": {"speaker": "Alex", "text": "這個我想過。分層的問題不"}}
+{"kind": "speaking", "t": 155.01059758398333, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 155.2440407499962, "data": {"run": {"speaker": "Alex", "seconds": 9.243998874997487}, "silent": {"Alex": 0.0, "Billis": 88.79955443055304, "達哥": 40.577332208330816, "Jax": 11.688443319441944}, "remaining": 564.7560011250025}}
+{"kind": "partial", "t": 156.01269979198696, "data": {"speaker": "Alex", "text": "這個我想過。分層的問題不是限"}}
+{"kind": "speaking", "t": 156.01271312500467, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 156.2462886669964, "data": {"run": {"speaker": "Alex", "seconds": 10.246238958992762}, "silent": {"Alex": 0.0, "Billis": 89.80179451454832, "達哥": 41.57957229232609, "Jax": 12.69068340343722}, "remaining": 563.7537610410072}}
+{"kind": "partial", "t": 157.01487845898373, "data": {"speaker": "Alex", "text": "這個我想過。分層的問題不是限制"}}
+{"kind": "speaking", "t": 157.01489862499875, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 157.24683654200635, "data": {"run": {"speaker": "Alex", "seconds": 11.24678837499232}, "silent": {"Alex": 0.0, "Billis": 90.80234393054788, "達哥": 42.58012170832565, "Jax": 13.691232819436777}, "remaining": 562.7532116250077}}
+{"kind": "partial", "t": 158.01712966698688, "data": {"speaker": "Alex", "text": "這個我想過。分層的問題不是限制，是"}}
+{"kind": "speaking", "t": 158.01715337499627, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 158.2490411250037, "data": {"run": {"speaker": "Alex", "seconds": 12.249012458982179}, "silent": {"Alex": 0.0, "Billis": 91.80456801453774, "達哥": 43.58234579231551, "Jax": 14.693456903426636}, "remaining": 561.7509875410178}}
+{"kind": "partial", "t": 159.0190045000054, "data": {"speaker": "Alex", "text": "這個我想過。分層的問題不是限制，是評"}}
+{"kind": "speaking", "t": 159.0190262499964, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 159.25125412500347, "data": {"run": {"speaker": "Alex", "seconds": 13.251209749985719}, "silent": {"Alex": 0.0, "Billis": 92.80676530554128, "達哥": 44.58454308331905, "Jax": 15.695654194430176}, "remaining": 560.7487902500143}}
+{"kind": "utterance", "t": 160.0022245, "data": {"speaker": "Alex", "text": "這個我想過。分層的問題不是限制，是評分。", "start": 146, "end": 160.0}}
+{"kind": "speaking", "t": 160.00223495898535, "data": {"speaker": "Alex", "active": false}}
+{"kind": "share", "t": 160.002263375005, "data": {"Alex": 0.2771362586605081, "Billis": 0.07621247113163968, "達哥": 0.31177829099307164, "Jax": 0.2725173210161662, "主席": 0.06235565819861432}}
+{"kind": "voice", "t": 160.00227320898557, "data": {"speaker": "Alex", "active": false}}
+{"kind": "voice", "t": 160.00228045898257, "data": {"speaker": "Alex", "active": true}}
+{"kind": "speaking", "t": 160.00228650000645, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 160.25338474998716, "data": {"run": {"speaker": "Alex", "seconds": 14.2533390839817}, "silent": {"Alex": 0.0, "Billis": 93.80889463953726, "達哥": 45.58667241731503, "Jax": 16.697783528426157}, "remaining": 559.7466609160183}}
+{"kind": "partial", "t": 161.00445983398822, "data": {"speaker": "Alex", "text": "你"}}
+{"kind": "speaking", "t": 161.00447895898833, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 161.25570624999818, "data": {"run": {"speaker": "Alex", "seconds": 15.255658749985741}, "silent": {"Alex": 0.0, "Billis": 94.8112143055413, "達哥": 46.58899208331907, "Jax": 17.7001031944302}, "remaining": 558.7443412500143}}
+{"kind": "partial", "t": 162.0067082089954, "data": {"speaker": "Alex", "text": "你一旦"}}
+{"kind": "speaking", "t": 162.00672841700725, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 162.2568890840048, "data": {"run": {"speaker": "Alex", "seconds": 16.256857708998723}, "silent": {"Alex": 0.0, "Billis": 95.81241326455428, "達哥": 47.59019104233205, "Jax": 18.70130215344318}, "remaining": 557.7431422910013}}
+{"kind": "partial", "t": 163.00782145900303, "data": {"speaker": "Alex", "text": "你一旦分層"}}
+{"kind": "speaking", "t": 163.00783299998147, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 163.2586209999863, "data": {"run": {"speaker": "Alex", "seconds": 17.258578124979977}, "silent": {"Alex": 0.0, "Billis": 96.81413368053553, "達哥": 48.591911458313305, "Jax": 19.703022569424434}, "remaining": 556.74142187502}}
+{"kind": "partial", "t": 164.00996624998515, "data": {"speaker": "Alex", "text": "你一旦分層就要"}}
+{"kind": "speaking", "t": 164.00998716699542, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 164.2592647089914, "data": {"run": {"speaker": "Alex", "seconds": 18.25920091700391}, "silent": {"Alex": 0.0, "Billis": 97.81475647255947, "達哥": 49.59253425033724, "Jax": 20.703645361448366}, "remaining": 555.7407990829961}}
+{"kind": "partial", "t": 165.01212945900625, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋"}}
+{"kind": "speaking", "t": 165.01214808400255, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 165.26091570899007, "data": {"run": {"speaker": "Alex", "seconds": 19.26088279200485}, "silent": {"Alex": 0.0, "Billis": 98.8164383475604, "達哥": 50.59421612533818, "Jax": 21.705327236449307}, "remaining": 554.7391172079952}}
+{"kind": "partial", "t": 166.01300204198924, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三"}}
+{"kind": "speaking", "t": 166.01302449998911, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 166.26224700000603, "data": {"run": {"speaker": "Alex", "seconds": 20.262201292003738}, "silent": {"Alex": 0.0, "Billis": 99.8177568475593, "達哥": 51.595534625337066, "Jax": 22.706645736448195}, "remaining": 553.7377987079963}}
+{"kind": "partial", "t": 167.01522466700408, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的"}}
+{"kind": "speaking", "t": 167.0152498339885, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 167.2636174169893, "data": {"run": {"speaker": "Alex", "seconds": 21.263570624985732}, "silent": {"Alex": 0.0, "Billis": 100.81912618054129, "達哥": 52.59690395831906, "Jax": 23.70801506943019}, "remaining": 552.7364293750143}}
+{"kind": "slow_score", "t": 167.93846408399986, "data": {"positive": 3, "negative": 2, "none": 3, "type": "發言權失衡", "verdict": "不介入", "utterance": "", "pros": ["Jax 的觀點在被 Alex 接話後尚未完整說完，適度介入可把發言權交還給他，避免未完成的反例被截斷。", "目前正處於分散期，應鼓勵 Jax 先完成對分層限制疑慮的說明，維持多元想法輸入。"], "cons": ["Alex 目前只連續發言約 0.3 分鐘，且內容仍在題目設計與評分的議題範圍內，尚未形成明顯的長時間壟斷。", "整體發言權已多次易手，Billis 雖較少發言但並未顯示被接話後持續無法參與；此刻強行介入可能打斷正在形成的討論。"], "admissible": false, "reason": "", "utterance_seconds": null}}
+{"kind": "partial", "t": 168.01736274998984, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍"}}
+{"kind": "speaking", "t": 168.01737549999962, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 168.2658402090019, "data": {"run": {"speaker": "Alex", "seconds": 22.26578166699619}, "silent": {"Alex": 0.0, "Billis": 101.82133722255175, "達哥": 53.59911500032952, "Jax": 24.710226111440647}, "remaining": 551.7342183330038}}
+{"kind": "partial", "t": 169.017463917, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什"}}
+{"kind": "speaking", "t": 169.017483292002, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 169.26814529200783, "data": {"run": {"speaker": "Alex", "seconds": 23.26809591698111}, "silent": {"Alex": 0.0, "Billis": 102.82365147253667, "達哥": 54.60142925031444, "Jax": 25.712540361425567}, "remaining": 550.7319040830189}}
+{"kind": "partial", "t": 170.01964137499453, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什麼拿"}}
+{"kind": "speaking", "t": 170.01966545899631, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 170.26958679198287, "data": {"run": {"speaker": "Alex", "seconds": 24.269524125003954}, "silent": {"Alex": 0.0, "Billis": 103.82507968055951, "達哥": 55.60285745833728, "Jax": 26.71396856944841}, "remaining": 549.730475874996}}
+{"kind": "partial", "t": 171.0218722090067, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什麼拿比較"}}
+{"kind": "speaking", "t": 171.02189224999165, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 171.27014708399656, "data": {"run": {"speaker": "Alex", "seconds": 25.27011316700373}, "silent": {"Alex": 0.0, "Billis": 104.82566872255929, "達哥": 56.60344650033706, "Jax": 27.714557611448186}, "remaining": 548.7298868329963}}
+{"kind": "partial", "t": 172.02320320898434, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什麼拿比較高的"}}
+{"kind": "speaking", "t": 172.0232085000025, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 172.2706605840067, "data": {"run": {"speaker": "Alex", "seconds": 26.2706357499992}, "silent": {"Alex": 0.0, "Billis": 105.82619130555476, "達哥": 57.60396908333253, "Jax": 28.715080194443658}, "remaining": 547.7293642500008}}
+{"kind": "partial", "t": 173.0253378339985, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什麼拿比較高的分數"}}
+{"kind": "speaking", "t": 173.02536149998195, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 173.27183154199156, "data": {"run": {"speaker": "Alex", "seconds": 27.271780958981253}, "silent": {"Alex": 0.0, "Billis": 106.82733651453681, "達哥": 58.60511429231458, "Jax": 29.71622540342571}, "remaining": 546.7282190410187}}
+{"kind": "partial", "t": 174.02578641698346, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什麼拿比較高的分數，而"}}
+{"kind": "speaking", "t": 174.02579275000608, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 174.27384366700426, "data": {"run": {"speaker": "Alex", "seconds": 28.27382554198266}, "silent": {"Alex": 0.0, "Billis": 107.82938109753822, "達哥": 59.60715887531599, "Jax": 30.718269986427117}, "remaining": 545.7261744580173}}
+{"kind": "partial", "t": 175.02583916700678, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什麼拿比較高的分數，而評審"}}
+{"kind": "speaking", "t": 175.02584591699997, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 175.27606999999261, "data": {"run": {"speaker": "Alex", "seconds": 29.276024624996353}, "silent": {"Alex": 0.0, "Billis": 108.83158018055191, "達哥": 60.60935795832968, "Jax": 31.72046906944081}, "remaining": 544.7239753750036}}
+{"kind": "partial", "t": 176.0260474999959, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什麼拿比較高的分數，而評審不一"}}
+{"kind": "speaking", "t": 176.02606304199435, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 176.2783979169908, "data": {"run": {"speaker": "Alex", "seconds": 30.278335334005533}, "silent": {"Alex": 0.0, "Billis": 109.83389088956109, "達哥": 61.61166866733886, "Jax": 32.72277977844999}, "remaining": 543.7216646659945}}
+{"kind": "partial", "t": 177.0276056669827, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什麼拿比較高的分數，而評審不一定認"}}
+{"kind": "speaking", "t": 177.0276206669805, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 177.27948345898767, "data": {"run": {"speaker": "Alex", "seconds": 31.279441291990224}, "silent": {"Alex": 0.0, "Billis": 110.83499684754578, "達哥": 62.61277462532355, "Jax": 33.72388573643468}, "remaining": 542.7205587080098}}
+{"kind": "partial", "t": 178.02860212500673, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什麼拿比較高的分數，而評審不一定認同那"}}
+{"kind": "speaking", "t": 178.0286210839986, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 178.28178066699184, "data": {"run": {"speaker": "Alex", "seconds": 32.281734666990815}, "silent": {"Alex": 0.0, "Billis": 111.83729022254637, "達哥": 63.61506800032414, "Jax": 34.72617911143527}, "remaining": 541.7182653330092}}
+{"kind": "partial", "t": 179.03065974998754, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什麼拿比較高的分數，而評審不一定認同那個權"}}
+{"kind": "speaking", "t": 179.03066604200285, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 179.28353254200192, "data": {"run": {"speaker": "Alex", "seconds": 33.283497750002425}, "silent": {"Alex": 0.0, "Billis": 112.83905330555798, "達哥": 64.61683108333575, "Jax": 35.72794219444688}, "remaining": 540.7165022499976}}
+{"kind": "utterance", "t": 180.00105204200372, "data": {"speaker": "Alex", "text": "你一旦分層就要解釋第三層的隊伍憑什麼拿比較高的分數，而評審不一定認同那個權重。", "start": 160, "end": 180.0}}
+{"kind": "speaking", "t": 180.00106404200778, "data": {"speaker": "Alex", "active": false}}
+{"kind": "share", "t": 180.00109591698856, "data": {"Alex": 0.4015296367112811, "Billis": 0.06309751434034414, "達哥": 0.2581261950286807, "Jax": 0.22562141491395787, "主席": 0.051625239005736144}}
+{"kind": "voice", "t": 180.00110612498247, "data": {"speaker": "Alex", "active": false}}
+{"kind": "voice", "t": 180.00111370900413, "data": {"speaker": "Alex", "active": true}}
+{"kind": "speaking", "t": 180.00112054200144, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 180.28381249998347, "data": {"run": {"speaker": "Alex", "seconds": 34.28376558399759}, "silent": {"Alex": 0.0, "Billis": 113.83932113955315, "達哥": 65.61709891733092, "Jax": 36.72821002844205}, "remaining": 539.7162344160024}}
+{"kind": "partial", "t": 181.0026723750052, "data": {"speaker": "Alex", "text": "我前年辦"}}
+{"kind": "speaking", "t": 181.00268362500356, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 181.28609245899133, "data": {"run": {"speaker": "Alex", "seconds": 35.28606995899463}, "silent": {"Alex": 0.0, "Billis": 114.84162551455019, "達哥": 66.61940329232796, "Jax": 37.73051440343909}, "remaining": 538.7139300410054}}
+{"kind": "partial", "t": 182.00276387500344, "data": {"speaker": "Alex", "text": "我前年辦的那場就是"}}
+{"kind": "speaking", "t": 182.00278345900006, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 182.28744345900486, "data": {"run": {"speaker": "Alex", "seconds": 36.28739891698933}, "silent": {"Alex": 0.0, "Billis": 115.84295447254489, "達哥": 67.62073225032266, "Jax": 38.73184336143379}, "remaining": 537.7126010830107}}
+{"kind": "partial", "t": 183.00484879198484, "data": {"speaker": "Alex", "text": "我前年辦的那場就是這樣，我"}}
+{"kind": "speaking", "t": 183.0048530419881, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 183.28892166700098, "data": {"run": {"speaker": "Alex", "seconds": 37.28890174999833}, "silent": {"Alex": 0.0, "Billis": 116.84445730555389, "達哥": 68.62223508333166, "Jax": 39.73334619444279}, "remaining": 536.7110982500017}}
+{"kind": "partial", "t": 184.0070061669976, "data": {"speaker": "Alex", "text": "我前年辦的那場就是這樣，我們設了難度"}}
+{"kind": "speaking", "t": 184.00702520899358, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 184.28926141699776, "data": {"run": {"speaker": "Alex", "seconds": 38.289214416989125}, "silent": {"Alex": 0.0, "Billis": 117.84476997254468, "達哥": 69.62254775032245, "Jax": 40.73365886143358}, "remaining": 535.7107855830109}}
+{"kind": "partial", "t": 185.0091733339941, "data": {"speaker": "Alex", "text": "我前年辦的那場就是這樣，我們設了難度加成，結"}}
+{"kind": "speaking", "t": 185.00918679198367, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 185.2895507499925, "data": {"run": {"speaker": "Alex", "seconds": 39.28953654199722}, "silent": {"Alex": 0.0, "Billis": 118.84509209755278, "達哥": 70.62286987533055, "Jax": 41.73398098644168}, "remaining": 534.7104634580028}}
+{"kind": "partial", "t": 186.01103633400635, "data": {"speaker": "Alex", "text": "我前年辦的那場就是這樣，我們設了難度加成，結果評審會上"}}
+{"kind": "speaking", "t": 186.01106370898196, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 186.29180454197922, "data": {"run": {"speaker": "Alex", "seconds": 40.29174245899776}, "silent": {"Alex": 0.0, "Billis": 119.84729801455332, "達哥": 71.62507579233109, "Jax": 42.73618690344222}, "remaining": 533.7082575410022}}
+{"kind": "minutes", "t": 186.3200982499984, "data": {"final": false, "decisions": [], "todos": [{"owner": "Billis", "task": "今天下午致電尾牙餐廳確認訂位"}], "unresolved": [{"topic": "黑客松題目是否採三層分層設計", "chair_ruling": "尚未定案；主席指出分層將帶來評分與權重說明問題"}, {"topic": "報名隊伍技術背景資料不完整及分組安排", "chair_ruling": "尚未定案"}, {"topic": "尾牙餐廳是否更換及訂位狀況", "chair_ruling": "先擱置，尚未定案"}], "stances": {"Alex": "希望盡快確定黑客松題目方向；認為分層的主要問題在於評分與不同層級的分數權重難以取得評審認同。", "達哥": "支持參考三層題目設計，讓隊伍自行選擇挑戰層級。", "Jax": "對題目分層持保留態度，擔心分層會限制意外且創新的作品。", "Billis": "認為參賽隊伍未填技術背景會增加分組難度。"}}}
+{"kind": "partial", "t": 187.01336187499692, "data": {"speaker": "Alex", "text": "我前年辦的那場就是這樣，我們設了難度加成，結果評審會上吵了四十"}}
+{"kind": "speaking", "t": 187.0133784589998, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 187.29410458399798, "data": {"run": {"speaker": "Alex", "seconds": 41.29405666698585}, "silent": {"Alex": 0.0, "Billis": 120.84961222254141, "達哥": 72.62739000031918, "Jax": 43.73850111143031}, "remaining": 532.7059433330141}}
+{"kind": "slow_score", "t": 187.488744125003, "data": {"positive": 3, "negative": 2, "none": 2, "type": "發言權失衡", "verdict": "正向介入", "utterance": "Jax剛才說「分層會不會反而限制住那種」，請先把這個疑慮說完；評分問題等你補充後再接。", "pros": ["Alex 連續主述且打斷了 Jax 尚未完成的句子，適合介入以把發言機會還給 Jax。", "Jax 提出的分層可能限制意外創意的疑慮尚未說完，應鼓勵其補充，避免討論過早被 Alex 的評分觀點帶走。"], "cons": ["目前仍處於發散期，討論緊扣黑客松題目設計，沒有離題或需要收斂的跡象。", "近期已有多次發言權易手，且 Jax、達哥都曾實質發言，尚不足以判定有人被排除。"], "admissible": true, "reason": "", "utterance_seconds": 1.42}}
+{"kind": "queued", "t": 187.48877004199312, "data": {"kind": "發言權失衡", "target": null, "text": "Jax剛才說「分層會不會反而限制住那種」，請先把這個疑慮說完；評分問題等你補充後再接。", "hard": false}}
+{"kind": "partial", "t": 188.01380470898584, "data": {"speaker": "Alex", "text": "我前年辦的那場就是這樣，我們設了難度加成，結果評審會上吵了四十分鐘，最後"}}
+{"kind": "speaking", "t": 188.01382454199484, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 188.29504054199788, "data": {"run": {"speaker": "Alex", "seconds": 42.29498062498169}, "silent": {"Alex": 0.0, "Billis": 121.85053618053725, "達哥": 73.62831395831502, "Jax": 44.73942506942615}, "remaining": 531.7050193750183}}
+{"kind": "partial", "t": 189.01567158399848, "data": {"speaker": "Alex", "text": "我前年辦的那場就是這樣，我們設了難度加成，結果評審會上吵了四十分鐘，最後是主辦方"}}
+{"kind": "speaking", "t": 189.01569775000098, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 189.2966556249885, "data": {"run": {"speaker": "Alex", "seconds": 43.29662304199883}, "silent": {"Alex": 0.0, "Billis": 122.85217859755438, "達哥": 74.62995637533216, "Jax": 45.741067486443285}, "remaining": 530.7033769580012}}
+{"kind": "partial", "t": 190.01788779199705, "data": {"speaker": "Alex", "text": "我前年辦的那場就是這樣，我們設了難度加成，結果評審會上吵了四十分鐘，最後是主辦方自己拍板，"}}
+{"kind": "speaking", "t": 190.01790829200763, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 190.2984715839848, "data": {"run": {"speaker": "Alex", "seconds": 44.298422208987176}, "silent": {"Alex": 0.0, "Billis": 123.85397776454273, "達哥": 75.6317555423205, "Jax": 46.74286665343163}, "remaining": 529.7015777910128}}
+{"kind": "partial", "t": 191.01978404200054, "data": {"speaker": "Alex", "text": "我前年辦的那場就是這樣，我們設了難度加成，結果評審會上吵了四十分鐘，最後是主辦方自己拍板，兩邊都不"}}
+{"kind": "speaking", "t": 191.01980762497988, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 191.29951949999668, "data": {"run": {"speaker": "Alex", "seconds": 45.2994692089851}, "silent": {"Alex": 0.0, "Billis": 124.85502476454066, "達哥": 76.63280254231843, "Jax": 47.74391365342956}, "remaining": 528.7005307910149}}
+{"kind": "utterance", "t": 191.55772449998767, "data": {"speaker": "Alex", "text": "我前年辦的那場就是這樣，我們設了難度加成，結果評審會上吵了四十分鐘，最後是主辦方自己拍板，兩邊都不開心。", "start": 180, "end": 191.55555555555554}}
+{"kind": "speaking", "t": 191.5577272090013, "data": {"speaker": "Alex", "active": false}}
+{"kind": "share", "t": 191.55773791699903, "data": {"Alex": 0.45565217391304347, "Billis": 0.05739130434782606, "達哥": 0.2347826086956522, "Jax": 0.2052173913043478, "主席": 0.046956521739130445}}
+{"kind": "voice", "t": 191.55774116699467, "data": {"speaker": "Alex", "active": false}}
+{"kind": "ai_critique", "t": 191.95186095900135, "data": {"meeting": "題目方向已出現實質分歧，但主席只拉回離題，還沒把「分層是否限制創意」與「評分如何處理」整理成可決策的問題。", "participants": {"Alex": "能把分層爭議推進到評分規則，但連續接手話題，尚未讓 Jax 把「限制創意」的疑慮說完。", "達哥": "先提供報名資料，再提出具體的三層設計，內容最接近可供團隊比較的方案。", "Jax": "兩次開口都在關鍵處：先指出分層可能限制意外成果，後續雖被打斷，核心疑慮尚未被回應。"}}}
+{"kind": "fast_timer", "t": 192.30175916699227, "data": {"run": {"speaker": "Alex", "seconds": 45.55555555555554}, "silent": {"Alex": 0.7461771944427937, "Billis": 125.8572883055539, "達哥": 77.63506608333167, "Jax": 48.746177194442794}, "remaining": 527.6982672500017}}
+{"kind": "spoken", "t": 192.6931024589867, "data": {"kind": "發言權失衡", "target": null, "text": "Jax剛才說「分層會不會反而限制住那種」，請先把這個疑慮說完；評分問題等你補充後再接。", "hard": false, "at": 192.5915109589987}}
+{"kind": "share", "t": 192.69316037499812, "data": {"Alex": 0.44519966015293116, "Billis": 0.05607476635514015, "達哥": 0.22939677145284623, "Jax": 0.2005097706032285, "主席": 0.06881903143585387}}
+{"kind": "fast_timer", "t": 193.30224474999704, "data": {"run": {"speaker": "Alex", "seconds": 45.55555555555554}, "silent": {"Alex": 1.7466669034394045, "Billis": 126.8577780145505, "達哥": 78.63555579232828, "Jax": 49.746666903439404}, "remaining": 526.697777541005}}
+{"kind": "fast_timer", "t": 194.304531709, "data": {"run": {"speaker": "Alex", "seconds": 45.55555555555554}, "silent": {"Alex": 2.7489387784509063, "Billis": 127.860049889562, "達哥": 79.63782766733978, "Jax": 50.748938778450906}, "remaining": 525.6955056659936}}
+{"kind": "fast_timer", "t": 195.30652408400783, "data": {"run": {"speaker": "Alex", "seconds": 45.55555555555554}, "silent": {"Alex": 3.7509256944241542, "Billis": 128.86203680553524, "達哥": 80.63981458331303, "Jax": 51.750925694424154}, "remaining": 524.6935187500203}}
+{"kind": "voice", "t": 196.0021569590026, "data": {"speaker": "Jax", "active": true}}
+{"kind": "speaking", "t": 196.00217979200534, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 196.3087250420067, "data": {"run": {"speaker": "Jax", "seconds": 0.30869079200783744}, "silent": {"Alex": 4.7531352364522945, "Billis": 129.86424634756338, "達哥": 81.64202412534117, "Jax": 0.0}, "remaining": 523.6913092079922}}
+{"kind": "partial", "t": 197.00427054200554, "data": {"speaker": "Jax", "text": "可是我剛"}}
+{"kind": "speaking", "t": 197.00428654198186, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 197.31088775000535, "data": {"run": {"speaker": "Jax", "seconds": 1.3108581669803243}, "silent": {"Alex": 5.755302611424781, "Billis": 130.86641372253587, "達哥": 82.64419150031365, "Jax": 0.0}, "remaining": 522.6891418330197}}
+{"kind": "partial", "t": 198.0063566250028, "data": {"speaker": "Jax", "text": "可是我剛剛想說的其"}}
+{"kind": "speaking", "t": 198.0063664589834, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 198.3130073339853, "data": {"run": {"speaker": "Jax", "seconds": 2.3129803339834325}, "silent": {"Alex": 6.75742477842789, "Billis": 131.86853588953898, "達哥": 83.64631366731676, "Jax": 0.0}, "remaining": 521.6870196660166}}
+{"kind": "utterance", "t": 198.44676412499393, "data": {"speaker": "Jax", "text": "可是我剛剛想說的其實是", "start": 196, "end": 198.44444444444446}}
+{"kind": "speaking", "t": 198.4467751669872, "data": {"speaker": "Jax", "active": false}}
+{"kind": "share", "t": 198.44681858399417, "data": {"Alex": 0.4370308590492076, "Billis": 0.05504587155963299, "達哥": 0.22518765638031693, "Jax": 0.21517931609674731, "主席": 0.06755629691409508}}
+{"kind": "voice", "t": 198.446833916998, "data": {"speaker": "Jax", "active": false}}
+{"kind": "fast_timer", "t": 199.31417587498436, "data": {"run": {"speaker": "Jax", "seconds": 2.444444444444457}, "silent": {"Alex": 7.758578944433907, "Billis": 132.869690055545, "達哥": 84.64746783332278, "Jax": 0.8696900555449929}, "remaining": 520.6858655000106}}
+{"kind": "voice", "t": 200.00119283399545, "data": {"speaker": "Alex", "active": true}}
+{"kind": "speaking", "t": 200.00121020898223, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 200.3156260419928, "data": {"run": {"speaker": "Alex", "seconds": 0.315589292004006}, "silent": {"Alex": 0.0, "Billis": 133.87114484755955, "達哥": 85.64892262533733, "Jax": 1.871144847559549}, "remaining": 519.684410707996}}
+{"kind": "partial", "t": 201.0029845419922, "data": {"speaker": "Alex", "text": "我知道你要"}}
+{"kind": "speaking", "t": 201.00300399999833, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 201.3179112089856, "data": {"run": {"speaker": "Alex", "seconds": 1.3178574589837808}, "silent": {"Alex": 0.0, "Billis": 134.87341301453932, "達哥": 86.65119079231711, "Jax": 2.8734130145393237}, "remaining": 518.6821425410162}}
+{"kind": "partial", "t": 202.00315995898563, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可"}}
+{"kind": "speaking", "t": 202.00317337500746, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 202.32015787498676, "data": {"run": {"speaker": "Alex", "seconds": 2.3201092499948572}, "silent": {"Alex": 0.0, "Billis": 135.8756648055504, "達哥": 87.65344258332819, "Jax": 3.8756648055504}, "remaining": 517.6798907500051}}
+{"kind": "partial", "t": 203.00348549999762, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況"}}
+{"kind": "speaking", "t": 203.003501166997, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 203.32241016699118, "data": {"run": {"speaker": "Alex", "seconds": 3.3223637919873}, "silent": {"Alex": 0.0, "Billis": 136.87791934754284, "達哥": 88.65569712532063, "Jax": 4.877919347542843}, "remaining": 516.6776362080127}}
+{"kind": "partial", "t": 204.0046131669951, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況不一樣。我"}}
+{"kind": "speaking", "t": 204.00463045900688, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 204.32322762499098, "data": {"run": {"speaker": "Alex", "seconds": 4.323178291990189}, "silent": {"Alex": 0.0, "Billis": 137.87873384754573, "達哥": 89.65651162532352, "Jax": 5.878733847545732}, "remaining": 515.6768217080098}}
+{"kind": "partial", "t": 205.0059377499856, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況不一樣。我前年辦的那"}}
+{"kind": "speaking", "t": 205.00595708398032, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 205.32445891699172, "data": {"run": {"speaker": "Alex", "seconds": 5.324411916983081}, "silent": {"Alex": 0.0, "Billis": 138.87996747253862, "達哥": 90.65774525031641, "Jax": 6.879967472538624}, "remaining": 514.6755880830169}}
+{"kind": "partial", "t": 206.00619845898473, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況不一樣。我前年辦的那場就是這樣"}}
+{"kind": "speaking", "t": 206.00621108399355, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 206.3267355840071, "data": {"run": {"speaker": "Alex", "seconds": 6.326692709000781}, "silent": {"Alex": 0.0, "Billis": 139.88224826455632, "達哥": 91.66002604233411, "Jax": 7.882248264556324}, "remaining": 513.6733072909992}}
+{"kind": "partial", "t": 207.0066312919953, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況不一樣。我前年辦的那場就是這樣，我們設了"}}
+{"kind": "speaking", "t": 207.0066547919996, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 207.3276604169805, "data": {"run": {"speaker": "Alex", "seconds": 7.327617917006137}, "silent": {"Alex": 0.0, "Billis": 140.88317347256168, "達哥": 92.66095125033947, "Jax": 8.88317347256168}, "remaining": 512.6723820829939}}
+{"kind": "partial", "t": 208.00881283398485, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況不一樣。我前年辦的那場就是這樣，我們設了難度加成，"}}
+{"kind": "speaking", "t": 208.00883654199424, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 208.32839799998328, "data": {"run": {"speaker": "Alex", "seconds": 8.328366917005042}, "silent": {"Alex": 0.0, "Billis": 141.88392247256058, "達哥": 93.66170025033837, "Jax": 9.883922472560585}, "remaining": 511.67163308299496}}
+{"kind": "partial", "t": 209.0103639169829, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況不一樣。我前年辦的那場就是這樣，我們設了難度加成，結果評審會"}}
+{"kind": "speaking", "t": 209.01038729198626, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 209.32949895900674, "data": {"run": {"speaker": "Alex", "seconds": 9.329448792006588}, "silent": {"Alex": 0.0, "Billis": 142.88500434756213, "達哥": 94.66278212533992, "Jax": 10.88500434756213}, "remaining": 510.6705512079934}}
+{"kind": "partial", "t": 210.01119866699446, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況不一樣。我前年辦的那場就是這樣，我們設了難度加成，結果評審會上吵了四十"}}
+{"kind": "speaking", "t": 210.01121895899996, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 210.3317823749967, "data": {"run": {"speaker": "Alex", "seconds": 10.331733792001614}, "silent": {"Alex": 0.0, "Billis": 143.88728934755716, "達哥": 95.66506712533494, "Jax": 11.887289347557157}, "remaining": 509.6682662079984}}
+{"kind": "partial", "t": 211.01237204199424, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況不一樣。我前年辦的那場就是這樣，我們設了難度加成，結果評審會上吵了四十分鐘，最後"}}
+{"kind": "speaking", "t": 211.01237908398616, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 211.33398716698866, "data": {"run": {"speaker": "Alex", "seconds": 11.333964874997037}, "silent": {"Alex": 0.0, "Billis": 144.88952043055258, "達哥": 96.66729820833037, "Jax": 12.88952043055258}, "remaining": 508.66603512500296}}
+{"kind": "partial", "t": 212.01451120898128, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況不一樣。我前年辦的那場就是這樣，我們設了難度加成，結果評審會上吵了四十分鐘，最後是主辦方自"}}
+{"kind": "speaking", "t": 212.01453608399606, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 212.33619070900022, "data": {"run": {"speaker": "Alex", "seconds": 12.336147458991036}, "silent": {"Alex": 0.0, "Billis": 145.89170301454658, "達哥": 97.66948079232436, "Jax": 13.891703014546579}, "remaining": 507.66385254100896}}
+{"kind": "partial", "t": 213.01673133400618, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況不一樣。我前年辦的那場就是這樣，我們設了難度加成，結果評審會上吵了四十分鐘，最後是主辦方自己拍板，兩邊"}}
+{"kind": "speaking", "t": 213.0167548339814, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 213.33686166699044, "data": {"run": {"speaker": "Alex", "seconds": 13.336832917004358}, "silent": {"Alex": 0.0, "Billis": 146.8923884725599, "達哥": 98.67016625033769, "Jax": 14.892388472559901}, "remaining": 506.66316708299564}}
+{"kind": "utterance", "t": 214.0004033749865, "data": {"speaker": "Alex", "text": "我知道你要說什麼，可是那個情況不一樣。我前年辦的那場就是這樣，我們設了難度加成，結果評審會上吵了四十分鐘，最後是主辦方自己拍板，兩邊都不開心。", "start": 200, "end": 214.0}}
+{"kind": "speaking", "t": 214.00041462498484, "data": {"speaker": "Alex", "active": false}}
+{"kind": "share", "t": 214.00044512498425, "data": {"Alex": 0.490566037735849, "Billis": 0.04981132075471695, "達哥": 0.20377358490566036, "Jax": 0.1947169811320755, "主席": 0.06113207547169811}}
+{"kind": "voice", "t": 214.0004560840025, "data": {"speaker": "Alex", "active": false}}
+{"kind": "voice", "t": 214.00046295899665, "data": {"speaker": "Jax", "active": true}}
+{"kind": "speaking", "t": 214.000469666993, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 214.3390362499922, "data": {"run": {"speaker": "Jax", "seconds": 0.33899099999689497}, "silent": {"Alex": 0.33899099999689497, "Billis": 147.89454655555244, "達哥": 99.67232433333022, "Jax": 0.0}, "remaining": 505.6610090000031}}
+{"kind": "utterance", "t": 214.4468034169986, "data": {"speaker": "Jax", "text": "嗯。", "start": 214, "end": 214.44444444444446}}
+{"kind": "speaking", "t": 214.4468138339871, "data": {"speaker": "Jax", "active": false}}
+{"kind": "share", "t": 214.44685120898066, "data": {"Alex": 0.4890895410082768, "Billis": 0.04966139954853269, "達哥": 0.20316027088036115, "Jax": 0.19714070729872094, "主席": 0.06094808126410835}}
+{"kind": "voice", "t": 214.44686799999909, "data": {"speaker": "Jax", "active": false}}
+{"kind": "fast_timer", "t": 215.34037237497978, "data": {"run": {"speaker": "Jax", "seconds": 0.4444444444444571}, "silent": {"Alex": 1.3403437919914722, "Billis": 148.89589934754702, "達哥": 100.6736771253248, "Jax": 0.8958993475470152}, "remaining": 504.6596562080085}}
+{"kind": "fast_timer", "t": 216.34094912500586, "data": {"run": {"speaker": "Jax", "seconds": 0.4444444444444571}, "silent": {"Alex": 2.3409176249988377, "Billis": 149.89647318055438, "達哥": 101.67425095833217, "Jax": 1.8964731805543806}, "remaining": 503.65908237500116}}
+{"kind": "fast_timer", "t": 217.3415736669849, "data": {"run": {"speaker": "Jax", "seconds": 0.4444444444444571}, "silent": {"Alex": 3.3415338750055525, "Billis": 150.8970894305611, "達哥": 102.67486720833888, "Jax": 2.8970894305610955}, "remaining": 502.65846612499445}}
+{"kind": "voice", "t": 218.00146979198325, "data": {"speaker": "Alex", "active": true}}
+{"kind": "speaking", "t": 218.00149995900574, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 218.3425114589918, "data": {"run": {"speaker": "Alex", "seconds": 0.34246124999481253}, "silent": {"Alex": 0.0, "Billis": 151.89801680555036, "達哥": 103.67579458332814, "Jax": 3.8980168055503555}, "remaining": 501.6575387500052}}
+{"kind": "partial", "t": 219.00223645899678, "data": {"speaker": "Alex", "text": "那就這樣"}}
+{"kind": "speaking", "t": 219.0022599590011, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 219.34287604200654, "data": {"run": {"speaker": "Alex", "seconds": 1.3428339999809396}, "silent": {"Alex": 0.0, "Billis": 152.89838955553648, "達哥": 104.67616733331427, "Jax": 4.8983895555364825}, "remaining": 500.65716600001906}}
+{"kind": "partial", "t": 220.00320670899237, "data": {"speaker": "Alex", "text": "那就這樣定了，題目"}}
+{"kind": "speaking", "t": 220.00322479198803, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 220.3438690000039, "data": {"run": {"speaker": "Alex", "seconds": 2.34383795899339}, "silent": {"Alex": 0.0, "Billis": 153.89939351454893, "達哥": 105.67717129232672, "Jax": 5.899393514548933}, "remaining": 499.6561620410066}}
+{"kind": "partial", "t": 221.00524329199106, "data": {"speaker": "Alex", "text": "那就這樣定了，題目開一個、"}}
+{"kind": "speaking", "t": 221.00526733399602, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 221.3445896669873, "data": {"run": {"speaker": "Alex", "seconds": 3.344568917003926}, "silent": {"Alex": 0.0, "Billis": 154.90012447255947, "達哥": 106.67790225033725, "Jax": 6.900124472559469}, "remaining": 498.6554310829961}}
+{"kind": "partial", "t": 222.0054281670018, "data": {"speaker": "Alex", "text": "那就這樣定了，題目開一個、不分層，我"}}
+{"kind": "speaking", "t": 222.00544887498836, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 222.3457705839828, "data": {"run": {"speaker": "Alex", "seconds": 4.345738542004256}, "silent": {"Alex": 0.0, "Billis": 155.9012940975598, "達哥": 107.67907187533758, "Jax": 7.9012940975597985}, "remaining": 497.65426145799574}}
+{"kind": "partial", "t": 223.005885208986, "data": {"speaker": "Alex", "text": "那就這樣定了，題目開一個、不分層，我等一下把"}}
+{"kind": "speaking", "t": 223.0059084169916, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 223.3479502919945, "data": {"run": {"speaker": "Alex", "seconds": 5.347921249980573}, "silent": {"Alex": 0.0, "Billis": 156.90347680553612, "達哥": 108.6812545833139, "Jax": 8.903476805536116}, "remaining": 496.6520787500194}}
+{"kind": "partial", "t": 224.00632379198214, "data": {"speaker": "Alex", "text": "那就這樣定了，題目開一個、不分層，我等一下把公告草稿發"}}
+{"kind": "speaking", "t": 224.00633316699532, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 224.34982258398668, "data": {"run": {"speaker": "Alex", "seconds": 6.3497815419978}, "silent": {"Alex": 0.0, "Billis": 157.90533709755334, "達哥": 109.68311487533113, "Jax": 9.905337097553343}, "remaining": 495.6502184580022}}
+{"kind": "utterance", "t": 224.8912922089803, "data": {"speaker": "Alex", "text": "那就這樣定了，題目開一個、不分層，我等一下把公告草稿發到群組。", "start": 218, "end": 224.88888888888889}}
+{"kind": "speaking", "t": 224.89130766698509, "data": {"speaker": "Alex", "active": false}}
+{"kind": "share", "t": 224.89135633400292, "data": {"Alex": 0.511861969805895, "Billis": 0.04744787922358013, "達哥": 0.19410496046010067, "Jax": 0.1883537023723941, "主席": 0.058231488138030196}}
+{"kind": "voice", "t": 224.89137145900168, "data": {"speaker": "Alex", "active": false}}
+{"kind": "fast_timer", "t": 225.35209179198137, "data": {"run": {"speaker": "Alex", "seconds": 6.888888888888886}, "silent": {"Alex": 0.4631623611074076, "Billis": 158.90760680555184, "達哥": 110.68538458332962, "Jax": 10.907606805551836}, "remaining": 494.6479487500037}}
+{"kind": "fast_timer", "t": 226.35424154199427, "data": {"run": {"speaker": "Alex", "seconds": 6.888888888888886}, "silent": {"Alex": 1.4653421951095709, "Billis": 159.909786639554, "達哥": 111.68756441733179, "Jax": 11.909786639554}, "remaining": 493.64576891600154}}
+{"kind": "fast_timer", "t": 227.35553408399574, "data": {"run": {"speaker": "Alex", "seconds": 6.888888888888886}, "silent": {"Alex": 2.46660577810124, "Billis": 160.91105022254567, "達哥": 112.68882800032345, "Jax": 12.911050222545668}, "remaining": 492.6445053330099}}
+{"kind": "fast_timer", "t": 228.35636020899983, "data": {"run": {"speaker": "Alex", "seconds": 6.888888888888886}, "silent": {"Alex": 3.467440528112803, "Billis": 161.91188497255723, "達哥": 113.68966275033502, "Jax": 13.911884972557232}, "remaining": 491.6436705829983}}
+{"kind": "fast_timer", "t": 229.3586729170056, "data": {"run": {"speaker": "Alex", "seconds": 6.888888888888886}, "silent": {"Alex": 4.469753320112233, "Billis": 162.91419776455666, "達哥": 114.69197554233445, "Jax": 14.914197764556661}, "remaining": 490.6413577909989}}
+{"kind": "fast_timer", "t": 230.35950858399156, "data": {"run": null, "silent": {"Alex": 5.4705860281117396, "Billis": 163.91503047255617, "達哥": 115.69280825033395, "Jax": 15.915030472556168}, "remaining": 489.6405250829994}}
+{"kind": "slow_score", "t": 230.64964995899936, "data": {"positive": 4, "negative": 3, "none": 1, "type": "發言權失衡", "verdict": "正向介入", "utterance": "", "pros": ["Alex 在 Jax 尚未說完時接話，且連續重複前面的經驗，實質阻斷了 Jax 完整表達。", "Alex 直接說「那就這樣定了」並準備發布公告，形成尚未充分聽取其他人意見的假共識。"], "cons": ["目前仍是發散期，不能因為意見尚未收斂就催促選邊或下結論。", "最近發言權仍有多次易手，且 Jax、達哥仍有近期發言，尚不足以判定整體討論已只剩單一聲音。"], "admissible": false, "reason": "同型退避", "utterance_seconds": null}}
+{"kind": "fast_timer", "t": 231.36176083399914, "data": {"run": null, "silent": {"Alex": 6.472834611094896, "Billis": 164.91727905553932, "達哥": 116.69505683331711, "Jax": 16.917279055539325}, "remaining": 488.6382765000162}}
+{"kind": "fast_timer", "t": 232.36394516698783, "data": {"run": null, "silent": {"Alex": 7.475031236115484, "Billis": 165.9194756805599, "達哥": 117.6972534583377, "Jax": 17.919475680559913}, "remaining": 487.63607987499563}}
+{"kind": "fast_timer", "t": 233.3660824589897, "data": {"run": null, "silent": {"Alex": 8.47718244510341, "Billis": 166.92162688954784, "達哥": 118.69940466732562, "Jax": 18.921626889547838}, "remaining": 486.6339286660077}}
+{"kind": "fast_timer", "t": 234.36828220900497, "data": {"run": null, "silent": {"Alex": 9.479342195105147, "Billis": 167.92378663954958, "達哥": 119.70156441732736, "Jax": 19.923786639549576}, "remaining": 485.63176891600597}}
+{"kind": "fast_timer", "t": 235.37065366699244, "data": {"run": null, "silent": {"Alex": 10.481711778107439, "Billis": 168.92615622255187, "達哥": 120.70393400032965, "Jax": 20.926156222551867}, "remaining": 484.6293993330037}}
+{"kind": "fast_timer", "t": 236.37149587500608, "data": {"run": null, "silent": {"Alex": 11.482575111107309, "Billis": 169.92701955555174, "達哥": 121.70479733332952, "Jax": 21.927019555551738}, "remaining": 483.6285360000038}}
+{"kind": "fast_timer", "t": 237.37375154200708, "data": {"run": null, "silent": {"Alex": 12.484811986114238, "Billis": 170.92925643055867, "達哥": 122.70703420833645, "Jax": 22.929256430558667}, "remaining": 482.6262991249969}}
+{"kind": "voice", "t": 238.00180808399455, "data": {"speaker": "達哥", "active": true}}
+{"kind": "speaking", "t": 238.00183841699618, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 238.37423241700162, "data": {"run": {"speaker": "達哥", "seconds": 0.3741394999960903}, "silent": {"Alex": 13.485250611107205, "Billis": 171.92969505555163, "達哥": 0.0, "Jax": 23.929695055551633}, "remaining": 481.6258605000039}}
+{"kind": "utterance", "t": 238.44678737499635, "data": {"speaker": "達哥", "text": "好。", "start": 238, "end": 238.44444444444446}}
+{"kind": "speaking", "t": 238.44679770898074, "data": {"speaker": "達哥", "active": false}}
+{"kind": "share", "t": 238.44682983399252, "data": {"Alex": 0.5103942652329748, "Billis": 0.04731182795698922, "達哥": 0.19641577060931908, "Jax": 0.1878136200716847, "主席": 0.05806451612903226}}
+{"kind": "voice", "t": 238.44683912498294, "data": {"speaker": "達哥", "active": false}}
+{"kind": "fast_timer", "t": 239.3756263339892, "data": {"run": {"speaker": "達哥", "seconds": 0.4444444444444571}, "silent": {"Alex": 14.486679736104435, "Billis": 172.93112418054886, "達哥": 0.9311241805488635, "Jax": 24.931124180548863}, "remaining": 480.6244313750067}}
+{"kind": "ai_critique", "t": 240.18789025000297, "data": {"meeting": "主席兩次把發言權交回 Jax，但共識仍在他被打斷後由 Alex 直接宣布，這比較像快速收束，不像完成討論。", "participants": {"Alex": "用自身經驗具體指出分層的評分風險，但兩次重述同一案例並打斷 Jax，最後把未完的討論直接定案。", "達哥": "先提供報名資料，再提出可操作的三層方案；只是話題一轉到尾牙，主席才把討論拉回正題。", "Jax": "提出分層可能壓縮意外創意的關鍵疑慮，卻兩度沒能說完；主席雖提醒讓他補充，實際上仍未阻止 Alex 收束。"}}}
+{"kind": "fast_timer", "t": 240.37760279199574, "data": {"run": {"speaker": "達哥", "seconds": 0.4444444444444571}, "silent": {"Alex": 15.488657695111925, "Billis": 173.93310213955635, "達哥": 1.933102139556354, "Jax": 25.933102139556354}, "remaining": 479.6224534159992}}
+{"kind": "fast_timer", "t": 241.3793652089953, "data": {"run": {"speaker": "達哥", "seconds": 0.4444444444444571}, "silent": {"Alex": 16.490429361105072, "Billis": 174.9348738055495, "達哥": 2.9348738055495005, "Jax": 26.9348738055495}, "remaining": 478.62068175000604}}
+{"kind": "voice", "t": 242.00217062499723, "data": {"speaker": "Alex", "active": true}}
+{"kind": "speaking", "t": 242.00219704199117, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 242.3811548340018, "data": {"run": {"speaker": "Alex", "seconds": 0.3811077089922037}, "silent": {"Alex": 0.0, "Billis": 175.93666326454775, "達哥": 3.9366632645477466, "Jax": 27.936663264547747}, "remaining": 477.6188922910078}}
+{"kind": "partial", "t": 243.003394208994, "data": {"speaker": "Alex", "text": "接下"}}
+{"kind": "speaking", "t": 243.00341425000806, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 243.38290937498095, "data": {"run": {"speaker": "Alex", "seconds": 1.3828578749962617}, "silent": {"Alex": 0.0, "Billis": 176.9384134305518, "達哥": 4.938413430551805, "Jax": 28.938413430551805}, "remaining": 476.61714212500374}}
+{"kind": "partial", "t": 244.00562374998117, "data": {"speaker": "Alex", "text": "接下來場"}}
+{"kind": "speaking", "t": 244.0056438749889, "data": {"speaker": "Alex", "active": true}}
+{"kind": "slow_score", "t": 244.0902949589945, "data": {"positive": 4, "negative": 3, "none": 2, "type": "發言權失衡", "verdict": "正向介入", "utterance": "", "pros": ["Alex 在 Jax 尚未說完時接話，且重複自身經驗後直接宣布「那就這樣定了」，可能實質截斷其他意見並形成未充分討論的決定。", "達哥僅以「好」回應，Billis 長時間未發言；在 Alex 主導下，應適度邀請尚未表達看法者補充。"], "cons": ["目前仍處於發散期，且最近發言權多次易手，不能僅因 Alex 發言較多就催促收斂或否定其觀點。", "討論內容仍圍繞黑客松題目設計與評審規則，沒有明顯離題；達哥剛開始發言，也不宜過早打斷。"], "admissible": false, "reason": "同型退避", "utterance_seconds": null}}
+{"kind": "fast_timer", "t": 244.38404087498202, "data": {"run": {"speaker": "Alex", "seconds": 2.38401441698079}, "silent": {"Alex": 0.0, "Billis": 177.93956997253633, "達哥": 5.939569972536333, "Jax": 29.939569972536333}, "remaining": 475.6159855830192}}
+{"kind": "partial", "t": 245.0078151669877, "data": {"speaker": "Alex", "text": "接下來場地。我"}}
+{"kind": "speaking", "t": 245.0078375839803, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 245.385235291993, "data": {"run": {"speaker": "Alex", "seconds": 3.3851841669820715}, "silent": {"Alex": 0.0, "Billis": 178.94073972253761, "達哥": 6.940739722537614, "Jax": 30.940739722537614}, "remaining": 474.61481583301793}}
+{"kind": "partial", "t": 246.01002658400103, "data": {"speaker": "Alex", "text": "接下來場地。我想沿"}}
+{"kind": "speaking", "t": 246.0100485419971, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 246.3855358340079, "data": {"run": {"speaker": "Alex", "seconds": 4.385489709005924}, "silent": {"Alex": 0.0, "Billis": 179.94104526456147, "達哥": 7.941045264561467, "Jax": 31.941045264561467}, "remaining": 473.6145102909941}}
+{"kind": "partial", "t": 247.01120895898202, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去"}}
+{"kind": "speaking", "t": 247.01123441700474, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 247.3862959999824, "data": {"run": {"speaker": "Alex", "seconds": 5.386266249988694}, "silent": {"Alex": 0.0, "Billis": 180.94182180554424, "達哥": 8.941821805544237, "Jax": 32.94182180554424}, "remaining": 472.6137337500113}}
+{"kind": "partial", "t": 248.01282841700595, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個"}}
+{"kind": "speaking", "t": 248.01285037500202, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 248.38757866699598, "data": {"run": {"speaker": "Alex", "seconds": 6.38751383399358}, "silent": {"Alex": 0.0, "Billis": 181.94306938954912, "達哥": 9.943069389549123, "Jax": 33.94306938954912}, "remaining": 471.6124861660064}}
+{"kind": "partial", "t": 249.01502312498633, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地"}}
+{"kind": "speaking", "t": 249.01504379199469, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 249.3883804169891, "data": {"run": {"speaker": "Alex", "seconds": 7.388348999986192}, "silent": {"Alex": 0.0, "Billis": 182.94390455554174, "達哥": 10.943904555541735, "Jax": 34.943904555541735}, "remaining": 470.6116510000138}}
+{"kind": "partial", "t": 250.017255209008, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租"}}
+{"kind": "speaking", "t": 250.01728120900225, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 250.38860325000132, "data": {"run": {"speaker": "Alex", "seconds": 8.388589791982668}, "silent": {"Alex": 0.0, "Billis": 183.9441453475382, "達哥": 11.94414534753821, "Jax": 35.94414534753821}, "remaining": 469.61141020801733}}
+{"kind": "partial", "t": 251.01943841698812, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣"}}
+{"kind": "speaking", "t": 251.01945875000092, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 251.38928145900718, "data": {"run": {"speaker": "Alex", "seconds": 9.389232583984267}, "silent": {"Alex": 0.0, "Billis": 184.9447881395398, "達哥": 12.94478813953981, "Jax": 36.94478813953981}, "remaining": 468.61076741601573}}
+{"kind": "partial", "t": 252.02061524998862, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣、動"}}
+{"kind": "speaking", "t": 252.02063583399286, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 252.3902094590012, "data": {"run": {"speaker": "Alex", "seconds": 10.390146624995396}, "silent": {"Alex": 0.0, "Billis": 185.94570218055094, "達哥": 13.945702180550938, "Jax": 37.94570218055094}, "remaining": 467.6098533750046}}
+{"kind": "partial", "t": 253.02111099998, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣、動線也"}}
+{"kind": "speaking", "t": 253.02113083400764, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 253.3915185839869, "data": {"run": {"speaker": "Alex", "seconds": 11.391455624980154}, "silent": {"Alex": 0.0, "Billis": 186.9470111805357, "達哥": 14.947011180535696, "Jax": 38.947011180535696}, "remaining": 466.60854437501985}}
+{"kind": "partial", "t": 254.02328112500254, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣、動線也熟。所"}}
+{"kind": "speaking", "t": 254.02330262499163, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 254.39389470900642, "data": {"run": {"speaker": "Alex", "seconds": 12.393843875004677}, "silent": {"Alex": 0.0, "Billis": 187.94939943056022, "達哥": 15.94939943056022, "Jax": 39.94939943056022}, "remaining": 465.6061561249953}}
+{"kind": "partial", "t": 255.02550899999915, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣、動線也熟。所以大"}}
+{"kind": "speaking", "t": 255.02553604199784, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 255.39445266698021, "data": {"run": {"speaker": "Alex", "seconds": 13.394393249996938}, "silent": {"Alex": 0.0, "Billis": 188.94994880555248, "達哥": 16.94994880555248, "Jax": 40.94994880555248}, "remaining": 464.60560675000306}}
+{"kind": "partial", "t": 256.0269194589928, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣、動線也熟。所以大方向"}}
+{"kind": "speaking", "t": 256.02694091698504, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 256.39651012499235, "data": {"run": {"speaker": "Alex", "seconds": 14.396446416998515}, "silent": {"Alex": 0.0, "Billis": 189.95200197255406, "達哥": 17.952001972554058, "Jax": 41.95200197255406}, "remaining": 463.6035535830015}}
+{"kind": "partial", "t": 257.02759391698055, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣、動線也熟。所以大方向大家都"}}
+{"kind": "speaking", "t": 257.02761766698677, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 257.39742962497985, "data": {"run": {"speaker": "Alex", "seconds": 15.397405124997022}, "silent": {"Alex": 0.0, "Billis": 190.95296068055256, "達哥": 18.952960680552565, "Jax": 42.952960680552565}, "remaining": 462.602594875003}}
+{"kind": "partial", "t": 258.02886866699555, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣、動線也熟。所以大方向大家都同意"}}
+{"kind": "speaking", "t": 258.02888774999883, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 258.3987169589964, "data": {"run": {"speaker": "Alex", "seconds": 16.398667500005104}, "silent": {"Alex": 0.0, "Billis": 191.95422305556065, "達哥": 19.954223055560647, "Jax": 43.95422305556065}, "remaining": 461.6013324999949}}
+{"kind": "partial", "t": 259.02912216700497, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣、動線也熟。所以大方向大家都同意囉，那"}}
+{"kind": "speaking", "t": 259.0291407920013, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 259.39959695900325, "data": {"run": {"speaker": "Alex", "seconds": 17.3995345000003}, "silent": {"Alex": 0.0, "Billis": 192.95509005555584, "達哥": 20.955090055555843, "Jax": 44.95509005555584}, "remaining": 460.6004654999997}}
+{"kind": "partial", "t": 260.0308223339962, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣、動線也熟。所以大方向大家都同意囉，那我就"}}
+{"kind": "speaking", "t": 260.03084024999407, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 260.401052250003, "data": {"run": {"speaker": "Alex", "seconds": 18.40098904198385}, "silent": {"Alex": 0.0, "Billis": 193.9565445975394, "達哥": 21.95654459753939, "Jax": 45.95654459753939}, "remaining": 459.59901095801615}}
+{"kind": "partial", "t": 261.03185274999123, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣、動線也熟。所以大方向大家都同意囉，那我就往下"}}
+{"kind": "speaking", "t": 261.03187308399356, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 261.4020215839846, "data": {"run": {"speaker": "Alex", "seconds": 19.401971208979376}, "silent": {"Alex": 0.0, "Billis": 194.95752676453492, "達哥": 22.95752676453492, "Jax": 46.95752676453492}, "remaining": 458.5980287910206}}
+{"kind": "utterance", "t": 262.00043633399764, "data": {"speaker": "Alex", "text": "接下來場地。我想沿用去年那個場地，租金一樣、動線也熟。所以大方向大家都同意囉，那我就往下走了。", "start": 242, "end": 262.0}}
+{"kind": "speaking", "t": 262.0004483749799, "data": {"speaker": "Alex", "active": false}}
+{"kind": "share", "t": 262.0004809589882, "data": {"Alex": 0.5663492063492063, "Billis": 0.041904761904761875, "達哥": 0.17396825396825405, "Jax": 0.16634920634920644, "主席": 0.05142857142857143}}
+{"kind": "voice", "t": 262.0004921249929, "data": {"speaker": "Alex", "active": false}}
+{"kind": "voice", "t": 262.00049945898354, "data": {"speaker": "Alex", "active": true}}
+{"kind": "speaking", "t": 262.00050824999926, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 262.4023712500057, "data": {"run": {"speaker": "Alex", "seconds": 20.402333042002283}, "silent": {"Alex": 0.0, "Billis": 195.95788859755783, "達哥": 23.957888597557826, "Jax": 47.957888597557826}, "remaining": 457.5976669579977}}
+{"kind": "partial", "t": 263.00081924998085, "data": {"speaker": "Alex", "text": "那今天就"}}
+{"kind": "speaking", "t": 263.0008406249981, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 263.4043851669994, "data": {"run": {"speaker": "Alex", "seconds": 21.40434979199199}, "silent": {"Alex": 0.0, "Billis": 196.95990534754753, "達哥": 24.959905347547533, "Jax": 48.95990534754753}, "remaining": 456.595650208008}}
+{"kind": "partial", "t": 264.0029836249887, "data": {"speaker": "Alex", "text": "那今天就到這裡，達"}}
+{"kind": "speaking", "t": 264.00300058399444, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 264.4061537499947, "data": {"run": {"speaker": "Alex", "seconds": 22.40610745898448}, "silent": {"Alex": 0.0, "Billis": 197.96166301454002, "達哥": 25.961663014540022, "Jax": 49.96166301454002}, "remaining": 455.5938925410155}}
+{"kind": "partial", "t": 265.00518520898186, "data": {"speaker": "Alex", "text": "那今天就到這裡，達哥你把四"}}
+{"kind": "speaking", "t": 265.0052086249925, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 265.40752241699374, "data": {"run": {"speaker": "Alex", "seconds": 23.407470749982167}, "silent": {"Alex": 0.0, "Billis": 198.9630263055377, "達哥": 26.96302630553771, "Jax": 50.96302630553771}, "remaining": 454.59252925001783}}
+{"kind": "partial", "t": 266.00686237498303, "data": {"speaker": "Alex", "text": "那今天就到這裡，達哥你把四十二隊的名"}}
+{"kind": "speaking", "t": 266.00688170900685, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 266.4098074589856, "data": {"run": {"speaker": "Alex", "seconds": 24.409737833979307}, "silent": {"Alex": 0.0, "Billis": 199.96529338953485, "達哥": 27.96529338953485, "Jax": 51.96529338953485}, "remaining": 453.5902621660207}}
+{"kind": "partial", "t": 267.0083310419868, "data": {"speaker": "Alex", "text": "那今天就到這裡，達哥你把四十二隊的名單整理一"}}
+{"kind": "speaking", "t": 267.00835454199114, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 267.4103312919906, "data": {"run": {"speaker": "Alex", "seconds": 25.410276999988127}, "silent": {"Alex": 0.0, "Billis": 200.96583255554367, "達哥": 28.96583255554367, "Jax": 52.96583255554367}, "remaining": 452.5897230000119}}
+{"kind": "slow_score", "t": 267.9174436669855, "data": {"positive": 4, "negative": 3, "none": 1, "type": "發言權失衡", "verdict": "正向介入", "utterance": "", "pros": ["Alex 在 Jax 尚未說完時代替他推測並接走話題，且隨後直接宣布決定，Jax 的觀點未被完整聽見。", "Alex 接著把場地方向表述為「大家同意」並準備往下推進，但目前只有達哥簡短回應，可能形成未經充分確認的假共識。"], "cons": ["目前仍處於發散期，題目設計與場地都仍在黑客松籌備議題內，不宜因尚未收斂或主述者發言較多就催促結論。", "最近已有多次發言權易手，且 Jax、達哥仍有實質發言紀錄；若此刻只是一般澄清或催促決策，可能造成不必要的打斷。"], "admissible": false, "reason": "同型退避", "utterance_seconds": null}}
+{"kind": "partial", "t": 268.0088408339943, "data": {"speaker": "Alex", "text": "那今天就到這裡，達哥你把四十二隊的名單整理一份給我，B"}}
+{"kind": "speaking", "t": 268.00885858398397, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 268.41254720897996, "data": {"run": {"speaker": "Alex", "seconds": 26.41251291698427}, "silent": {"Alex": 0.0, "Billis": 201.9680684725398, "達哥": 29.968068472539812, "Jax": 53.96806847253981}, "remaining": 451.58748708301573}}
+{"kind": "partial", "t": 269.0110877499974, "data": {"speaker": "Alex", "text": "那今天就到這裡，達哥你把四十二隊的名單整理一份給我，Billi"}}
+{"kind": "speaking", "t": 269.011110499996, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 269.4148462500016, "data": {"run": {"speaker": "Alex", "seconds": 27.414792416995624}, "silent": {"Alex": 0.0, "Billis": 202.97034797255117, "達哥": 30.970347972551167, "Jax": 54.97034797255117}, "remaining": 450.5852075830044}}
+{"kind": "partial", "t": 270.01307870898745, "data": {"speaker": "Alex", "text": "那今天就到這裡，達哥你把四十二隊的名單整理一份給我，Billis 你去確"}}
+{"kind": "speaking", "t": 270.01309304198367, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 270.41679299998214, "data": {"run": {"speaker": "Alex", "seconds": 28.416726291994564}, "silent": {"Alex": 0.0, "Billis": 203.9722818475501, "達哥": 31.972281847550107, "Jax": 55.97228184755011}, "remaining": 449.58327370800544}}
+{"kind": "partial", "t": 271.01378087498597, "data": {"speaker": "Alex", "text": "那今天就到這裡，達哥你把四十二隊的名單整理一份給我，Billis 你去確認場地那"}}
+{"kind": "speaking", "t": 271.0138033749827, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 271.419163249986, "data": {"run": {"speaker": "Alex", "seconds": 29.419110458984505}, "silent": {"Alex": 0.0, "Billis": 204.97466601454005, "達哥": 32.97466601454005, "Jax": 56.97466601454005}, "remaining": 448.5808895410155}}
+{"kind": "partial", "t": 272.0153968340019, "data": {"speaker": "Alex", "text": "那今天就到這裡，達哥你把四十二隊的名單整理一份給我，Billis 你去確認場地那邊的檔期。"}}
+{"kind": "speaking", "t": 272.01541662498494, "data": {"speaker": "Alex", "active": true}}
+{"kind": "fast_timer", "t": 272.42011404200457, "data": {"run": {"speaker": "Alex", "seconds": 30.420064959005686}, "silent": {"Alex": 0.0, "Billis": 205.97562051456123, "達哥": 33.97562051456123, "Jax": 57.97562051456123}, "remaining": 447.5799350409943}}
+{"kind": "partial", "t": 273.0163919169863, "data": {"speaker": "Alex", "text": "那今天就到這裡，達哥你把四十二隊的名單整理一份給我，Billis 你去確認場地那邊的檔期。辛苦大家"}}
+{"kind": "speaking", "t": 273.01641616699635, "data": {"speaker": "Alex", "active": true}}
+{"kind": "utterance", "t": 273.33551412500674, "data": {"speaker": "Alex", "text": "那今天就到這裡，達哥你把四十二隊的名單整理一份給我，Billis 你去確認場地那邊的檔期。辛苦大家了。", "start": 262, "end": 273.3333333333333}}
+{"kind": "speaking", "t": 273.335520291992, "data": {"speaker": "Alex", "active": false}}
+{"kind": "share", "t": 273.3355417919811, "data": {"Alex": 0.5927251043530112, "Billis": 0.03935599284436492, "達哥": 0.163387000596303, "Jax": 0.1562313655336912, "主席": 0.0483005366726297}}
+{"kind": "voice", "t": 273.33554850000655, "data": {"speaker": "Alex", "active": false}}
+{"kind": "fast_timer", "t": 273.4224570840015, "data": {"run": {"speaker": "Alex", "seconds": 31.333333333333314}, "silent": {"Alex": 0.08905837566516084, "Billis": 206.97794726455402, "達哥": 34.97794726455402, "Jax": 58.97794726455402}, "remaining": 446.5776082910015}}
+{"kind": "fast_timer", "t": 274.4227894170035, "data": {"run": {"speaker": "Alex", "seconds": 31.333333333333314}, "silent": {"Alex": 1.0893962506476669, "Billis": 207.97828513953652, "達哥": 35.978285139536524, "Jax": 59.978285139536524}, "remaining": 445.577270416019}}
+{"kind": "fast_timer", "t": 275.42328962500324, "data": {"run": {"speaker": "Alex", "seconds": 31.333333333333314}, "silent": {"Alex": 2.0899124166559773, "Billis": 208.97880130554483, "達哥": 36.978801305544835, "Jax": 60.978801305544835}, "remaining": 444.5767542500107}}
+{"kind": "fast_timer", "t": 276.4238555839984, "data": {"run": {"speaker": "Alex", "seconds": 31.333333333333314}, "silent": {"Alex": 3.090473916653252, "Billis": 209.9793628055421, "達哥": 37.97936280554211, "Jax": 61.97936280554211}, "remaining": 443.57619275001343}}
+{"kind": "fast_timer", "t": 277.4261377500079, "data": {"run": {"speaker": "Alex", "seconds": 31.333333333333314}, "silent": {"Alex": 4.092744041651429, "Billis": 210.9816329305403, "達哥": 38.981632930540286, "Jax": 62.981632930540286}, "remaining": 442.57392262501526}}
+{"kind": "fast_timer", "t": 278.42767787500634, "data": {"run": null, "silent": {"Alex": 5.09429945864639, "Billis": 211.98318834753525, "達哥": 39.98318834753525, "Jax": 63.98318834753525}, "remaining": 441.5723672080203}}
+{"kind": "fast_timer", "t": 279.4282163339958, "data": {"run": null, "silent": {"Alex": 6.0948299166727224, "Billis": 212.98371880556158, "達哥": 40.98371880556158, "Jax": 64.98371880556158}, "remaining": 440.57183674999396}}
+{"kind": "fast_timer", "t": 280.4305745419988, "data": {"run": null, "silent": {"Alex": 7.0972035006658984, "Billis": 213.98609238955476, "達哥": 41.986092389554756, "Jax": 65.98609238955476}, "remaining": 439.5694631660008}}
+{"kind": "minutes", "t": 280.6990842919913, "data": {"final": false, "decisions": [{"who": "Alex", "what": "黑客松題目開一個、不分層", "by": "會議主席定案"}, {"who": "Alex", "what": "場地大方向沿用去年場地", "by": "主席表示大家同意後往下執行"}], "todos": [{"owner": "Alex", "task": "把黑客松題目公告草稿發到群組"}, {"owner": "達哥", "task": "整理四十二隊的名單給 Alex"}, {"owner": "Billis", "task": "確認場地檔期"}, {"owner": "Billis", "task": "下午打電話確認尾牙餐廳訂位"}], "unresolved": [{"topic": "尾牙餐廳是否更換餐廳", "chair_ruling": "先擱置，未作決定"}, {"topic": "報名隊伍有一半未填技術背景，分組如何安排", "chair_ruling": "未討論出處理方案"}, {"topic": "Jax 對分層可能限制意外創意的疑慮", "chair_ruling": "主席要求先補充，但後續未完成討論"}], "stances": {"Alex": "主張黑客松題目只開一個、不分層，主要疑慮是分層後的評分與難度加成會引發爭議；傾向沿用去年場地。", "達哥": "提出將題目分成三層、由隊伍自行選擇挑戰層級的做法；負責整理四十二隊名單。", "Billis": "指出未填技術背景會造成分組困難；表示會下午聯絡尾牙餐廳，並負責確認場地檔期。", "Jax": "認為分層有道理，但擔心分層可能限制隊伍做出意外成果；曾詢問尾牙餐廳是否更換。"}}}
+{"kind": "fast_timer", "t": 281.43171516698203, "data": {"run": null, "silent": {"Alex": 8.098324208646488, "Billis": 214.98721309753535, "達哥": 42.987213097535346, "Jax": 66.98721309753535}, "remaining": 438.5683424580202}}
+{"kind": "fast_timer", "t": 282.4340752919961, "data": {"run": null, "silent": {"Alex": 9.100690916655992, "Billis": 215.98957980554485, "達哥": 43.98957980554485, "Jax": 67.98957980554485}, "remaining": 437.5659757500107}}
+{"kind": "slow_score", "t": 282.5243329999794, "data": {"positive": 4, "negative": 4, "none": 2, "type": "假共識", "verdict": "兩者皆有", "utterance": "Alex，你說「大家都同意」前，Billis，你同意沿用去年場地嗎？", "pros": ["Alex 在尚處發散期時直接宣布題目與場地已定，並以「大家都同意」代表共識，提前收斂且可能壓縮其他人的表達空間。", "Billis 已超過三分鐘沒有實質發言，且 Alex 直接替他分派場地確認任務，應給他明確機會確認意見與承接任務。"], "cons": ["目前沒有明顯離題、重複或衝突升高；Alex 的發言仍圍繞黑客松籌備事項。", "Alex 只是剛連續發言約半分鐘，其他人先前仍有發言，尚不足以判定有人被實質接走話或完全排除。"], "admissible": true, "reason": "", "utterance_seconds": 1.23}}
+{"kind": "queued", "t": 282.5243657089886, "data": {"kind": "假共識", "target": null, "text": "Alex，你說「大家都同意」前，Billis，你同意沿用去年場地嗎？", "hard": false}}
+{"kind": "spoken", "t": 282.64543991698883, "data": {"kind": "假共識", "target": null, "text": "Alex，你說「大家都同意」前，Billis，你同意沿用去年場地嗎？", "hard": false, "at": 282.54468491699663}}
+{"kind": "share", "t": 282.6454990839993, "data": {"Alex": 0.5833333333333333, "Billis": 0.03873239436619716, "達哥": 0.16079812206572777, "Jax": 0.15375586854460105, "主席": 0.06338028169014086}}
+{"kind": "fast_timer", "t": 283.43642024998553, "data": {"run": null, "silent": {"Alex": 10.103046166662068, "Billis": 216.99193505555093, "達哥": 44.991935055550925, "Jax": 68.99193505555093}, "remaining": 436.5636205000046}}
+{"kind": "fast_timer", "t": 284.43680654198397, "data": {"run": null, "silent": {"Alex": 11.103432458660507, "Billis": 217.99232134754936, "達哥": 45.992321347549364, "Jax": 69.99232134754936}, "remaining": 435.5632342080062}}
+{"kind": "fast_timer", "t": 285.43891508399975, "data": {"run": null, "silent": {"Alex": 12.10552779167, "Billis": 218.99441668055886, "達哥": 46.99441668055886, "Jax": 70.99441668055886}, "remaining": 434.5611388749967}}
+{"kind": "voice", "t": 286.0012822919816, "data": {"speaker": "達哥", "active": true}}
+{"kind": "speaking", "t": 286.0013020839833, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 286.44092808399, "data": {"run": {"speaker": "達哥", "seconds": 0.44086249999236315}, "silent": {"Alex": 13.107529166659049, "Billis": 219.9964180555479, "達哥": 0.0, "Jax": 71.9964180555479}, "remaining": 433.55913750000764}}
+{"kind": "partial", "t": 287.0034909170063, "data": {"speaker": "達哥", "text": "沒問題，"}}
+{"kind": "speaking", "t": 287.0035151669872, "data": {"speaker": "達哥", "active": true}}
+{"kind": "fast_timer", "t": 287.4418877919961, "data": {"run": {"speaker": "達哥", "seconds": 1.4418275839998387}, "silent": {"Alex": 14.108494250666524, "Billis": 220.99738313955538, "達哥": 0.0, "Jax": 72.99738313955538}, "remaining": 432.55817241600016}}
+{"kind": "utterance", "t": 287.55791645898717, "data": {"speaker": "達哥", "text": "沒問題，掰掰。", "start": 286, "end": 287.55555555555554}}
+{"kind": "speaking", "t": 287.55793045900646, "data": {"speaker": "達哥", "active": false}}
+{"kind": "share", "t": 287.55797787499614, "data": {"Alex": 0.5785797438882421, "Billis": 0.03841676367869614, "達哥": 0.16763678696158327, "Jax": 0.15250291036088487, "主席": 0.06286379511059373}}
+{"kind": "voice", "t": 287.5579912920075, "data": {"speaker": "達哥", "active": false}}
+{"kind": "fast_timer", "t": 288.4423399590014, "data": {"run": {"speaker": "達哥", "seconds": 1.555555555555543}, "silent": {"Alex": 15.108958708655962, "Billis": 221.99784759754482, "達哥": 0.8867364864337333, "Jax": 73.99784759754482}, "remaining": 431.5577079580107}}
+{"kind": "ai_critique", "t": 289.30273187498096, "data": {"meeting": "主席兩次攔截確實讓離題和未完發言回到桌面，但最後仍在未完成討論、且有人被點名後未回應的情況下宣布定案。", "participants": {"Alex": "他用自身經驗提出評分風險，但兩次打斷 Jax 並代替對方收束，最後把未獲確認的場地說成共識。", "達哥": "他提供了具體的分層案例，也在被拉回議題後沒有再補充；目前有內容的主張只停在一個做法。", "Jax": "他提出分層可能壓縮意外創意的關鍵疑慮，兩次開口都碰到核心，但始終沒機會完整說完。", "Billis": "他只指出背景資料會增加分組難度，之後被點名確認場地卻沒有實質回應，會議因此留下未核實的同意。"}}}
+{"kind": "fast_timer", "t": 289.4440429589886, "data": {"run": {"speaker": "達哥", "seconds": 1.555555555555543}, "silent": {"Alex": 16.110665500668517, "Billis": 222.99955438955737, "達哥": 1.8884432784462888, "Jax": 74.99955438955737}, "remaining": 430.55600116599817}}
+{"kind": "fast_timer", "t": 290.44470845899195, "data": {"run": {"speaker": "達哥", "seconds": 1.555555555555543}, "silent": {"Alex": 17.111323208674264, "Billis": 224.00021209756312, "達哥": 2.8891009864520356, "Jax": 76.00021209756312}, "remaining": 429.5553434579924}}
+{"kind": "fast_timer", "t": 291.4453267499921, "data": {"run": {"speaker": "達哥", "seconds": 1.555555555555543}, "silent": {"Alex": 18.11193341666757, "Billis": 225.00082230555643, "達哥": 3.88971119444534, "Jax": 77.00082230555643}, "remaining": 428.5547332499991}}
+{"kind": "fast_timer", "t": 292.4456728749792, "data": {"run": {"speaker": "達哥", "seconds": 1.555555555555543}, "silent": {"Alex": 19.112278958646755, "Billis": 226.0011678475356, "達哥": 4.890056736424526, "Jax": 78.00116784753561}, "remaining": 427.55438770801993}}
+{"kind": "fast_timer", "t": 293.44702437499654, "data": {"run": null, "silent": {"Alex": 20.113637708661088, "Billis": 227.00252659754995, "達哥": 5.891415486438859, "Jax": 79.00252659754995}, "remaining": 426.5530289580056}}
+{"kind": "voice", "t": 294.0016662919952, "data": {"speaker": "Jax", "active": true}}
+{"kind": "speaking", "t": 294.0016959999921, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 294.44787641699077, "data": {"run": {"speaker": "Jax", "seconds": 0.44781604199670255}, "silent": {"Alex": 21.114482708663388, "Billis": 228.00337159755225, "達哥": 6.89226048644116, "Jax": 0.0}, "remaining": 425.5521839580033}}
+{"kind": "partial", "t": 295.00364037498366, "data": {"speaker": "Jax", "text": "掰掰，下"}}
+{"kind": "speaking", "t": 295.0036635840079, "data": {"speaker": "Jax", "active": true}}
+{"kind": "fast_timer", "t": 295.4499353749852, "data": {"run": {"speaker": "Jax", "seconds": 1.4498842089960817}, "silent": {"Alex": 22.116550875662767, "Billis": 229.00543976455162, "達哥": 7.894328653440539, "Jax": 0.0}, "remaining": 424.5501157910039}}
+{"kind": "utterance", "t": 295.5569814170012, "data": {"speaker": "Jax", "text": "掰掰，下週見。", "start": 294, "end": 295.55555555555554}}
+{"kind": "speaking", "t": 295.5569919589907, "data": {"speaker": "Jax", "active": false}}
+{"kind": "share", "t": 295.5570260839886, "data": {"Alex": 0.5739030023094688, "Billis": 0.038106235565819845, "達哥": 0.1662817551963049, "Jax": 0.1593533487297922, "主席": 0.062355658198614335}}
+{"kind": "voice", "t": 295.5570364589803, "data": {"speaker": "Jax", "active": false}}
+{"kind": "fast_timer", "t": 296.4513331250055, "data": {"run": {"speaker": "Jax", "seconds": 1.555555555555543}, "silent": {"Alex": 23.11796566667425, "Billis": 230.0068545555631, "達哥": 8.895743444452023, "Jax": 0.8957434444520231}, "remaining": 423.54870099999243}}
+{"kind": "fast_timer", "t": 297.4523261249997, "data": {"run": {"speaker": "Jax", "seconds": 1.555555555555543}, "silent": {"Alex": 24.118943541669694, "Billis": 231.00783243055855, "達哥": 9.896721319447465, "Jax": 1.8967213194474652}, "remaining": 422.547723124997}}
+{"kind": "fast_timer", "t": 298.45324016700033, "data": {"run": {"speaker": "Jax", "seconds": 1.555555555555543}, "silent": {"Alex": 25.119856375657662, "Billis": 232.00874526454652, "達哥": 10.897634153435433, "Jax": 2.8976341534354333}, "remaining": 421.546810291009}}
+{"kind": "fast_timer", "t": 299.45550308399834, "data": {"run": {"speaker": "Jax", "seconds": 1.555555555555543}, "silent": {"Alex": 26.122134041662036, "Billis": 233.0110229305509, "達哥": 11.899911819439808, "Jax": 3.899911819439808}, "remaining": 420.54453262500465}}
+{"kind": "voice", "t": 300.0021424169827, "data": {"speaker": "Billis", "active": true}}
+{"kind": "speaking", "t": 300.00216974999057, "data": {"speaker": "Billis", "active": true}}
+{"kind": "fast_timer", "t": 300.4578026669915, "data": {"run": {"speaker": "Billis", "seconds": 0.4577510840026662}, "silent": {"Alex": 27.124417750669352, "Billis": 0.0, "達哥": 12.902195528447123, "Jax": 4.902195528447123}, "remaining": 419.54224891599733}}
+{"kind": "utterance", "t": 300.66761000000406, "data": {"speaker": "Billis", "text": "掰掰。", "start": 300, "end": 300.6666666666667}}
+{"kind": "speaking", "t": 300.66762320898124, "data": {"speaker": "Billis", "active": false}}
+{"kind": "share", "t": 300.66767283398076, "data": {"Alex": 0.5719217491369389, "Billis": 0.04142692750287695, "達哥": 0.1657077100115075, "Jax": 0.15880322209436137, "主席": 0.062140391254315315}}
+{"kind": "voice", "t": 300.6676874590048, "data": {"speaker": "Billis", "active": false}}
+{"kind": "fast_timer", "t": 301.46004112498485, "data": {"run": {"speaker": "Billis", "seconds": 0.6666666666666856}, "silent": {"Alex": 28.126665083672094, "Billis": 0.7933317503387229, "達哥": 13.904442861449866, "Jax": 5.904442861449866}, "remaining": 418.5400015829946}}
+{"kind": "fast_timer", "t": 302.4621449999977, "data": {"run": {"speaker": "Billis", "seconds": 0.6666666666666856}, "silent": {"Alex": 29.128782875670993, "Billis": 1.7954495423376216, "達哥": 14.906560653448764, "Jax": 6.906560653448764}, "remaining": 417.5378837909957}}
+{"kind": "fast_timer", "t": 303.4635128749942, "data": {"run": {"speaker": "Billis", "seconds": 0.6666666666666856}, "silent": {"Alex": 30.13013604164979, "Billis": 2.79680270831642, "達哥": 15.907913819427563, "Jax": 7.907913819427563}, "remaining": 416.5365306250169}}
+{"kind": "fast_timer", "t": 304.46494858400547, "data": {"run": {"speaker": "Billis", "seconds": 0.6666666666666856}, "silent": {"Alex": 31.131580416646727, "Billis": 3.798247083313356, "達哥": 16.9093581944245, "Jax": 8.909358194424499}, "remaining": 415.53508625001996}}
+{"kind": "fast_timer", "t": 305.46511179200024, "data": {"run": {"speaker": "Billis", "seconds": 0.6666666666666856}, "silent": {"Alex": 32.131743333661404, "Billis": 4.798410000328033, "達哥": 17.909521111439176, "Jax": 9.909521111439176}, "remaining": 414.5349233330053}}
+{"kind": "fast_timer", "t": 306.46649870899273, "data": {"run": null, "silent": {"Alex": 33.13312250065309, "Billis": 5.799789167319716, "達哥": 18.91090027843086, "Jax": 10.910900278430859}, "remaining": 413.5335441660136}}
+{"kind": "fast_timer", "t": 307.4686998749967, "data": {"run": null, "silent": {"Alex": 34.135321500662656, "Billis": 6.801988167329284, "達哥": 19.913099278440427, "Jax": 11.913099278440427}, "remaining": 412.53134516600403}}
+{"kind": "fast_timer", "t": 308.4694322499854, "data": {"run": null, "silent": {"Alex": 35.13602691665682, "Billis": 7.802693583323446, "達哥": 20.91380469443459, "Jax": 12.913804694434589}, "remaining": 411.53063975000987}}
+{"kind": "fast_timer", "t": 309.47154075000435, "data": {"run": null, "silent": {"Alex": 36.13817862564855, "Billis": 8.804845292315179, "達哥": 21.91595640342632, "Jax": 13.915956403426321}, "remaining": 410.52848804101814}}
+{"kind": "fast_timer", "t": 310.473707541998, "data": {"run": null, "silent": {"Alex": 37.140329833646945, "Billis": 9.806996500313574, "達哥": 22.918107611424716, "Jax": 14.918107611424716}, "remaining": 409.52633683301974}}
+{"kind": "fast_timer", "t": 311.4752664589905, "data": {"run": null, "silent": {"Alex": 38.141893000671814, "Billis": 10.808559667338443, "達哥": 23.919670778449586, "Jax": 15.919670778449586}, "remaining": 408.52477366599487}}
+{"kind": "fast_timer", "t": 312.4773897919804, "data": {"run": null, "silent": {"Alex": 39.14401700066327, "Billis": 11.810683667329897, "達哥": 24.92179477844104, "Jax": 16.92179477844104}, "remaining": 407.5226496660034}}
+{"kind": "fast_timer", "t": 313.47894304199144, "data": {"run": null, "silent": {"Alex": 40.14556625067297, "Billis": 12.8122329173396, "達哥": 25.923344028450742, "Jax": 17.923344028450742}, "remaining": 406.5211004159937}}
+{"kind": "fast_timer", "t": 314.4811636249942, "data": {"run": null, "silent": {"Alex": 41.14779212565435, "Billis": 13.814458792320977, "達哥": 26.92556990343212, "Jax": 18.92556990343212}, "remaining": 405.51887454101234}}
+{"kind": "fast_timer", "t": 315.48228974998347, "data": {"run": null, "silent": {"Alex": 42.14890291665023, "Billis": 14.815569583316858, "達哥": 27.926680694428, "Jax": 19.926680694428}, "remaining": 404.51776375001646}}
+{"kind": "minutes", "t": 320.5870816670067, "data": {"final": true, "host_md": "# 主持記錄\n\n## 介入清單\n| 時間 | 類型 | 對象 | 硬/軟 | 話術 | 理由 |\n|---|---|---|---|---|---|\n| 00:59 | 離題 | - | 軟 | 達哥的「尾牙的餐廳訂了嗎」先擱著；Jax，你怎麼看題目方向或分組問題？ | 達哥突然轉向尾牙餐廳，已離開黑客松籌備議題，應拉回議題；Jax 尚未發言，可在拉回議題時邀請其提供看法，避免討論只由少數人主導 |\n| 03:12 | 發言權失衡 | - | 軟 | Jax剛才說「分層會不會反而限制住那種」，請先把這個疑慮說完；評分問題等你補充後再接。 | Alex 連續主述且打斷了 Jax 尚未完成的句子，適合介入以把發言機會還給 Jax。；Jax 提出的分層可能限制意外創意的疑慮尚未說完，應鼓勵其補充，避免討論過早被 Alex 的評分觀點帶走。 |\n| 04:42 | 假共識 | - | 軟 | Alex，你說「大家都同意」前，Billis，你同意沿用去年場地嗎？ | Alex 在尚處發散期時直接宣布題目與場地已定，並以「大家都同意」代表共識，提前收斂且可能壓縮其他人的表達空間。；Billis 已超過三分鐘沒有實質發言，且 Alex 直接替他分派場地確認任務，應給他明確機會確認意見與承接任務。 |\n\n## 作廢／失敗候選\n（無）\n\n## 被壓掉的慢路評分\n共 11 筆\n| 原因 | 次數 |\n|---|---|\n| 模型與三軸都判不需介入（type=無） | 5 |\n| 三軸分數不足（模型已判類型，自己投票不介入） | 3 |\n| 同型退避 | 3 |\n\n### 三軸分數不足（模型已判類型，自己投票不介入）\n模型判了類型、也寫了正反理由，但三軸分數比不過「不介入」那一軸，所以主席沒有開口。差距 ＝ 不介入 − max(正向, 負向)，0 代表平手。\n| 時間 | 類型 | 正向 | 負向 | 不介入 | 差距 |\n|---|---|---|---|---|---|\n| 01:32 | 離題 | 2 | 1 | 2 | 0 |\n| 01:39 | 離題 | 2 | 1 | 3 | 1 |\n| 02:47 | 發言權失衡 | 3 | 2 | 3 | 0 |\n\n## 發言分佈\n| 對象 | 佔比 |\n|---|---|\n| Alex | 57% |\n| Billis | 4% |\n| 達哥 | 17% |\n| Jax | 16% |\n| 主席 | 6% |\n\n## 階段軌跡\n| 時間 | 階段 |\n|---|---|\n| 00:00 | 發散期 |\n", "minutes_md": "# 會議產出\n\n## 決議事項\n| 誰 | 做什麼 | 何時前 |\n|---|---|---|\n| Alex | 黑客松題目開一個、不分層 | 會議中拍板，Alex表示稍後發公告草稿 |\n| Alex | 大方向沿用去年場地，租金與動線維持不變 | Alex表示往下進行；逐字稿未記錄Billis對此的明確回覆 |\n\n## 待辦事項\n| 負責人 | 任務 |\n|---|---|\n| Alex | 將黑客松公告草稿發到群組 |\n| 達哥 | 整理四十二隊的名單給Alex |\n| Billis | 確認場地檔期 |\n| Billis | 今天下午打電話確認尾牙餐廳 |\n\n## 未解決事項\n| 議題 | 主席裁決理由 |\n|---|---|\n| 尾牙餐廳是否更換，以及訂位狀況 | 先擱置，會議未作成決定 |\n| 分層是否會限制隊伍提出意外作品的疑慮 | 主席要求Jax先說完疑慮，但隨後仍決定題目不分層，未進一步形成獨立結論 |\n| 沿用去年場地是否獲得Billis同意 | 主席要求Billis確認，但逐字稿未記錄其回覆 |\n\n## 每人立場摘要\n- **Alex**：主張黑客松題目只開一個、不分層，認為分層會造成評分權重爭議；傾向沿用去年場地。\n- **達哥**：提供三層題目的做法作為參考；負責整理報名隊伍名單。\n- **Billis**：指出未填技術背景會造成分組困難；表示會確認場地檔期，並曾表示今天下午打電話處理尾牙餐廳訂位。\n- **Jax**：認為分層有道理，但擔心分層可能限制隊伍做出意外的作品；曾質疑是否更換去年桌菜普通的尾牙餐廳。\n", "host_path": "meetings/meeting-1788618914.host.md", "minutes_path": "meetings/meeting-1788618914.minutes.md", "log_path": "meetings/meeting-1788618914.log", "events_path": "meetings/meeting-1788618914.events.jsonl"}}

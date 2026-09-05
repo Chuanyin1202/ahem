@@ -1,200 +1,309 @@
-# Ahem
+# Ahem — 會議裡敢開口的 AI 主席
 
-> 咳咳。會議裡那個敢插嘴的 AI 主席。　　[English](README.en.md)
+> 咳咳。它不做記錄，它做主持：分配發言、拉回離題、在時間內推進決策。
 
-Ahem 是一個**即時主持真人會議**的 AI 主席。它加入 Discord 語音頻道，聽每一個人說話，判斷什麼時候該開口，然後真的開口：打斷講太久的人、點名一直沒說話的人、把離題的討論拉回來、在時限內做出裁決。
+[![tests](https://img.shields.io/badge/tests-608%20passed-brightgreen)](#5-測試)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-它不是會議助理。助理記筆記、追議程、事後摘要；主席管的是**群體過程**，而且有裁決權。
+- 主專案：[Chuanyin1202/ahem](https://github.com/Chuanyin1202/ahem)
+- 英文版：[README.en.md](README.en.md)
+- 完整驗證紀錄（含失敗與更正）：[docs/validation-log.md](docs/validation-log.md)
 
-![Ahem 觀戰畫面：主席引用原話把離題的討論拉回議題，右側是它每次判斷的紀錄與發言分佈](docs/images/spectator.png)
+---
 
-*觀戰畫面，回放 [`examples/synthetic-meeting.events.jsonl`](examples/synthetic-meeting.events.jsonl)——一場虛構的三人會議，與會者與對話皆為合成。*
+## 問題與目標
 
-## 為什麼是主席
+團隊會議常見的失敗不是「沒有記錄」，是**沒有人管流程**：發言時間嚴重不均、話題滑走沒人拉回、兩個人卡在同一個爭點繞圈、時間到了還沒有結論。逐字稿工具與會後摘要解決不了這些——它們都是事後的，而**這些問題只有在會議進行中處理才有意義**。
 
-會議收斂不了，通常不是因為沒人記筆記，而是**沒有人願意當壞人**：沒人敢打斷資深者、沒人敢說「這跟議題無關」、沒人敢在僵持時拍板。於是大家假裝有共識，散會，下週再開一次。
+Ahem 的目標使用者是**用 Discord 開會的小型專案團隊**。它以「主席」而不是「記錄助理」的身分參與真人語音會議：即時聽、判斷此刻該不該開口、決定用硬打斷還是等停頓、然後**真的用語音講出來**。
 
-AI 沒有職涯風險、沒有面子問題。這是它相對於人類主席的結構性優勢——不是「比較會做筆記」。
+> **不宣稱的事**：我們沒有量到「效率提升 X%」這種數字，也不打算宣稱。目前有的是介入時機的量測與失敗案例紀錄，全部公開在 [docs/validation-results.md](docs/validation-results.md)。
 
-Ahem 必須敢做四件事：
+---
 
-1. 分配發言權與時間
-2. 打斷離題與超時
-3. 點名一直沒開口的人，並問到答案
-4. 在時限內僵持不下時直接裁決，並說明理由
+## 核心功能
 
-**它明確不是**：轉錄工具、事後摘要、文字聊天機器人、只給建議的助理。**即時**是硬需求——會後才分析錄音的產品，不是這個專案。
+- **即時聆聽與逐字稿**：Discord 每人獨立音軌接 ElevenLabs Scribe，尾段延遲實測 0.34 秒；畫面同步顯示辨識中的文字與定稿。
+- **雙路徑主持決策**
+  - **快路（規則、零延遲）**：發言超時、議程超時、有人被冷落、全場沉默
+  - **慢路（LLM，每 5 秒一次）**：離題、重複、假共識、僵局、事實錯誤、發言權失衡
+  - 慢路拆成**兩次呼叫**：先判斷、通過閘門才產生話術——同一次呼叫做這兩件事時，話術指令會回頭污染判斷（34 個真實評分點實測）。
+- **可聽見的介入**：硬打斷先播提示音再說話；軟插入等對方停頓，等不到 15 秒才升級。有冷卻期、同型退避、失聰偵測與收尾閘門——**主席不該說話的時候，它閉嘴**。
+- **即時觀戰畫面**：完整逐字稿、主席每 5 秒的判斷（開口／受阻／**忍住**）、發言分布、階段時間軸、會議產出即時預覽、AI 對會議與每位與會者的評語。參與者與操作者權杖分開，預設私密。
+- **會後兩份記錄**：會議產出（決議／待辦／未解決事項／立場摘要）與**主持記錄**（每次介入的時間、類型、理由）。後者是這個專案獨有的——它記錄的是「這場會議是怎麼被引導的」。
+- **腳本測試台**：與會者全是固定劇本、只有主席是真的。不接 Discord、不接 STT，可無人值守跑完整套場景並對期望窗口計分——湊不到人也能迭代主席的判斷品質。
+- **會議錄影**：任何一場開過的會議（真實或腳本）都能事後重播成 MP4。
 
-## 它怎麼運作
+---
 
+## 系統架構
+
+```mermaid
+flowchart TD
+    A[Discord 真人語音<br/>每人一軌] --> B[收音與串流管理]
+    S[腳本測試台<br/>固定劇本] -.取代 STT.-> D
+    B --> C[ElevenLabs Scribe<br/>即時轉錄]
+    C --> D[會議狀態<br/>MeetingState]
+    D --> E[快路：純規則<br/>零延遲]
+    D --> F[慢路：LLM 判斷<br/>＋ LLM 話術]
+    E --> G[介入閘門<br/>冷卻／同型退避／失聰／收尾]
+    F --> G
+    G --> H[Chair 狀態機<br/>硬打斷／軟插入]
+    H --> I[ElevenLabs 或 Azure TTS]
+    I --> A
+    D --> J[aiohttp SSE 事件流]
+    G --> J
+    F --> K[背景迴圈<br/>階段判斷／術語卡<br/>產出預覽／AI 心聲]
+    K --> J
+    J --> L[觀戰畫面<br/>HTML/CSS/JS]
+    D --> M[events.jsonl<br/>Markdown 會後記錄]
+    M -.重播.-> L
+    M -.錄影.-> N[MP4]
 ```
-Discord 語音（每人一軌）
-   → ElevenLabs Scribe 即時中文逐字稿
-   → 兩條判斷路徑
-        快路：純規則、零延遲     發言超時／議程超時／有人被冷落／全場沉默
-        慢路：LLM，每 5 秒一次   離題／重複／假共識／僵局／事實錯誤
-   → 靜默閘門（任一成立就不開口）
-        會議收尾中 ／ STT 失效中 ／ 冷卻期內 ／ 話術生成失敗
-   → 開口：硬打斷先播提示音再說；軟插入等對方停頓後直接說
-   → 觀戰畫面即時更新 → 會後兩份記錄
-```
 
-**即時逐字**：說話的同時，觀戰畫面就顯示這段目前講到哪（Scribe 的 partial 每秒更新），停頓後由定稿取代。判斷一律只用定稿，不用草稿。
+- **前端**：單一 HTML 頁面靠 SSE 更新；操作者可切階段、結束會議。沒有前端框架。
+- **後端**：Python 3.13／asyncio 管音訊、事件、判斷與發言；aiohttp 提供 HTTP 與 SSE。
+- **模型**：ElevenLabs 負責 STT 與預設 TTS；OpenAI 負責所有語意判斷；Azure Speech 是主席 TTS 的**選用**替代（台灣華語男女聲），不取代 Scribe。
+- **資料**：沒有資料庫。會議狀態在記憶體，產出是本機 `events.jsonl` 與 Markdown。
+- **事件流是單一真相**：畫面、會後記錄、重播、錄影、離線計分全部讀同一份 `events.jsonl`。
 
-**慢路是兩次呼叫**：第一次只判斷（三軸分數與類型），通過閘門後第二次才寫出要說的話，而且**必須逐字引用逐字稿裡真的出現過的句子**。生不出合格的話就放棄這次介入，不退回制式句。
+---
 
-**觀戰畫面**給評審與操作者看：主席每一次「開口／受阻／忍住」的判斷與理由、時間軸、發言分佈，以及不出聲的術語補充卡：引言由程式從逐字稿逐字組出；外部說明由 LLM 加網路搜尋產生，必須附來源連結，沒有連結就整段丟棄。
+## 使用技術
 
-**會後記錄**兩份：會議產出（決議、待辦、未解決事項、立場摘要）與主持記錄（每次介入的時間、類型、理由）。後者是這個專案獨有的——它記錄的是「這場會議是怎麼被引導的」。
+| 類型 | 技術／服務 | 用途 |
+| --- | --- | --- |
+| AI 模型 | ElevenLabs `scribe_v2_realtime` | 即時中文語音轉文字（尾段延遲實測 0.34 秒） |
+| AI 模型 | OpenAI `gpt-5.6-luna`（`reasoning_effort=none`） | 慢路判斷、話術生成、階段判斷、術語抽取、會議產出、AI 心聲 |
+| AI 模型 | ElevenLabs `eleven_v3_conversational` | 主席 TTS（串流，首位元組中位 0.15–0.23 秒） |
+| AI 模型 | Azure Speech 台灣華語（小辰／雲哲） | **選用**的主席聲音，需自備 Azure Speech 資源 |
+| 前端 | HTML／CSS／JavaScript、Server-Sent Events | 即時逐字稿、主席三態、發言分布、階段操作 |
+| 後端 | Python 3.13、asyncio、aiohttp、websockets | 非同步管線、HTTP／SSE |
+| 音訊 | discord.py、discord-ext-voice_recv、PyNaCl、NumPy、audioop | Discord 每人一軌收音／發聲、重採樣與切幀 |
+| 中文處理 | OpenCC（`s2twp`） | Scribe 輸出為簡體，統一轉台灣正體 |
+| 資料 | JSONL、Markdown | 事件流與會後記錄；**不需要資料庫** |
+| 測試與工具 | pytest、Playwright、ffmpeg | 631 項回歸測試、瀏覽器驗證、會議錄影與精華剪接 |
+| Sponsor 技術 | **ElevenLabs**（Scribe STT ＋ 串流 TTS） | 參加 **ElevenLabs Sponsor Challenge**；主賽道 **02 AI for Everyday Life** |
 
-## 快速開始
+---
 
-需求：Python 3.11 或 3.12（3.13 需另裝 `audioop-lts`，已列在 requirements）、一個加入你伺服器且有語音權限的 Discord bot、ElevenLabs 與 OpenAI 的 API key。主席預設仍用 ElevenLabs 發言；若要使用 Azure 台灣男聲或女聲，另需 Azure Speech key。
+## 安裝與執行
+
+以 macOS／Linux、Python 3.13 為例。若系統回報找不到 PortAudio，需先安裝該系統音訊函式庫。
 
 ```bash
-git clone https://github.com/Chuanyin1202/ahem.git && cd ahem
-python -m venv .venv && .venv/bin/pip install -r requirements.txt
-cp .env.example .env        # 填入 ELEVENLABS_API_KEY、OPENAI_API_KEY、DISCORD_BOT_TOKEN
+git clone https://github.com/Chuanyin1202/ahem.git
+cd ahem
+python3.13 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
 ```
 
-改用已實聽確認的 Azure 台灣主席聲音：
+### 1. 不需要任何 API Key：重播一場合成會議
 
-```dotenv
-AHEM_TTS_PROVIDER=azure
-AZURE_SPEECH_KEY=<Azure Speech key>
-AZURE_SPEECH_REGION=eastasia
-AZURE_TTS_GENDER=female
-AZURE_TTS_RATE=+12%
-AZURE_TTS_MONTHLY_LIMIT=500000
-AZURE_TTS_HARD_STOP_PERCENT=95
-AZURE_TTS_WARNING_PERCENTS=80,90,95
-AZURE_TTS_USAGE_FILE=meetings/azure_tts_usage.json
+```bash
+PYTHONPATH=src .venv/bin/python -m meeting_host.spectator \
+  --replay examples/synthetic-meeting.events.jsonl --port 8765 --speed 8
 ```
 
-`AZURE_TTS_GENDER=female` 是 1 號小辰女聲，改成 `male` 就是 5 號雲哲男聲。
-兩者均使用相同的 `+12%` 語速。如需進階指定其他 Azure 聲線，可另設
-`AZURE_TTS_VOICE`，其優先權高於性別預設。
+用終端印出的網址開啟觀戰畫面。**這是合成事件重播，不是現場辨識與語音生成**——不要把重播效果當成真實服務整合已驗證。
 
-這只替換主席的 TTS；即時逐字稿仍由 ElevenLabs Scribe 處理，所以 `ELEVENLABS_API_KEY` 仍須保留。Azure 口說層會把獨立的 `API` 念成已確認的「誒批哀」，並把「收斂」固定成台灣華語 `ㄕㄡ ㄌㄧㄢˋ`；觀戰畫面、事件檔與會後記錄保留原始文字，不會出現發音用的同音字。
+### 2. 腳本測試台：與會者是劇本，主席是真的
 
-Azure `Free F0` 每月額度由 Azure 端強制；Ahem 另在本機保守記帳。預設於 80%、90%、95% 寫出警告，並在 475,000 字元（免費額度的 95%）硬停，保留 5% 緩衝避免不同計量口徑造成超額。使用量記錄在 `meetings/azure_tts_usage.json`，每個 UTC 月自動歸零。Cost Management 預算只能對費用發通知，不能取代這個字元硬上限。
+需要 `OPENAI_API_KEY`（判斷與話術），不需要 Discord、不需要 STT、不需要音訊裝置：
 
-主持一場會議（先讓與會者進語音頻道，或直接給頻道 ID）：
+```bash
+cp .env.example .env      # 填入 OPENAI_API_KEY
+PYTHONPATH=src .venv/bin/python -m meeting_host.live \
+  --script examples/scripts/demo.json --mute --say-hello --spectator-port 8765
+```
+
+`--mute` 讓 TTS 換成等長靜音（時序行為完全相同，不燒 TTS 額度、headless 機器也跑得動）。劇本播完會自動收尾。
+
+跑完可以對它自己宣告的期望窗口計分、導出配音用的時間軸、或錄成影片：
+
+```bash
+PYTHONPATH=src .venv/bin/python experiments/score_script_run.py --all
+PYTHONPATH=src .venv/bin/python experiments/dub_script.py   --latest demo --md
+PYTHONPATH=src .venv/bin/python experiments/record_replay.py --latest demo   # 需要 ffmpeg
+```
+
+### 3. 真實 Discord 語音會議
+
+`.env` 需要 `DISCORD_BOT_TOKEN`、`ELEVENLABS_API_KEY`、`OPENAI_API_KEY`，以及部署環境的 `AHEM_CHANNEL_ID`、`AHEM_PUBLIC_URL`：
 
 ```bash
 PYTHONPATH=src .venv/bin/python -u -m meeting_host.live \
-    --topic "黑客松籌備" --duration 30 --say-hello --spectator-port 8765 \
-    [--channel <頻道 ID>] [--keyterms 詞1 詞2] [--phase 發散期|呻吟區|收斂期] [--auto-phase suggest|apply] [--style strict|gentle|efficient] [--no-llm]
+  --topic "產品上線排程討論" --duration 30 \
+  --say-hello --spectator-port 8765 --auto-phase suggest
 ```
 
-觀戰畫面在 `http://localhost:8765`。`Ctrl-C` 結束會議並寫出記錄到 `meetings/`。
+bot 需已加入伺服器並具備語音頻道的連線與發言權限。**真實執行會呼叫外部 API，會消耗額度或產生費用。**
 
-權杖分兩級，啟動時各印一個網址：
+選用 Azure 台灣華語主席聲音：
 
-| | 能做什麼 | 從哪裡來 |
-|---|---|---|
-| **參與者** | 讀（逐字稿、主席判斷、總結） | `--view-token` ／ `AHEM_VIEW_TOKEN`，留空就隨機產生 |
-| **操作者** | 讀 ＋ 切階段 ＋ 結束會議 | `--spectator-token` ／ `AHEM_SPECTATOR_TOKEN`，留空就隨機產生 |
+```dotenv
+AHEM_TTS_PROVIDER=azure
+AZURE_SPEECH_KEY=
+AZURE_SPEECH_REGION=eastasia
+AZURE_TTS_GENDER=female     # male = 雲哲
+```
 
-**預設是私密的**：`GET /events` 要帶其中一組（放在 query string `?k=`，因為 SSE 的 `EventSource` 不能設自訂 header）。逐字稿、主席判斷、會議總結全從那條出去，鎖住它就等於鎖住所有真實內容；`GET /` 那份空殼 HTML 不鎖，否則重新整理會壞（前端把權杖存在 sessionStorage 並刻意從網址列抹掉——畫面會投影）。`POST /phase` 與 `POST /end` 只認操作者權杖，帶 `X-Ahem-Token` header。
+仍需保留 ElevenLabs Key 供 STT 使用。
 
-bot 進語音頻道後會**自動把參與者網址貼進該頻道自己的文字聊天**，看得到的人就等於進得了那個語音頻道的人——存取範圍直接借用 Discord 既有的成員資格，不必自己蓋帳號系統。權杖跟著行程活，會議結束就失效。網址的網域從 `AHEM_PUBLIC_URL` 來，沒設就用 `http://localhost:<port>`。
+### 4. 主席不出聲的旗標
 
-會議結束時，同一個頻道還會收到**會議記錄的 md 附件**（用附件是因為 Discord 單則訊息有 2000 字元上限，總結常常超過）。這兩件事都是 best-effort：Discord 那側失敗（缺權限、頻道不支援文字聊天）只會印一行警告，不影響會議與收尾。
+| 旗標 | 效果 |
+| --- | --- |
+| `--no-llm` | 只跑快路規則，零 LLM 成本 |
+| `--no-critique` | 只關掉「AI 心聲」那條迴圈，其他 LLM 功能不受影響 |
+| `--mute` | 全流程照跑但不出聲（TTS 換成等長靜音） |
+| `--style strict\|gentle\|efficient\|test\|demo` | 門檻檔位；`demo` 會關掉慢路否決權，**誤報率未實測** |
 
-`--public-read` 讓讀取端完全不設防，給 demo 現場用（評審不在 Discord 頻道裡，拿不到參與者權杖）。寫入端不受這個旗標影響。
-
-> **網路暴露**：觀戰服務綁定 `0.0.0.0`。掛在公開網域（反向代理、tunnel）後面時，讀取端靠上面那組權杖擋著；開了 `--public-read` 就等於完整逐字稿對全世界公開，只在 demo 那種刻意公開的場合用。
-
-不用 Discord 也能看畫面——回放任何一份事件檔：
+### 5. 測試
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m meeting_host.spectator --replay examples/synthetic-meeting.events.jsonl --port 8765 --speed 8
+PYTHONPATH=src .venv/bin/python -m pytest -q tests
 ```
 
-測試：
+**clone 下來直接跑會得到 608 passed / 21 skipped / 2 xfailed**——這是任何人重現得了的數字，徽章寫的也是它。
+21 個 skip 分兩種：17 個要回放真實會議錄音，資料放進 `experiments/holdout/` 後會自己啟用（不在公開 repo，見「資料政策」）；
+另外 4 個要連真實 Discord，得設 `MEETING_HOST_RUN_REAL_DISCORD=1`。
+
+把 holdout 資料補齊之後是 **625 passed / 4 skipped / 2 xfailed**。兩個數字都列出來，是因為只寫後者會讓人以為 clone 下來就該看到 625。
+
+---
+
+## 作品展示
+
+- **評選影片**：【待補 YouTube 連結，設為「知道連結即可觀看」】
+- **作品展示網址**：<https://ahem.eighti.app> —— 常駐回放一場完整會議（黑客松籌備，四位與會者），
+  可直接看到主席的三次介入、兩次「判出問題但選擇不開口」，以及會後產出的決議／待辦／未解決事項。
+- **原始碼**：<https://github.com/Chuanyin1202/ahem>
+
+![觀戰畫面](docs/images/spectator.png)
+
+*回放 [`examples/hackathon-planning.events.jsonl`](examples/hackathon-planning.events.jsonl)——跟評選影片同一場，並打開了「群體動力」抽屜。這場**只有主席是真的**：四位與會者與他們說的每一句話都出自腳本，所以這份錄影能證明的只有主席的判斷。要自己跑一次：*
+```bash
+PYTHONPATH=src python -m meeting_host.spectator --replay examples/hackathon-planning.events.jsonl --public-read
+```
+
+---
+
+## 限制與未來工作
+
+**這一段是認真寫的，不是免責聲明。** 完整過程與失敗案例在 [docs/validation-log.md](docs/validation-log.md)。
+
+### 已知且量測過的限制
+
+- **慢路判斷不穩**：同一批評分點重跑 5 輪，主席開口次數在 1–5 次之間。三個判準變體（粗尺度、明確判準、兩段式）都無法同時在兩場真實會議上改善——把靈敏度調高，誤報就等比例升。
+- **「該講卻不講」只解了一半**：其中一個成因是類型清單少一格（模型判定要介入、卻找不到型別可填而選「無」，被自己的閘門滅掉，在一場真實會議上佔了 64%）。補上「發言權失衡」後，人工標註的獨白窗口從 0/5 輪變成 5/5 輪。**另一半未解**：三軸打平時被否決權擋下，同一份資料上佔 22/50。
+- **兩個介入型別從未在真實會議觸發**：假共識、事實錯誤。在腳本測試台上驗證過會動，真實會議還沒遇到。
+- **術語卡精確度**：判準改以「受眾需不需要」為主軸後，真實會議逐字稿上的挑詞從 156 次降到 51 次，但**其中仍有約一半是雜訊**——模型拿不到「這個團隊的日常用語是什麼」這項資訊。兩個候選改法記在 `glossary.py` 的模組說明裡。
+- **階段自動判斷只做過反面驗證**：兩場全程發散的錄音上 0 次誤切；「該切時會不會切」的正面驗證還缺一場真的走完三階段的錄音。
+- **收尾判定靠道別詞**：用詞表以外的方式收尾（「那今天就到這裡」）抓不到，主席可能在散會時還開口。已重現，刻意不用特例規則補——那會往單一場資料過擬合。
+- **主席看不到「正在發生」的長篇獨白**：慢路只在有新逐字稿時評分，而 STT 要等停頓才定稿。真實會議中影響有限（真人講話會有停頓），但這是結構性盲區。
+
+### 方法論上的限制
+
+- **腳本測試台會誇大效果**。同一個修正在自編劇本上精確度 83%、在真實會議逐字稿上只有 45%。腳本可以做同場景 A/B 相對比較，**不能拿來宣稱絕對品質**。真實會議的 holdout 永遠是回歸防線。
+- **單次測試會給出完全錯誤的結論**（我們自己撞過：模型選型時「8/8 全對」的那組，重跑 5 輪後誤報率 60%）。所有比較至少跑 5 輪。
+
+### 未來工作
+
+1. 主席判斷品質——優先處理三軸平手被否決那一半
+2. 語音自然度——目前預設聲音是英語母語的音色，唸中文有口音；換成中文母語聲音需要付費帳號的聲音庫
+3. 真實會議的長期驗證——今天的改動都還沒在真人會議上跑過
+4. 資料保留與權限政策
+
+### 尚未併入主線的協作提案
+
+- [PR #1](https://github.com/Chuanyin1202/ahem/pull/1)：觀戰存取與會議記錄的安全強化
+- [PR #4](https://github.com/Chuanyin1202/ahem/pull/4)：選用的企業後台（獨立程序、角色授權、加密儲存）
+
+---
+
+## 第三方服務、資料與素材
+
+| 項目 | 來源／連結 | 使用與授權 |
+| --- | --- | --- |
+| Ahem 原始碼 | [LICENSE](LICENSE) | MIT |
+| ElevenLabs API | [文件](https://elevenlabs.io/docs/overview)、[服務條款](https://elevenlabs.io/terms-of-use) | STT／TTS，依帳號方案；本專案採 MIT 不代表該服務免費或授予模型權重 |
+| OpenAI API | [文件](https://platform.openai.com/docs)、[服務協議](https://openai.com/policies/services-agreement/) | 語意判斷與文字生成 |
+| Azure Speech | [文件](https://learn.microsoft.com/azure/ai-services/speech-service/) | **選用**語音合成 |
+| Discord | [開發者文件](https://discord.com/developers/docs/intro)、[Developer Terms](https://support-dev.discord.com/hc/en-us/articles/8562894815383) | 真人語音頻道 |
+| Python 相依套件 | [requirements.txt](requirements.txt)（27 項） | 逐一核對過，**全部為寬鬆授權，沒有任何 GPL／AGPL／LGPL**——清單見下表 |
+| 觀戰字型 | [Google Fonts](https://fonts.google.com/)：Noto Sans TC／Noto Serif TC／JetBrains Mono | 由 Google Fonts CDN 載入，repo 內未封裝字型檔。三者皆為 SIL Open Font License 1.1 |
+| 觀戰背景圖 | `src/meeting_host/spectator/assets/bg-watercolor.jpg` | **AI 生成**素材（GPT image），由團隊成員產出並提供 |
+| 合成會議事件與截圖 | [examples/](examples/)、[docs/images/](docs/images/) | 虛構會議，非真實與會者資料 |
+| 引導方法參考 | [docs/prior-art.md](docs/prior-art.md) | 方法論參考，不表示可再散布被引用著作 |
+
+
+### Python 相依套件的授權
+
+以本專案 `requirements.txt` 的 27 項逐一核對套件 metadata（PEP 639 `License-Expression`
+優先，其次 Trove classifier）。**沒有任何 copyleft（GPL／AGPL／LGPL）授權**，因此
+不對本專案的 MIT 散布產生額外義務。
+
+| 套件 | 授權 | | 套件 | 授權 |
+| --- | --- | --- | --- | --- |
+| aiohappyeyeballs | PSF-2.0 | | opencc-python-reimplemented | Apache-2.0 |
+| aiohttp | Apache-2.0 AND MIT | | packaging | Apache-2.0 OR BSD-2-Clause |
+| aiosignal | Apache-2.0 | | pluggy | MIT |
+| attrs | MIT | | propcache | Apache-2.0 |
+| audioop-lts | PSF-2.0 | | pycparser | BSD-3-Clause |
+| cffi | MIT-0 | | Pygments | BSD-2-Clause |
+| davey | MIT | | PyNaCl | Apache-2.0 |
+| discord-ext-voice_recv | MIT | | pytest | MIT |
+| discord.py | MIT | | python-dotenv | BSD-3-Clause |
+| frozenlist | Apache-2.0 | | sounddevice | MIT |
+| idna | BSD-3-Clause | | typing_extensions | PSF-2.0 |
+| iniconfig | MIT | | websockets | BSD-3-Clause |
+| multidict | Apache-2.0 | | yarl | Apache-2.0 |
+| numpy | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | | | |
+
+盤點方式可重現：
 
 ```bash
-.venv/bin/python -m pytest tests/ -q
+.venv/bin/python -c "
+import importlib.metadata as md, re, pathlib
+names=[re.split(r'[=<>;\\[]', l.strip())[0] for l in
+       pathlib.Path('requirements.txt').read_text().splitlines()
+       if l.strip() and not l.startswith('#')]
+for n in sorted(set(names)):
+    m=md.metadata(n)
+    print(n, m.get('License-Expression') or
+          [c.rsplit('::',1)[-1].strip() for c in (m.get_all('Classifier') or [])
+           if c.startswith('License ::')])"
 ```
 
-沒有真實會議資料時是 494 passed、23 skipped、2 xfailed：17 個 skip 是需要真實錄音的回歸測試，資料放進 `experiments/holdout/` 後自動啟用（見[資料政策](#資料政策)）；另 6 個需要 `playwright`。
+**真實會議資料不在本 repo。** 逐字稿含與會者真實對話，只保留在本機（見「資料政策」）。
 
-## 做到哪裡
-
-Ahem 已在兩場真實 Discord 會議（14 分鐘與 43 分鐘，皆有人工標註）上主持並量測。完整數字與方法在 [docs/validation-results.md](docs/validation-results.md)；結論：
-
-| 面向 | 狀態 |
-|---|---|
-| 話術品質 | 已解。拆成兩次呼叫後，34 個評分點中 32 個逐字引用逐字稿（拆之前 2 個） |
-| 判斷穩定度 | **主要未解問題**。同一批評分點重跑 5 輪，主席開口次數在 1–5 次之間；人工標註「該開口」的三處，5 輪中有 3 輪一處都沒命中。多數決投票已量測，改善有限；三個判準變體（粗尺度、明確判準、兩段式）也沒有一個能同時在兩場改善——把靈敏度調高，誤報就等比例升 |
-| 雜務誤判 | 已修。調設備、找檔案曾被判為離題（5/5 輪），修正後 0/5，且未削弱對真正離題的偵測 |
-| 介入類型覆蓋 | 六型中「假共識」「事實錯誤」從未在真實會議觸發 |
-| STT 失效偵測 | 已實作，僅離線驗證 |
-| 階段自動判斷 | 第一版，建議模式；兩場全程發散的錄音上（36 筆讀數）0 次誤切；判準已排除「針對主席的衝突」 |
-
-**尚未完成**：
-
-- **群體過程階段的自動判斷**（發散／呻吟區／收斂，依 Sam Kaner 的 Diamond 模型）——這是產品定位的基礎。已有第一版偵測器（`--auto-phase suggest`：每 60 秒判一次、連續兩次一致才建議、單人或無人說話時不判），預設只建議、由人在觀戰畫面確認；`apply` 才自動套用。**只做過反面驗證**（全程發散的錄音上不亂切），正面驗證要等一場真的走完三階段的會議。
-- 主持風格檔位已有第一版（`--style`，三組既有快路門檻的組合），**未調校**：哪組適合哪種會議要靠真實會議實測。
-
-**已定的設計決定**：一個主席、只做中文、不做人格設定、不做 avatar、不做本地備援（預設雲端服務可用）。理由見 [docs/product-definition.md](docs/product-definition.md) 與 [docs/development-plan.md](docs/development-plan.md)。
+---
 
 ## 資料政策
 
-真實會議的原始逐字稿與量測產物**不在這個 repo**。文件中引用的少量對話片段與參與者名字，已取得當事人同意。
+- 真實會議的逐字稿、事件檔與會後記錄**不進版控**（`meetings/`、`experiments/holdout/` 皆已 gitignore）。
+- `.env` 不進版控；`.env.example` 只有欄位名稱，沒有值。
+- 觀戰畫面**預設私密**，需要權杖；`--public-read` 才會完全開放，那是刻意公開的場合才用。
+- 錄製真實會議前需事前告知並取得與會者同意。
 
-**資料流向**：會議音訊送往 ElevenLabs 做即時轉錄與語音合成；逐字稿片段送往 OpenAI 做判斷與話術生成，術語查證另經 OpenAI 的網路搜尋。所有紀錄只寫在本機 `meetings/`，保留與刪除由執行者決定。使用前請告知與會者並取得同意。
+---
 
-要驗證 Ahem 在你自己的會議上的表現：主持一場會議得到 `meetings/*.events.jsonl`，放進 `experiments/holdout/<案例>/`，依 [experiments/holdout/README.md](experiments/holdout/README.md) 標註「該開口」與「不該開口」的時段，然後：
+## 團隊成員
 
-```bash
-PYTHONPATH=src .venv/bin/python experiments/rescore_slow_path.py experiments/holdout/<案例>/meeting.events.jsonl \
-    --labels experiments/holdout/<案例>/labels.json --rounds 5
-```
+隊伍編號 **T043**，隊名 **分身有術**。
 
-`--rounds 5` 不是選配：單次結果只是一個抽樣，這個專案的所有穩定度結論都來自多輪重跑。
+| 姓名 | 分工 | GitHub |
+| --- | --- | --- |
+| Alex Huang（主要聯絡人） | 核心 | [Chuanyin1202](https://github.com/Chuanyin1202) |
+| 周逸達 | 前端 UI | [Zeal Chou](https://github.com/zealchou) |
+| Billis | 後端 UI | [BillisWen](https://github.com/BillisWen) |
+| Jax | 測試 | — |
 
-## 專案結構
+---
 
-```
-src/meeting_host/
-  live.py             會議主迴圈：接線、兩條判斷路徑、閘門、事件、優雅關閉
-  discord_source.py   Discord 每人一軌收音（唯一接入的音源）   stt.py   ElevenLabs Scribe 串流池
-  fast_path.py        快路四規則                    slow_path.py  慢路：判斷與話術兩次呼叫
-  phrasing.py         快路話術庫                    hearing.py    STT 失效偵測
-  phase.py            階段自動判斷（LLM 讀數＋遲滯，預設只建議）
-  style.py            主持風格檔位（快路門檻的三組預設，未調校）
-  speaker.py          提示音、TTS、Chair 狀態機      glossary.py   術語補充卡
-  events.py           事件 schema（各模組的接縫）    minutes.py    會後兩份記錄
-  spectator.py        觀戰畫面與回放伺服器           state.py      會議狀態
-examples/
-  synthetic-meeting.events.jsonl         虛構會議的事件檔，供回放與看格式
-  synthetic-phases.events.jsonl          虛構的三階段會議，含階段建議與切換事件
-experiments/
-  rescore_slow_path.py / score_run.py    重評與窗口計分
-  holdout/                               自備會議資料（不進版控）
-docs/
-  product-definition.md    定位：為什麼是主席，與 Teams Facilitator 的差別
-  interruption-design.md   插話機制：評分準則、階段感知、提示音策略
-  tech-architecture.md     技術架構與選型
-  development-plan.md      開發方案與完成狀態
-  demo-runbook.md          現場流程：會前檢查、啟動、出事處理、結束
-  validation-results.md    驗證摘要（現況一覽與各輪結論）
-  validation-log.md        完整工程紀錄，按驗證輪次累積
-  results.json             機器可讀的實測數字
-  evaluation.md            評估方法
-  prior-art.md             相關研究與開源盤點
-  specs/                   三份設計規格
-  design/                  觀戰畫面設計稿與設計原則（design/README.md）
-```
+## License
 
-## 貢獻與回報
+本專案採 **MIT License**，見根目錄 [`LICENSE`](LICENSE)，著作權標示 `Copyright (c) 2026 Chuanyin1202`。
 
-歡迎 issue 與 pull request，流程見 [CONTRIBUTING.md](CONTRIBUTING.md)；安全問題請依 [SECURITY.md](SECURITY.md) 私下回報。
-
-## 關於
-
-為 FUTUREMODE BUILDMODE GEN-AI HACKATHON 2026（台北，9 月 4–6 日）開發。
-
-授權：[MIT](LICENSE)。
+第三方服務、相依套件、字型與素材依各自條款，見上表。

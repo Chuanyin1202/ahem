@@ -52,3 +52,6 @@ experiments/out/
 
 # local design-context file for an editor skill; not part of the public repo
 .impeccable.md
+
+# firebase CLI 的除錯輸出，含登入帳號；這個 repo 是公開的，不能讓它被順手加進來
+firebase-debug.log

@@ -1,6 +1,6 @@
 """POST 端點的權杖守門。
 
-背景：觀戰服務綁 0.0.0.0，且預計掛在 Cloudflare Tunnel 後面對外（ahem.eighti.app）。
+背景：觀戰服務綁 0.0.0.0，且預計掛在反向代理／Cloudflare Tunnel 後面對外（主機名由部署端的 AHEM_PUBLIC_URL 提供）。
 `POST /end` 走的是跟 SIGTERM 完全同一條收尾路徑，會寫記錄然後結束會議——不設防
 等於任何知道網址的人都能中止進行中的 demo，而網址 demo 當下會投影出去。
 

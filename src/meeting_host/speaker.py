@@ -192,6 +192,118 @@ class Output(discord.AudioSource):
         return False
 
 
+class LocalOutput(Output):
+    """把主席的聲音送到**本機喇叭**，取代 Discord 的播放執行緒。腳本測試台專用。
+
+    只換「聲音往哪送」這一層：佇列、切幀、EOS、`first_audible_at` 全部繼承
+    `Output`，所以 Chair 走的是同一套語意——`is_busy()` 什麼時候為真、
+    `first_audible_at` 什麼時候被標記，都跟真實會議一模一樣。**不重寫這些邏輯是
+    刻意的**：主席的時序行為（軟插入等停頓、15 秒升級、播放期間不評分）全靠它們，
+    自己寫一份等於在測一條產品不會走的路。
+
+    Discord 那邊由播放執行緒每 20ms 呼叫一次 `read()`；這裡改由 sounddevice 的
+    音訊 callback 呼叫同一支。格式不用轉：`audio.py` 產的就是 48kHz 立體聲
+    s16le，一幀 960 個 sample。
+
+    ⚠️ callback 在音訊執行緒上跑，不能碰 asyncio、不能拋例外——`read()` 本身
+    保證永遠回滿一幀（沒東西就回靜音），所以這裡不需要額外防護。
+    """
+
+    BLOCK_FRAMES = FRAME_BYTES // (SAMPLE_WIDTH * 2)   # 3840 bytes ÷ (2 bytes × 2ch) = 960
+
+    def __init__(self) -> None:
+        super().__init__()
+        import numpy as np
+        import sounddevice as sd
+        self._np = np
+        self._stream = sd.OutputStream(
+            samplerate=DISCORD_RATE, channels=2, dtype="int16",
+            blocksize=self.BLOCK_FRAMES, callback=self._callback)
+        self._stream.start()
+
+    def _callback(self, outdata, frames, time_info, status) -> None:
+        outdata[:] = self._np.frombuffer(self.read(), dtype=self._np.int16).reshape(-1, 2)
+
+    def close(self) -> None:
+        self._stream.stop()
+        self._stream.close()
+
+
+class MutedOutput(Output):
+    """把主席的聲音排空但不播出去。無人值守／headless 專用。
+
+    為什麼不是「什麼都不做」：Chair 的 `is_busy()`、冷卻期、`first_audible_at`
+    全靠音訊**真的花時間排空**。如果沒有人消費佇列，`is_busy()` 永遠是 True，
+    主席講完第一句就再也不開口；反過來若讓假 TTS 瞬間回空，`is_busy()` 立刻變
+    False，主席變成「講完 0 秒就能再講」，`live.should_score` 的 busy 閘門形同
+    虛設，慢路評分點的分佈整個變樣。兩種都不是產品行為。
+
+    所以這裡照著 Discord 播放執行緒的節奏，每 20ms 呼叫一次 `read()` 把資料
+    丟掉——時間照花、語意照舊，只是沒有聲音出去，也不需要任何音訊裝置
+    （Pi5 這種 headless 機器上 sounddevice 根本開不起來）。
+
+    用 asyncio task 而不是執行緒：這個類別只在腳本測試台裡用，那條路徑本來就
+    活在 event loop 上，多開一條執行緒只是多一個要收的東西。
+    """
+
+    TICK_SECONDS = FRAME_BYTES / (DISCORD_RATE * SAMPLE_WIDTH * 2)   # 一幀 = 20ms
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._task = asyncio.create_task(self._drain())
+
+    async def _drain(self) -> None:
+        while True:
+            self.read()          # 丟掉。first_audible_at 由 read() 自己標記——
+                                 # 前提是送進來的幀不是全零，見 SilentVoice._FRAME
+            await asyncio.sleep(self.TICK_SECONDS)
+
+    def close(self) -> None:
+        self._task.cancel()
+
+
+class SilentVoice:
+    """假的 TTS：產出**與真話術等長**的靜音，一個字元都不送 ElevenLabs。
+
+    長度必須對。Chair 從 `synth()` 拿到多少 PCM，就決定 `is_busy()` 要多久才
+    變 False、冷卻期從哪一刻起算、下一次慢路評分什麼時候恢復。長度不對的話
+    整條時序鏈都跟著錯，測到的不是產品行為。
+
+    語速用 `replay.CHARS_PER_SECOND`（4.5 字/秒）——專案既有的常數，`replay.py`
+    估算發言長度、`slow_path.MAX_UTTERANCE_CHARS` 的說明換算秒數用的都是它，
+    這裡不另立一個。
+
+    介面只要 `synth(text)`：`Chair._start` 只呼叫這一支（`async for pcm in
+    self.voice.synth(iv.text)`），格式跟 `Voice.synth` 一樣是 48kHz 立體聲。
+    """
+
+    # 一幀的內容。**不能是全零**——`Output.read()` 用 `frame != SILENCE_FRAME`
+    # 判斷「這一幀有沒有聲音」來標記 `first_audible_at`，而 `SILENCE_FRAME` 正是
+    # 全零（見本檔案頂端）。全零的幀會讓 `first_audible_at` 永遠是 None，
+    # `Chair.tick()` 就永遠不呼叫 `on_spoken`，那次介入卡在 playing 出不去：
+    # 主席從此一句話都不再說。
+    #
+    # 2026-09-05 實測撞到：腳本場次兩次「發言權失衡」都排入了、都沒說出口，
+    # 事件檔上看起來像是 Chair 壞了，其實是假 TTS 送了一組跟靜音無法區分的資料。
+    #
+    # 取 int16 的 1（約 -90 dBFS）：對 `!=` 而言不是靜音，真的播出來也聽不見。
+    _FRAME = b"\x01\x00" * (FRAME_BYTES // 2)
+
+    def __init__(self, chars_per_second: float | None = None):
+        from .replay import CHARS_PER_SECOND
+        self.chars_per_second = chars_per_second or CHARS_PER_SECOND
+
+    async def synth(self, text: str):
+        seconds = max(len(text), 1) / self.chars_per_second
+        frames = max(1, round(seconds * DISCORD_RATE * SAMPLE_WIDTH * 2 / FRAME_BYTES))
+        for _ in range(frames):
+            # 一次吐一幀、每幀之間 await 一下：真的 TTS 是串流回來的，Chair 的
+            # prebuffer 邏輯（PREBUFFER_SECONDS）會依 chunk 累積量決定何時開播。
+            # 一次吐完整句會讓那段邏輯永遠走「短句」分支，測不到常見路徑。
+            yield self._FRAME
+            await asyncio.sleep(0)
+
+
 class Earcon:
     """主席的提示音。啟動時載入並驗格式——「本地檔不會失敗」是錯的，缺檔、壞檔都要 fail fast。"""
 

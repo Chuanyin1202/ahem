@@ -1309,6 +1309,34 @@ def test_utterance_prompt_carries_transcript_and_the_two_rules_that_earned_their
     assert str(slow_path.MAX_UTTERANCE_CHARS) in p
 
 
+def test_structure_block_separates_backchannel_from_participation():
+    """結構訊號要把「對方只剩應聲」量成數字——那是 6 則逐字稿看不出來的形狀。
+
+    2026-09-05 的依據：8/31 那場 O1 窗口內，模型的三軸每次都判「要介入」、pros 直接
+    寫「Alex 連續主導、Jax 已近 3 分鐘未發言」，但六個類型沒有一格裝得下，只好選
+    「無」，被 is_intervention() 的 type 閘門滅掉 12/12 次。加上「發言權失衡」這一格
+    之後，該窗口五輪全中——而區分「主述」與「已經不在討論裡」靠的就是這裡的
+    最長句字數（Jax 三分鐘內唯一一句是「OK。」）。
+    """
+    from meeting_host import slow_path
+    st = MeetingState(topic="t", duration_min=30, participants=["Alex", "Jax"])
+    st.add(Utterance("Alex", "很久以前的一段話" * 5, 100.0, 160.0))   # 3 分鐘窗口外
+    st.add(Utterance("Jax", "OK。", 400.0, 402.0))
+    st.add(Utterance("Alex", "我覺得這件事" * 40, 405.0, 465.0))
+    st.add(Utterance("Alex", "而且還有一點" * 40, 466.0, 526.0))
+    block = slow_path.build_structure(st, 530.0)
+
+    assert "Alex：說了 120 秒／2 句，最長的一句 240 字" in block   # 窗口外那句沒被算進來
+    assert "Jax：說了 2 秒／1 句，最長的一句 3 字" in block         # 三分鐘內只剩應聲
+    assert "發言權易手 1 次" in block
+    assert "Alex 已連續講 2.0 分鐘" in block   # 405→526，中間 1 秒的停頓不斷鏈
+
+    # 這一段必須進到判斷 prompt，且類型清單有那一格，否則模型判得出來也講不出口
+    p = slow_path.build_prompt(st, 530.0)
+    assert "## 結構訊號" in p and "最長的一句 3 字" in p
+    assert "發言權失衡" in p
+
+
 def test_judge_prompt_no_longer_asks_for_an_utterance():
     """拆呼叫的前提：判斷那一次完全不提話術。v2 實測只改話術指令就讓介入次數
     從 9 跳到 17——只要 utterance 還在同一份 JSON 裡，兩件事就分不開。"""
@@ -1319,3 +1347,20 @@ def test_judge_prompt_no_longer_asks_for_an_utterance():
     assert "utterance" not in p
     assert "你會說的話" not in p
     assert '"type"' in p and '"pros"' in p
+
+
+def test_channel_id_comes_from_env_and_bad_values_are_ignored(monkeypatch):
+    """`--channel` 的預設值讀 AHEM_CHANNEL_ID；壞值當作沒設，不拿去 join。
+
+    頻道 ID 屬於部署環境，不是產品的一部分：寫死在文件裡的指令會被複製到錯的
+    機器上，而這個 repo 是公開的，把 ID 留在版控裡等於公開一個可被騷擾的目標。
+    argparse 的 `type=int` 不套用在 default 上，所以轉換必須自己做——轉不動時
+    回 None（照原本的路徑等頻道），不能讓一個壞掉的 default 去 join 不存在的頻道。
+    """
+    from meeting_host import live
+    monkeypatch.delenv("AHEM_CHANNEL_ID", raising=False)
+    assert live._env_channel_id() is None
+    monkeypatch.setenv("AHEM_CHANNEL_ID", " 1234567890 ")
+    assert live._env_channel_id() == 1234567890
+    monkeypatch.setenv("AHEM_CHANNEL_ID", "not-a-number")
+    assert live._env_channel_id() is None

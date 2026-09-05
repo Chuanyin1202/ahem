@@ -312,3 +312,38 @@ def test_flush_streams_times_out_and_returns_false_when_client_never_drains():
             spectator._STREAMS.remove(stream)
 
     asyncio.run(body())
+
+
+def test_public_base_url_falls_back_loudly_when_unset(monkeypatch):
+    """沒設 AHEM_PUBLIC_URL 時要退回 localhost，**並且說得出來自己退回了**。
+
+    2026-09-05 的事故：真實會議該跑在部署主機、對外走 tunnel，卻被跑到開發機上。
+    開發機沒有 AHEM_PUBLIC_URL，啟動橫幅安靜地印了 `http://localhost:8765/?k=…`，
+    那串網址被交給外網的人，完全打不開。退回 localhost 本身沒錯，**不出聲才是錯**——
+    所以第二個回傳值存在，讓呼叫端能印警告。
+    """
+    from meeting_host.spectator import public_base_url
+    monkeypatch.delenv("AHEM_PUBLIC_URL", raising=False)
+    assert public_base_url(8765) == ("http://localhost:8765", False)
+
+    monkeypatch.setenv("AHEM_PUBLIC_URL", "https://host.example.com/")
+    assert public_base_url(8765) == ("https://host.example.com", True)   # 尾斜線要去掉
+
+    monkeypatch.setenv("AHEM_PUBLIC_URL", "   ")      # 只有空白＝沒設
+    assert public_base_url(8765) == ("http://localhost:8765", False)
+
+
+def test_banner_and_discord_notice_resolve_the_same_url(monkeypatch):
+    """人眼看的橫幅與貼進 Discord 的網址必須來自同一支解析。
+
+    出事的形狀就是兩邊各自讀環境變數：Discord 通知讀了 AHEM_PUBLIC_URL、
+    啟動橫幅沒讀，同一場會議吐出兩種網址，而看橫幅的人不會知道。
+    這條測試釘住「live.py 用的就是 spectator 那一支」，不是各寫各的。
+    """
+    import inspect
+    from meeting_host import live, spectator
+    src = inspect.getsource(live.main_async)
+    assert "public_base_url" in src, "live.py 必須共用 spectator.public_base_url"
+    assert "os.environ.get(\"AHEM_PUBLIC_URL\"" not in src, "live.py 不該自己再讀一次環境變數"
+    monkeypatch.setenv("AHEM_PUBLIC_URL", "https://host.example.com")
+    assert spectator.public_base_url(1234)[0] == "https://host.example.com"

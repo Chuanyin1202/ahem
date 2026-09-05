@@ -33,9 +33,14 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    background: var(--bg); color: var(--text);
+    /* Track C：body 本身不再上色（交給 #view 的 --bg），留 14px 當畫框——
+       這圈縫隙讓 Track B 的水彩背景圖（見下方 <img>，fixed + z-index:-1）
+       露出一點邊緣水洗質感。#view 仍是滿版不透明的 --bg，內容區完全不受影響，
+       文字可讀性不變。 */
+    background: transparent; color: var(--text);
     font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
     min-width: 1200px; overflow-x: auto;
+    padding: 14px;
   }
   a { color: var(--accent); }
   a:hover { color: var(--accentHover); }
@@ -45,7 +50,10 @@
 
   /* 設計稿是 1440×900 的固定畫布、grid 1fr + 380px；瀏覽器版改成填滿視窗，
      右欄寬度與所有內距照抄，左欄吃剩餘寬度（＝設計稿的 1fr）。 */
-  #view { width: 100%; height: 100vh; overflow: hidden; display: flex; flex-direction: row; background: var(--bg); }
+  /* Track C：高度扣掉 body 的上下 14px 畫框（vh 不會自動跟著父層 padding 縮，
+     width:100% 因為全域 box-sizing:border-box 會自動扣掉左右 padding，
+     高度要自己算）。 */
+  #view { width: 100%; height: calc(100vh - 28px); overflow: hidden; display: flex; flex-direction: row; background: var(--bg); }
 
   /* ── 左：會議紀錄 ── */
   .left {
@@ -152,7 +160,10 @@
   .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 18px; flex-shrink: 0; }
   .stat { display: flex; flex-direction: column; gap: 4px; }
   .stat-label { font-size: 12px; color: var(--muted); }
-  .stat-value { font-size: 28px; font-weight: 600; color: var(--text); }
+  /* Track C：KPI 數字改用 --muted，跟 #minutes-live／「主席的思考」維持的
+     --text 拉開一層輕重（既有設計本來就用 --muted 標示次要文字，如
+     stat-label／section-hint／u-time，這裡沒有新增色碼）。 */
+  .stat-value { font-size: 28px; font-weight: 600; color: var(--muted); }
   .stat-unit { font-size: 14px; font-weight: 400; color: var(--muted); }
   .stat-sub { font-size: 12px; color: var(--muted); }
 
@@ -160,6 +171,30 @@
   .section-head { display: flex; align-items: baseline; gap: 10px; }
   .section-title { font-size: 13px; font-weight: 700; color: var(--text); }
   .section-hint { font-size: 11px; color: var(--muted); }
+
+  /* Track C：「群體動力」抽屜，把 KPI／時間軸／主席的思考／發言分佈四組包在
+     同一個可收合面板裡，#minutes-live 維持獨立在外層（見下方 HTML 結構註解，
+     這是已定案的 layout 決策）。用原生 <details>/<summary>，不寫 JS 管開關
+     狀態——天生鍵盤可操作（Tab 跳進去、Enter／Space 觸發）、天生記得展開/收合。
+     只用既有色票；箭頭符號沿用 `.status.switchable::after` 已經在用的「▾」
+     寫法，不另外畫 SVG、不新增色碼。 */
+  .drawer { display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+  .drawer > summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    cursor: pointer; user-select: none; list-style: none;
+  }
+  .drawer > summary::-webkit-details-marker { display: none; } /* Chrome/Safari 預設三角形 */
+  .drawer > summary::marker { content: ""; }                    /* Firefox 預設三角形 */
+  .drawer > summary::after {
+    content: "▾"; font-size: 11px; color: var(--muted);
+    transition: transform .15s ease; flex-shrink: 0;
+  }
+  .drawer[open] > summary::after { transform: rotate(180deg); }
+  .drawer-body { display: flex; flex-direction: column; gap: 26px; }
+
+  /* 抽屜裡真正的次要指標（時間軸／發言分佈）標題退到 --muted；「主席的思考」
+     不加這個 class，維持 --text，讓它在抽屜裡仍比純數據更搶眼。 */
+  .section-secondary .section-title { color: var(--muted); }
 
   /* 會議產出（預覽）：設計稿之外新增，沿用「主席的思考」同一種版面語言
      （左細線＋兩行內容），只用既有色票，不發明新樣式。 */
@@ -299,8 +334,10 @@
   </div>
 
   <div class="right">
-    <!-- 會議產出（預覽）：設計稿之外新增的獨立區塊，見 docs/design/README.md
-         的偏離註記。不動下面既有的 4 組（KPI／時間軸／主席的思考／發言分佈）。 -->
+    <!-- 會議產出（預覽）：獨立在下面「群體動力」抽屜之外——這是結果／待辦，
+         抽屜裡是過程／動態訊號，概念不同。這是已定案的 layout 決策，不要併
+         進抽屜。設計稿之外新增的獨立區塊，見 docs/design/README.md 的偏離
+         註記。 -->
     <div class="section">
       <div class="section-head">
         <div class="section-title">會議產出（預覽）</div>
@@ -311,56 +348,90 @@
 
     <div class="rule"></div>
 
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-label">主席開口</div>
-        <div class="stat-value mono" id="s-iv">0</div>
-        <div class="stat-sub" id="s-iv-sub">—</div>
+    <!-- 群體動力抽屜：KPI／時間軸／主席的思考／發言分佈四組，同一顆按鈕開關。
+         原生 <details>/<summary>，不寫 JS 管開關狀態；預設展開（open）
+         保持既有畫面不變。 -->
+    <details class="drawer" id="group-dynamics" open>
+      <summary>
+        <div class="section-head">
+          <div class="section-title">群體動力</div>
+          <div class="section-hint">數據與判斷紀錄</div>
+        </div>
+      </summary>
+      <div class="drawer-body">
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">主席開口</div>
+            <div class="stat-value mono" id="s-iv">0</div>
+            <div class="stat-sub" id="s-iv-sub">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">實際發言</div>
+            <div class="stat-value mono" id="s-talk">0.0<span class="stat-unit"> 分</span></div>
+            <div class="stat-sub" id="s-talk-sub">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">最長沉默</div>
+            <div class="stat-value mono" id="s-silence">0″</div>
+            <div class="stat-sub" id="s-silence-sub">未觸發超時</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">主席思考</div>
+            <div class="stat-value mono" id="s-slow">0<span class="stat-unit"> 次</span></div>
+            <div class="stat-sub" id="s-slow-sub">—</div>
+          </div>
+        </div>
+
+        <div class="rule"></div>
+
+        <div class="section section-secondary">
+          <div class="section-head">
+            <div class="section-title">時間軸</div>
+            <div class="section-hint">發言 · 主席開口 · 忍住 · 階段</div>
+          </div>
+          <svg id="timeline" width="304" height="86" viewBox="0 0 304 86" style="display: block;"></svg>
+        </div>
+
+        <div class="rule"></div>
+
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">主席的思考</div>
+            <div class="section-hint">每 5 秒想一次要不要開口 · 最近三次</div>
+          </div>
+          <div class="judge-list" id="judge-list"></div>
+        </div>
+
+        <div class="rule"></div>
+
+        <div class="section section-secondary">
+          <div class="section-title">發言分佈</div>
+          <div class="share-list" id="share-list"></div>
+        </div>
       </div>
-      <div class="stat">
-        <div class="stat-label">實際發言</div>
-        <div class="stat-value mono" id="s-talk">0.0<span class="stat-unit"> 分</span></div>
-        <div class="stat-sub" id="s-talk-sub">—</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">最長沉默</div>
-        <div class="stat-value mono" id="s-silence">0″</div>
-        <div class="stat-sub" id="s-silence-sub">未觸發超時</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">主席思考</div>
-        <div class="stat-value mono" id="s-slow">0<span class="stat-unit"> 次</span></div>
-        <div class="stat-sub" id="s-slow-sub">—</div>
-      </div>
-    </div>
-
-    <div class="rule"></div>
-
-    <div class="section">
-      <div class="section-head">
-        <div class="section-title">時間軸</div>
-        <div class="section-hint">發言 · 主席開口 · 忍住 · 階段</div>
-      </div>
-      <svg id="timeline" width="304" height="86" viewBox="0 0 304 86" style="display: block;"></svg>
-    </div>
-
-    <div class="rule"></div>
-
-    <div class="section">
-      <div class="section-head">
-        <div class="section-title">主席的思考</div>
-        <div class="section-hint">每 5 秒想一次要不要開口 · 最近三次</div>
-      </div>
-      <div class="judge-list" id="judge-list"></div>
-    </div>
-
-    <div class="rule"></div>
-
-    <div class="section">
-      <div class="section-title">發言分佈</div>
-      <div class="share-list" id="share-list"></div>
-    </div>
-
+    </details>
+    <script>
+      // Track C：Tab／Space 對這顆 <summary> 完全是原生行為，不需要任何 JS。
+      // 唯一補的是 Enter 鍵——實測（isolated <details>/<summary> 對照組，加上
+      // 這個頁面本身，都用 headless Chrome＋CDP 送真實鍵盤事件、重複多次驗證，
+      // 不是憑印象）發現目前 Chrome 的原生 <summary> 只綁 Space 觸發開關，
+      // 不含 Enter；同一支測試對一個原生 <button> 送同樣的 Enter 事件會正常
+      // 觸發 click，排除是送鍵方式的問題。開關狀態仍然是原生 details.open
+      // 屬性，這裡沒有另外自己管一份布林 state。
+      (function () {
+        var summary = document.getElementById("group-dynamics").querySelector("summary");
+        summary.addEventListener("keydown", function (e) {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          this.parentElement.open = !this.parentElement.open;
+        });
+        // 保險：如果瀏覽器對 Enter 另外還排了一個在 keyup 時機的原生預設動作，
+        // 這裡把它吃掉，避免「keydown 開／keyup 又關回去」變成按了等於沒按。
+        summary.addEventListener("keyup", function (e) {
+          if (e.key === "Enter") e.preventDefault();
+        });
+      })();
+    </script>
 
     <div class="spacer"></div>
 

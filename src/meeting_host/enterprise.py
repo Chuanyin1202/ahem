@@ -12,6 +12,7 @@ import sqlite3
 import time
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from aiohttp import web
 from .enterprise_security import EnvelopeStore, load_kek, prepare_private_dir
@@ -21,6 +22,7 @@ PURPOSES = {"meeting_review", "incident_review"}
 SERVICE_STATES = {"ok", "degraded", "unavailable", "unknown"}
 COMPONENTS = {"discord", "stt", "tts", "chair"}
 ACTOR = web.RequestKey("enterprise_actor", dict)
+MEETING_TZ = ZoneInfo("Asia/Taipei")
 
 
 def metrics(events):
@@ -77,6 +79,7 @@ class Workspace:
         os.close(fd)
         path.chmod(0o600)
         self.db = sqlite3.connect(path)
+        self.db.execute('PRAGMA busy_timeout=100')
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA secure_delete=ON")
         self.db.executescript('''
@@ -107,6 +110,8 @@ class Workspace:
         CREATE INDEX IF NOT EXISTS audit_tenant_time ON audit(tenant,at);
         CREATE INDEX IF NOT EXISTS health_history_tenant_time ON health_history(tenant,at);
         ''')
+        if 'target' not in {r[1] for r in self.db.execute('PRAGMA table_info(audit)')}:
+            self.db.execute('ALTER TABLE audit ADD COLUMN target TEXT')
         # Database credentials supersede static bootstrap keys after rotation.
         for row in self.db.execute('SELECT actor,digest,profile FROM member_credentials'):
             profile=json.loads(row['profile'])
@@ -119,6 +124,8 @@ class Workspace:
         self.store = EnvelopeStore(kek)
         self.sessions = {}
         self.attempts = {}
+        self.login_volume = {}
+        self.maintenance_failures = 0
 
     def identify(self, token):
         if not isinstance(token, str) or len(token) > 4096:
@@ -150,9 +157,9 @@ class Workspace:
         self.sessions={k:v for k,v in self.sessions.items() if v[0]['id']!=profile['id']}
         return {'token':token,'expires_at':expires,'actor':profile['id']}
 
-    def audit(self, actor, action, outcome):
-        self.db.execute("INSERT INTO audit VALUES (?,?,?,?,?)", (time.time(), actor["tenant"],
-            hashlib.sha256(actor["id"].encode()).hexdigest()[:16], action, outcome))
+    def audit(self, actor, action, outcome, target=None):
+        self.db.execute("INSERT INTO audit (at,tenant,actor,action,outcome,target) VALUES (?,?,?,?,?,?)", (time.time(), actor["tenant"],
+            hashlib.sha256(actor["id"].encode()).hexdigest()[:16], action, outcome, target))
         self.db.commit()
 
     def expire(self):
@@ -216,7 +223,7 @@ class Workspace:
             self.db.execute("INSERT INTO meeting_imports VALUES (?,?)", (mid,time.time()))
             if source_id is not None:
                 self.db.execute('INSERT INTO import_receipts VALUES (?,?,?)', (actor['tenant'],source_id,mid))
-        self.audit(actor, "import", "ok")
+        self.audit(actor, "import", "ok", mid)
         return mid
 
 
@@ -256,6 +263,8 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
             response = web.json_response({"error": exc.reason}, status=exc.status)
         except (ValueError, KeyError, TypeError):
             response = web.json_response({"error": "Invalid request"}, status=400)
+        except sqlite3.OperationalError:
+            response = web.json_response({"error": "Database temporarily unavailable"}, status=503)
         response.headers.update({"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
             "Referrer-Policy": "no-referrer", "Content-Security-Policy":
             "default-src 'self'; script-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'"})
@@ -266,21 +275,34 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
         ws.attempts = {k: v for k, v in ws.attempts.items() if v[1] > now}
         key = request.remote
         count, until = ws.attempts.get(key, (0, now+60))
+        ws.login_volume = {k:v for k,v in ws.login_volume.items() if v[1]>now}
+        volume, volume_until = ws.login_volume.get(key, (0, now+60))
+        if volume >= 120 or len(ws.login_volume) >= 10000:
+            raise web.HTTPTooManyRequests()
+        ws.login_volume[key] = (volume+1, volume_until)
         if count >= 10 or len(ws.attempts) >= 10000:
             raise web.HTTPTooManyRequests()
-        ws.attempts[key] = (count+1, until)
         body = await object_body(request)
+        # Another request may have failed while this body was uploading.
+        count, until = ws.attempts.get(key, (0, time.time()+60))
+        if until <= time.time():
+            count, until = 0, time.time()+60
+        if count >= 10:
+            raise web.HTTPTooManyRequests()
         actor = ws.identify(body["token"])
         if not actor:
+            ws.attempts[key] = (count+1, until)
             raise web.HTTPUnauthorized()
         ws.sessions = {k: v for k, v in ws.sessions.items() if v[1] > now}
         if len(ws.sessions) >= 10000:
             raise web.HTTPServiceUnavailable()
         sid = secrets.token_urlsafe(32)
-        ws.sessions[sid] = (actor, now+1800)
+        credential = ws.db.execute('SELECT expires FROM member_credentials WHERE actor=?', (actor['id'],)).fetchone()
+        expires = min(now+1800, credential[0]) if credential else now+1800
+        ws.sessions[sid] = (actor, expires)
         response = web.json_response({"role": actor["role"]})
         response.set_cookie("enterprise", sid, httponly=True, samesite="Strict",
-                            secure=origin.startswith("https://"), max_age=1800, path="/")
+                            secure=origin.startswith("https://"), max_age=max(0, int(expires-now)), path="/")
         ws.audit(actor, "login", "ok")
         return response
 
@@ -352,10 +374,10 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
         granted = actor["role"] == "operator" or ws.db.execute(
             "SELECT 1 FROM grants WHERE meeting=? AND actor=?", (row["id"], actor["id"])).fetchone()
         if not granted or purpose not in PURPOSES or (row["policy"] == "regulated" and actor.get("regulated_content") is not True):
-            ws.audit(actor, "content", "denied")
+            ws.audit(actor, "content", "denied", row['id'])
             raise web.HTTPForbidden()
         text = ws.store.decrypt_text(row["blob"], meeting_id=row["id"], artifact_type="events", purpose=purpose, operator=True)
-        ws.audit(actor, "content:"+purpose, "ok")
+        ws.audit(actor, "content:"+purpose, "ok", row['id'])
         return web.json_response({"events": json.loads(text)})
 
     async def access(request):
@@ -393,7 +415,7 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
                 ws.db.execute("INSERT OR IGNORE INTO grants VALUES (?,?)", (row["id"], target["id"]))
             else:
                 ws.db.execute("DELETE FROM grants WHERE meeting=? AND actor=?", (row["id"], target["id"]))
-        ws.audit(actor, "grant" if body["allow"] else "revoke", "ok")
+        ws.audit(actor, "grant" if body["allow"] else "revoke", "ok", row['id'])
         return web.json_response({"ok": True})
 
     async def health(request):
@@ -426,7 +448,7 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
             where += " AND outcome=?"; params.append(outcome)
         count = ws.db.execute("SELECT count(*) FROM audit WHERE " + where, params).fetchone()[0]
         return web.json_response({"entries": [dict(r) for r in ws.db.execute(
-            "SELECT at,actor,action,outcome FROM audit WHERE " + where + " ORDER BY at DESC,rowid DESC LIMIT ? OFFSET ?",
+            "SELECT at,actor,action,outcome,target FROM audit WHERE " + where + " ORDER BY at DESC,rowid DESC LIMIT ? OFFSET ?",
             [*params, limit, offset])], "total_count": count, "limit": limit, "offset": offset})
 
     async def history(request):
@@ -450,7 +472,7 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
         expires = min(row["expires"], time.time()+days*86400)
         with ws.db:
             ws.db.execute("UPDATE meetings SET policy=?,expires=? WHERE id=?", (target, expires, row["id"]))
-        ws.audit(actor, "policy", "ok")
+        ws.audit(actor, "policy", "ok", row['id'])
         return web.json_response({"policy": target, "expires_at": expires})
 
     async def members(request):
@@ -530,11 +552,11 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
         if row['policy']=='regulated' and not actor.get('regulated_content'):
             raise web.HTTPForbidden()
         day=body.get('day')
-        if not isinstance(day,str) or date.fromisoformat(day).isoformat()!=day or date.fromisoformat(day)>datetime.now(timezone.utc).date():
+        if not isinstance(day,str) or date.fromisoformat(day).isoformat()!=day or date.fromisoformat(day)>datetime.now(MEETING_TZ).date():
             raise ValueError('Expected a non-future YYYY-MM-DD meeting date')
         with ws.db:
             ws.db.execute('INSERT OR REPLACE INTO meeting_dates VALUES (?,?)',(row['id'],day))
-        ws.audit(actor,'meeting_date_update','ok')
+        ws.audit(actor,'meeting_date_update','ok',row['id'])
         return web.json_response({'day':day,'source':'operator_entered'})
 
     async def meeting_trends(request):
@@ -542,7 +564,7 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
         days=int(request.query.get('days','30'))
         if days not in {30,90,365}:
             raise ValueError('Unsupported date window')
-        cutoff=(datetime.now(timezone.utc).date()-timedelta(days=days-1)).isoformat()
+        cutoff=(datetime.now(MEETING_TZ).date()-timedelta(days=days-1)).isoformat()
         rows=ws.db.execute("""SELECT d.day,count(*) AS meetings,
           round(avg(json_extract(m.aggregate,'$.duration_seconds'))/60.0,2) AS average_minutes,
           sum(json_extract(m.aggregate,'$.interventions')) AS interventions,
@@ -615,10 +637,13 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
     async def purge(request):
         actor = require(request, {"operator"})
         row = meeting(request)
+        if row['policy'] == 'regulated' and actor.get('regulated_content') is not True:
+            ws.audit(actor, 'delete', 'denied', row['id'])
+            raise web.HTTPForbidden()
         with ws.db:
             ws.db.execute("DELETE FROM grants WHERE meeting=?", (row["id"],))
             ws.db.execute("DELETE FROM meetings WHERE id=?", (row["id"],))
-        ws.audit(actor, "delete", "ok")
+        ws.audit(actor, "delete", "ok", row['id'])
         return web.json_response({"ok": True})
 
     app = web.Application(middlewares=[boundary], client_max_size=4*1024*1024)
@@ -644,8 +669,14 @@ def create_app(ws: Workspace, origin: str, *, demo_mode: bool = False):
         import asyncio
         async def sweep():
             while True:
-                ws.expire()
-                await asyncio.sleep(60)
+                try:
+                    ws.expire()
+                    ws.maintenance_failures = 0
+                except sqlite3.OperationalError:
+                    ws.db.rollback()
+                    ws.maintenance_failures += 1
+                    print('enterprise retention: database unavailable; retry scheduled', flush=True)
+                await asyncio.sleep(min(60, 2 ** min(ws.maintenance_failures, 6)) if ws.maintenance_failures else 60)
         task = asyncio.create_task(sweep())
         yield
         task.cancel()

@@ -82,7 +82,7 @@ class FileKEK:
     def load(self) -> bytes:
         if not self.path.is_absolute():
             raise ValueError("AHEM_KEK_FILE 必須是絕對路徑")
-        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | os.O_NONBLOCK
         try:
             fd = os.open(self.path, flags)
         except OSError as exc:
@@ -99,7 +99,9 @@ class FileKEK:
                 raise PermissionError("KEK 檔案必須由服務帳號或 root 擁有")
             with os.fdopen(fd, "r", encoding="ascii") as handle:
                 fd = -1
-                encoded = handle.read().strip()
+                encoded = handle.read(4097).strip()
+                if len(encoded) > 4096:
+                    raise ValueError('KEK file too large')
         finally:
             if fd >= 0:
                 os.close(fd)

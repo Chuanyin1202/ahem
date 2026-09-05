@@ -6,6 +6,7 @@ import sqlite3
 import time
 import secrets
 import re
+import tempfile
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from .enterprise_security import EnvelopeStore, load_kek
@@ -18,11 +19,16 @@ def write_new(path, data):
     path = Path(path)
     if not path.parent.is_dir() or path.parent.is_symlink() or path.parent.stat().st_mode & 0o077:
         raise ValueError('Destination directory must already exist and be private (0700)')
-    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    with os.fdopen(fd, 'wb') as output:
-        output.write(data)
-        output.flush()
-        os.fsync(output.fileno())
+    fd, temporary = tempfile.mkstemp(prefix='.ahem-backup-', suffix='.partial', dir=path.parent)
+    try:
+        with os.fdopen(fd, 'wb') as output:
+            output.write(data)
+            output.flush()
+            os.fsync(output.fileno())
+        # Atomic no-clobber publication on the same filesystem.
+        os.link(temporary, path)
+    finally:
+        os.unlink(temporary)
 
 
 def validate(db, key):

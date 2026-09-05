@@ -168,7 +168,7 @@ function renderAudit(pane,data) {
  outcome.onchange=()=>{filters.outcome=outcome.value;filters.offset=0;render().catch(error);};pane.append(field('稽核結果',outcome));
  const actions={login:'登入',import:'匯入會議',grant:'授予閱覽',revoke:'撤銷閱覽',delete:'刪除會議',access:'權限檢查',content:'內容讀取','content:meeting_review':'讀取：會議回顧','content:incident_review':'讀取：事件調查'};
  if (!data.entries.length) { pane.append(el('p','目前尚無存取紀錄。','empty')); return; }
- pane.append(table(['時間','操作身分指紋','動作','結果'],data.entries.map(x => [new Date(x.at*1000).toLocaleString(),x.actor,actions[x.action]||x.action,x.outcome==='ok'?'成功':'拒絕'])));
+ pane.append(table(['時間','操作身分指紋','動作','目標會議','結果'],data.entries.map(x => [new Date(x.at*1000).toLocaleString(),x.actor,actions[x.action]||x.action,x.target||'—',x.outcome==='ok'?'成功':'拒絕'])));
  paginate(pane,data);
 }
 function paginate(pane,data){
@@ -226,7 +226,10 @@ function renderMeetingTrends(pane,data){
  if(!data.days.length)pane.append(el('p','此期間尚無具會議日期的資料，管理員可在「內容與授權」填寫日期。','empty'));
 }
 function meetingDate(m){
- const pane=detailPane('填寫會議日期'),form=el('form',undefined,'import'),input=el('input');input.type='date';input.required=true;input.max=new Date().toISOString().slice(0,10);
+ const pane=detailPane('填寫會議日期'),form=el('form',undefined,'import'),input=el('input');input.type='date';input.required=true;
+ const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ const part=k=>parts.find(p=>p.type===k).value;
+ input.max=`${part('year')}-${part('month')}-${part('day')}`;
  const submit=el('button','儲存會議日期');submit.type='submit';form.append(field('會議日期',input),submit);pane.append(el('p','請填寫實際會議日期；系統記錄為管理員提供，不會自行推測。','small'),form);
  form.onsubmit=async e=>{e.preventDefault();if(submit.disabled)return;submit.disabled=true;const epoch=revision;
   try{await api('meetings/'+m.id+'/date',{day:input.value});if(epoch===revision)await render();}catch(e){if(epoch===revision)error(e);}finally{submit.disabled=false;}
@@ -315,7 +318,7 @@ function renderMeetings(pane,data,page) {
     if(identity.role==='operator')actions.append(button('保存政策',()=>retention(m),'secondary'));
     if(identity.role==='operator')actions.append(button('填寫日期',()=>meetingDate(m),'secondary'));
    } else actions.append(el('span','需受限內容許可','small'));
-   if(identity.role==='operator')actions.append(button('刪除',async()=>{
+   if(identity.role==='operator' && (m.policy!=='regulated' || identity.regulated_content))actions.append(button('刪除',async()=>{
     if(confirm('永久刪除此場會議的儲存內容與授權？')){
      await api('meetings/'+m.id,null,'DELETE'); await render();
     }

@@ -43,6 +43,9 @@
        不留裸 rgba() 字面值在規則裡。 */
     --handle-shadow: -6px 0 16px rgba(43, 38, 34, 0.06);
     --drawer-shadow: -12px 0 32px rgba(43, 38, 34, 0.08);
+    /* Track E：即時會議記錄卡片底色，逐值抄自設計稿（純白，跟半透明的 --panel
+       故意不同——卡片要在半透明右欄上「浮起來」）。 */
+    --card-bg: #FFFFFF;
   }
 
   @keyframes ahem-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
@@ -50,14 +53,15 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    /* Track C：body 本身不再上色（交給 #view 的 --bg），留 14px 當畫框——
-       這圈縫隙讓 Track B 的水彩背景圖（見下方 <img>，fixed + z-index:-1）
-       露出一點邊緣水洗質感。#view 仍是滿版不透明的 --bg，內容區完全不受影響，
-       文字可讀性不變。 */
+    /* 【2026-09-05 Track E 更新】Zeal 明確要求比照提案圖 MainWithSidebar.dc.html
+       的滿版水彩氛圍，不要只留 14px 畫框——原本 Track C 的折衷版是因為 #view/.left/
+       .right 全是不透明實色，只能靠邊緣縫隙透出背景。現在改成 .left/.right 自己
+       半透明（見下方 .left/.head/.right），水彩整面都看得到，畫框縫隙已無存在理由，
+       改回 0，版面滿版對齊提案圖。 */
     background: transparent; color: var(--text);
     font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
     min-width: 1200px; overflow-x: auto;
-    padding: 14px;
+    padding: 0;
   }
   a { color: var(--accent); }
   a:hover { color: var(--accentHover); }
@@ -70,17 +74,24 @@
   /* Track C：高度扣掉 body 的上下 14px 畫框（vh 不會自動跟著父層 padding 縮，
      width:100% 因為全域 box-sizing:border-box 會自動扣掉左右 padding，
      高度要自己算）。 */
-  #view { width: 100%; height: calc(100vh - 28px); overflow: hidden; display: flex; flex-direction: row; background: var(--bg); }
+  /* 【Track E】#view 改透明，不再是滿版不透明的 --bg——水彩氛圍改由 .left／.head／
+     .right 各自的半透明底色負責（數值抄自提案圖 MainWithSidebar.dc.html 行
+     19-30：header 0.68／左欄 0.42／右欄 0.88），拿掉 -28px 因為 body 已經沒有
+     畫框 padding 要扣。 */
+  #view { width: 100%; height: 100vh; overflow: hidden; display: flex; flex-direction: row; background: transparent; }
 
   /* ── 左：會議紀錄 ── */
   .left {
     display: flex; flex-direction: column; gap: 28px;
     flex-grow: 1; min-width: 0; min-height: 0;
     padding: 48px 64px 40px 72px;
+    background: rgba(244, 239, 231, 0.42);
   }
   .head {
     display: flex; align-items: flex-end; gap: 24px;
     padding-bottom: 22px; border-bottom: 1px solid var(--border-strong);
+    margin: -48px -64px 0 -72px; padding: 48px 64px 22px 72px;
+    background: rgba(251, 248, 243, 0.68);
   }
   .head-id { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
   .eyebrow { font-size: 11px; letter-spacing: 0.24em; color: var(--muted); }
@@ -184,7 +195,9 @@
     display: flex; flex-direction: column; gap: 26px;
     width: 380px; flex-shrink: 0; min-height: 0;
     padding: 48px 40px 40px 36px;
-    background: var(--panel); border-left: 1px solid var(--border);
+    /* Track E：改半透明（抄提案圖右欄 0.88），讓水彩從右欄也透出來——0.88 已經
+       夠不透明，文字對比不受影響。 */
+    background: rgba(251, 248, 243, 0.88); border-left: 1px solid var(--border);
     /* 設計稿是 1440×900 的固定畫布，右欄內容剛好填滿、不需要捲。加了「提示卡」
        之後在 900px 高的視窗會超出——原本超出的部分是直接被切掉的（實測：兩顆
        按鈕整個按不到），那不是刻意的設計，只是從來沒超出過。這裡讓它在超出時
@@ -220,15 +233,34 @@
 
   /* 會議產出（預覽）：設計稿之外新增，沿用「主席的思考」同一種版面語言
      （左細線＋兩行內容），只用既有色票，不發明新樣式。 */
-  .minutes-live { display: flex; flex-direction: column; gap: 12px; }
-  .ml-group { display: flex; flex-direction: column; gap: 6px; }
-  .ml-group-title { font-size: 11px; color: var(--muted); letter-spacing: .04em; }
-  .ml-list { display: flex; flex-direction: column; gap: 6px; list-style: none; margin: 0; padding: 0; }
+  /* Track E：即時會議記錄改白卡片，逐值抄自提案圖 MainWithSidebar.dc.html
+     行 82-105——決議/未解決事項用卡片（未解決是虛線邊框，跟已拍板的決議做視覺
+     區分），待辦事項維持提案圖原本的純文字列（提案圖本來就沒把待辦裝進卡片）。 */
+  .minutes-live { display: flex; flex-direction: column; gap: 16px; }
+  .ml-group { display: flex; flex-direction: column; gap: 10px; }
+  .ml-group-head { display: flex; align-items: baseline; gap: 8px; }
+  .ml-group-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .ml-count { font-family: "JetBrains Mono", "SF Mono", Menlo, monospace; font-size: 11px; font-weight: 600; color: var(--muted); }
+  .ml-list { display: flex; flex-direction: column; gap: 10px; list-style: none; margin: 0; padding: 0; }
   .ml-list li {
-    font-size: 12px; line-height: 1.55; color: var(--text);
-    padding-left: 12px; border-left: 2px solid var(--track);
+    font-size: 14px; line-height: 1.55; color: var(--text);
   }
-  .ml-who { font-weight: 700; margin-right: 6px; }
+  .ml-list.ml-list--card li {
+    position: relative; display: flex; flex-direction: column; gap: 3px;
+    padding: 10px 12px; background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .ml-list.ml-list--card.ml-list--unresolved li { border-style: dashed; border-color: var(--border-strong); }
+  .ml-list.ml-list--plain li {
+    display: grid; grid-template-columns: 60px 1fr; gap: 10px; font-size: 13px;
+  }
+  .ml-badge-new {
+    position: absolute; top: -6px; right: -6px; padding: 1px 7px; border-radius: 999px;
+    background: var(--panel); border: 1px solid var(--border-strong); color: var(--muted);
+    font-size: 9px; font-weight: 700;
+  }
+  .ml-who { font-size: 11px; font-weight: 500; color: var(--muted); }
+  .ml-what { font-size: 14px; font-weight: 500; line-height: 1.55; color: var(--text); }
   .ml-muted { color: var(--muted); }
   .ml-empty { font-size: 12px; color: var(--muted); }
 
@@ -431,7 +463,13 @@
     <div class="section">
       <div class="section-head">
         <div class="section-title">會議產出（預覽）</div>
-        <div class="section-hint">進行中即時更新 · 非正式版</div>
+        <!-- Track E：抄提案圖行 75-77 的呼吸圓點＋即時鐘，讓「這是活的」變成看得到的
+             動態證據，不只是一句靜態文字。時間來自 renderTop() 已經在用的 state.serverNow，
+             不新開一條時鐘來源。 -->
+        <div class="section-hint" style="display:flex; align-items:center; gap:6px;">
+          <span style="width:6px; height:6px; border-radius:999px; background:var(--muted); animation: ahem-pulse 1.6s ease-in-out infinite; flex-shrink:0;"></span>
+          <span>即時更新中 · <span id="minutes-live-clock" class="mono">--:--</span></span>
+        </div>
       </div>
       <div class="minutes-live" id="minutes-live"></div>
     </div>
@@ -816,6 +854,7 @@
     el("topic").textContent = m ? m.topic : "等待會議開始…";
     el("clock").textContent = fmtClock(state.serverNow);
     el("clock-total").textContent = m ? "/ " + fmtClock(m.duration_min * 60) : "/ --:--";
+    el("minutes-live-clock").textContent = fmtClock(state.serverNow);
 
     var statusEl = el("status");
     statusEl.classList.toggle("switchable", !!m && !state.ended);
@@ -1247,11 +1286,18 @@
   // 的偏離註記），只用既有色票／既有的 .section 版面語言，不發明新樣式。
   // 讀 state.minutesLive（只被 final=false 的預覽更新，final=true 到達時
   // 刻意不清空——見 state 宣告處與 handleEvent 的 "minutes" 分支）。
-  function renderMinutesGroup(title, items, renderItem) {
+  // listStyle: "card"（決議/未解決，白卡片）｜"plain"（待辦，純文字列，提案圖本來就沒裝卡片）
+  // 「剛更新」只標最後一筆——這幾組都是只增不減的預覽陣列，最後一筆＝最新一筆是查得到的事實，不是猜的。
+  function renderMinutesGroup(title, items, renderItem, listStyle) {
     if (!items.length) return "";
-    return '<div class="ml-group"><div class="ml-group-title">' + esc(title) + '</div>' +
-      '<ul class="ml-list">' + items.map(function (it) {
-        return "<li>" + renderItem(it) + "</li>";
+    var cls = "ml-list " + (listStyle === "card" ? "ml-list--card" : "ml-list--plain") +
+      (title === "未解決事項" ? " ml-list--unresolved" : "");
+    var last = items.length - 1;
+    return '<div class="ml-group"><div class="ml-group-head"><div class="ml-group-title">' + esc(title) +
+      '</div><div class="ml-count">' + items.length + '</div></div>' +
+      '<ul class="' + cls + '">' + items.map(function (it, i) {
+        var badge = (listStyle === "card" && i === last && items.length > 1) ? '<div class="ml-badge-new">剛更新</div>' : "";
+        return "<li>" + badge + renderItem(it) + "</li>";
       }).join("") + '</ul></div>';
   }
 
@@ -1266,16 +1312,17 @@
     }
     el("minutes-live").innerHTML =
       renderMinutesGroup("決議事項", decisions, function (d) {
-        return (d.who ? '<span class="ml-who">' + esc(d.who) + '</span>' : "") +
-          esc(d.what || "") + (d.by ? '<span class="ml-muted">　' + esc(d.by) + ' 前</span>' : "");
-      }) +
+        return (d.who ? '<div class="ml-who">' + esc(d.who) + '</div>' : "") +
+          '<div class="ml-what">' + esc(d.what || "") + (d.by ? '<span class="ml-muted">　' + esc(d.by) + ' 前</span>' : "") + '</div>';
+      }, "card") +
       renderMinutesGroup("待辦事項", todos, function (t) {
-        return (t.owner ? '<span class="ml-who">' + esc(t.owner) + '</span>' : "") + esc(t.task || "");
-      }) +
+        return (t.owner ? '<div class="ml-muted">' + esc(t.owner) + '</div>' : "<div></div>") +
+          '<div>' + esc(t.task || "") + '</div>';
+      }, "plain") +
       renderMinutesGroup("未解決事項", unresolved, function (u) {
-        return esc(u.topic || "") +
-          (u.chair_ruling ? '<span class="ml-muted">　' + esc(u.chair_ruling) + '</span>' : "");
-      });
+        return '<div class="ml-what">' + esc(u.topic || "") + '</div>' +
+          (u.chair_ruling ? '<div class="ml-muted">' + esc(u.chair_ruling) + '</div>' : "");
+      }, "card");
   }
 
   // ── AI 即時觀察（Track D，D2）──────────────────────────────────────────

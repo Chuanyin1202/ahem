@@ -8,6 +8,8 @@
 - 2026-09-05 — Track B 補做獨立審計（原本合併時漏了這一關）。細節見下。
 - 2026-09-05 — Track D（主席狀態徽章＋AI 即時觀察面板＋群體動力滑入抽屜）完工。細節見下。
 - 2026-09-05 — Track D 以 `git rebase main` 併回主線，4 處衝突人工合併＋覆核，順手修掉 DEFERRED_DEFECTS 第 5 項。細節見下。
+- 2026-09-05 — Track E（水彩背景改滿版半透明、會議摘要改白卡片，逐值比對提案圖修正）完工，已合併於 `0cb37c8`。
+- 2026-09-05 — Track F（補 Kaner 菱形「會議節奏」視覺化，用真實資料算座標＋核對抽屜排版/圖示）完工。細節見下。
 
 ---
 
@@ -292,3 +294,111 @@
 - `docs/DEFERRED_DEFECTS.md` 還有 3 項待處理：第 2 項（`background: transparent`
   建議改 `var(--bg)`）、第 3 項（已因 Track D 改版大致失效，僅剩最低優先度）、
   第 4 項（Kaner 菱形節奏視覺化未做）。demo 之後再看。
+
+---
+
+## 2026-09-05 Track F：補 Kaner 菱形「會議節奏」視覺化＋核對抽屜排版/圖示
+
+- **時間**：2026-09-05（Demo Day 當天）
+- **誰做的**：builder agent（worktree 隔離），Claude Sonnet 5 前台驗收
+- **開工前棕地探勘發現的落差**：worktree 建立時分岔自舊的 `f025fef`（另一條
+  Discord／participant-token 功能線），main 當時已經前進到 `0cb37c8`
+  （含 Track D 的滑入抽屜與 Track E 的水彩/卡片修正），兩者相差 14 個 commit。
+  `git merge-base main HEAD` 確認 `f025fef` 是 `0cb37c8` 的**純祖先**（`main..HEAD`
+  無任何獨有 commit），於是用 `git merge --ff-only main` 快轉到 `0cb37c8`，
+  乾淨、無衝突。這一步如果漏做，`.dyn-drawer`／`#dyn-handle` 等工作單引用的
+  id 全部不存在，會整批誤判成「Track D 沒做」。
+- **做了什麼**：
+  1. `src/meeting_host/spectator/index.html` 新增 `renderKanerDiamond()` 與兩個
+     幾何輔助函式 `kanerUpperY(x)`/`kanerLowerY(x)`，插在 `renderTimeline()`
+     之後。HTML 插入點在「群體動力」抽屜標題列之後、既有四塊（KPI／時間軸／
+     主席的思考／發言分佈）之前，比照提案圖順序（會議節奏在最上面）。
+  2. 三個階段分界點：預設 `duration_min*60` 均分三等份；`state.phaseTransitions`
+     出現第一筆 `to==="呻吟區"`/`to==="收斂期"` 就改用那筆真實 `t`（用
+     `gotB1`/`gotB2` 旗標鎖住「只取第一筆」，不是每次都覆蓋成最後一筆）。
+  3. 目前位置圓點／線：`state.serverNow` 對總時長的比例映射到 6~314px，掛在
+     `handleEvent()` 開頭 `state.serverNow = ev.t;` 之後呼叫，讓它跟畫面上其他
+     即時元素一樣每個事件就更新；另外在 `"meeting"`／`"phase"` 兩個 case 尾端
+     各多呼叫一次，因為這兩處會推進 `phaseTransitions`／換 `duration_min`，
+     順序上晚於檔頭那次呼叫，不補這一下分界線會晚一個事件才追上（marker
+     位置本身不受影響，因為它只依賴 `serverNow`，在檔頭那次呼叫時已經是對的）。
+  4. 填色路徑與兩條分隔虛線都用同一組直線內插公式現算 y 座標，不寫死。
+  5. 三欄標籤 `grid-template-columns` 的三個 fr 值跟著真實分界點成比例
+     （`Math.max(1, ...)` 防止退化寬度把 grid 弄壞）。
+  6. 說明文字取 `phaseTransitions` 最後一筆；沒有紀錄時改講真話「尚未切換階段，
+     目前處於「X」」，**沒有**照抄提案圖那句「主席取得評估授權後開始收斂」——
+     那是示範用的假敘述，沒有對應的真實判斷邏輯，工作單也明講不要抄。
+  7. 顏色：新增 `--kaner-fill`(`#EAE1D2`)／`--kaner-track`(`#C9BEAD`) 兩個
+     `:root` 變數；另外三色（外框白底／描邊／目前位置標記）分別剛好等於既有
+     `--card-bg`／`--dim`／`--text`，直接重用沒有重複定義。
+- **一處小澄清（工作單 vs 提案圖原始碼有出入，取後者）**：工作單文字說「其餘
+  兩欄用 `--muted`」，但逐字讀提案圖第 166-167 行，未選中欄位的顏色是
+  `#A89F93`——這個色碼在本專案已有既有具名變數 `--dim`，不是 `--muted`
+  （`#857C72`）。既然工作單本身開宗明義要求「直接讀源碼取精確數值，不要憑
+  印象轉述」，這裡採用提案圖的真實色碼、對到既有的 `--dim`，不是工作單文字
+  複述時的筆誤版本。
+- **排版/圖示核對結果**（Playwright 實測，不是讀程式碼推論）：把手菱形 icon
+  14×14、抽屜標題菱形 icon 13×13（皆為 `M12 3 L21 12 L12 21 L3 12 Z`）、關閉
+  按鈕 15×15（兩條對角線 X）、關閉按鈕點擊區 34×34、抽屜寬度 380px、抽屜陰影
+  `rgba(43,38,34,0.08) -12px 0 32px`、把手陰影 `rgba(43,38,34,0.06) -6px 0 16px`
+  ——**全部跟提案圖逐值相符，Track D 已經做對，本批沒有改動這些**。
+- **實測證據**：
+  - `.venv/bin/python -m pytest tests/ -q` → **564 passed, 21 skipped, 2 xfailed**
+    （施工前後各跑一次，數字一致；這批只碰 `index.html`，Python 零改動）。
+    這台環境原本沒有 `.venv`，本批自己建的（`requirements.txt` + `playwright
+    install chromium`，chromium 二進位命中既有的 `~/.cache/ms-playwright`
+    共用快取，沒有重新下載）。
+  - `node --check`（抽出真正的 `<script>`…`</script>` 區塊，用 `^<script>$`/
+    `^</script>$` 精確定位行號，不是天真的正規表示式——第一次天真抓法被我自己
+    寫的 CSS 註解裡出現的字面字串 `<script>` 誤導撞到假陽性語法錯誤）→ **rc=0**。
+  - Python `HTMLParser` 標籤平衡檢查（沿用 Track D 那次審計的同一支檢查邏輯）
+    → **errors: 0, unclosed: []**。
+  - `grep -n "#[0-9A-Fa-f]{3,6}"` 逐行核對：新程式碼（`renderKanerDiamond` 系列
+    函式）**零筆**裸 hex，全部走 `var(--...)`；命中的都是既有、這批完全沒碰過的
+    `renderTimeline()` SVG 字串或說明文字裡的色碼提及。
+  - **真瀏覽器＋真實回放資料驗證**（`PYTHONPATH=src .venv/bin/python -m
+    meeting_host.spectator --replay examples/synthetic-phases.events.jsonl
+    --port 8879 --speed 1000000 --public-read`，這份範例檔本身就在 t=180
+    切「呻吟區」、t=300 切「收斂期」，duration_min=15（900 秒），均分點應為
+    300/600，跟這兩筆真實時間明顯不同，足以證明程式真的讀了
+    `phaseTransitions` 而不是巧合對上均分值）：
+    - `#kaner-diamond` innerHTML 讀出的分界線 x 座標 `67.6`/`108.7`、目前位置
+      圓點 `108.7`，跟純數學公式（`px(180,900)=67.60`／`px(300,900)=108.67`）
+      獨立算出的期望值完全對上（誤差 <0.15px，浮點捨入範圍內）。
+    - `#kaner-labels` 的 `grid-template-columns` 電腦運算後的像素
+      `63px/41.98px/210px`，比例 `20%/13.33%/66.67%`，跟 `(180)/(120)/(600)`
+      秒數比例完全一致。
+    - `#kaner-now` 顯示「目前：決定階段」、`#kaner-caption` 顯示
+      「05:00 由拉鋸進入決定」（`fmtClock(300)="05:00"`，取自 `phaseTransitions`
+      最後一筆，沒有抄提案圖的假句）。
+    - 用 `window.__spectator.handleEvent({kind:'phase', t:345, data:{phase:
+      '發散期', source:'manual-test'}})` 在瀏覽器 console 灌一筆假事件（只在
+      記憶體裡動，沒有寫回任何檔案）：目前位置圓點即時移到 `124.1`（期望值
+      `px(345,900)=124.07`）、粗體欄位換成「發想」、說明文字換成
+      「05:45 由決定進入發想」——**證明「隨事件即時移動」與「文字說明真的會換」
+      都成立**。分界線本身沒動（這筆事件的 `to` 是「發散期」，不是
+      「呻吟區」或「收斂期」，設計上就不該影響分界點），這是正確行為，不是
+      沒反應。
+    - 全程 `page.on("pageerror")` 收集 → **零筆 JS 例外**。
+    - 截圖：`scratchpad/track_f_screens/01_drawer_real_transitions.png`（整頁）、
+      `02_drawer_top_kaner_closeup.png`（真實資料狀態特寫）、
+      `03/04_after_fake_transition*.png`（灌假事件後的狀態）、
+      `05_handle_closed.png`／`06_drawer_header_closeup.png`（把手／標題列
+      特寫）——這些截圖存在對話的 scratchpad，**沒有入庫**，僅供這次交付佐證。
+- **卡住或未完的**：無阻塞。以下是刻意的簡化，記在這裡讓下一棒知道：
+  - `total`（總時長）分母在 `!state.meeting` 時退化用常數 `1` 避免除以 0，這時
+    marker 會停在最左端、三欄近似等寬——這是「會議還沒開始」的誠實佔位狀態，
+    不是 bug；工作單沒有明講這個邊界情況，是本批新增的合理判斷。
+  - 分界點的「第一筆」判斷用兩個布林旗標 `gotB1`/`gotB2` 鎖住，如果同一階段
+    重複進出（例如人工把階段切回發散期又切回呻吟區），分界點永遠停在**第一次**
+    切過去的那個時間，不會被後續同名切換覆蓋——這是刻意選擇（分界點代表
+    「這個階段第一次開始」），工作單原文用詞是「第一個分界點」，這裡讀成
+    「第一筆紀錄」而非「最後一筆」，跟 `computeJudgment()` 讀「最後一筆」的
+    既有慣例不同，屬於語意不同、刻意分開處理，不是不一致。
+- **下一關該知道什麼**：
+  - `docs/DEFERRED_DEFECTS.md` 第 4 項已標記解決，其餘第 2、3 項仍待處理
+    （優先度低，demo 後再看，不在這批範圍）。
+  - `.venv`（含 chromium 二進位）留在這個 worktree，`.gitignore` 已排除，
+    正式 demo 機器要照 README 自己建一份。
+  - 本批累計缺陷修復 0 筆（純新增功能，沒有動到既有四塊的資料/渲染邏輯），
+    疲勞計數不適用。

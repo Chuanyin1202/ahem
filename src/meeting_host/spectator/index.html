@@ -46,6 +46,12 @@
     /* Track E：即時會議記錄卡片底色，逐值抄自設計稿（純白，跟半透明的 --panel
        故意不同——卡片要在半透明右欄上「浮起來」）。 */
     --card-bg: #FFFFFF;
+    /* Track F：Kaner 菱形「會議節奏」新增的兩個色碼，逐值抄自提案圖
+       MainWithSidebar.dc.html 行 157/159-160。提案圖另外用到的 #FFFFFF／
+       #A89F93／#2B2622 剛好分別等於既有 --card-bg／--dim／--text，直接重用，
+       不重複定義第二份。 */
+    --kaner-fill: #EAE1D2;   /* 已走過路徑的填色 */
+    --kaner-track: #C9BEAD;  /* 三階段分隔虛線 */
   }
 
   @keyframes ahem-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
@@ -382,6 +388,17 @@
   .dyn-close:hover { background: var(--track); }
   .dyn-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+  /* ── 會議節奏：Kaner 菱形（Track F；提案圖行 149-171）──
+     菱形本身的座標／填色路徑／分隔線全部由 renderKanerDiamond() 用真實資料
+     算出、寫進 #kaner-diamond 的 innerHTML（見下方 <script>），這裡只放跟
+     SVG 無關的外圍樣式：標題列的現況字＋下面三欄文字標籤＋說明文字。 */
+  .kaner-now { font-size: 12px; font-weight: 700; color: var(--text); }
+  .kaner-labels { display: grid; }
+  .kaner-label { text-align: center; font-size: 10px; color: var(--dim); }
+  .kaner-label.active { font-size: 13px; font-weight: 700; color: var(--text); }
+  .kaner-caption { font-size: 12px; line-height: 1.6; color: var(--body); }
+  .kaner-caption-time { color: var(--dim); }
+
   .actions { display: flex; gap: 10px; flex-shrink: 0; }
   .btn { flex-grow: 1; padding: 11px 0; text-align: center; font-size: 13px; border-radius: 6px; cursor: pointer; user-select: none; }
   .btn-ghost { border: 1px solid var(--border-strong); color: var(--text); }
@@ -525,10 +542,24 @@
     </button>
   </div>
 
+  <!-- 會議節奏：Kaner 菱形（Track F 新增；提案圖行 149-171）。三個階段的
+       分界點與目前位置全部從 state.phaseTransitions／state.serverNow 真實
+       算出，不是提案圖那種寫死座標，見 renderKanerDiamond()。 -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">會議節奏</div>
+      <div class="spacer"></div>
+      <div class="kaner-now" id="kaner-now">—</div>
+    </div>
+    <svg id="kaner-diamond" viewBox="0 0 320 96" width="316" style="display: block;"></svg>
+    <div class="kaner-labels" id="kaner-labels"></div>
+    <div class="kaner-caption" id="kaner-caption"></div>
+  </div>
+
+  <div class="rule"></div>
+
   <!-- 以下四塊資料／渲染邏輯完全不變（id 不變，renderStats/renderTimeline/
-       renderJudgments/renderShare 照舊運作），只是從常駐版面搬進抽屜殼。
-       提案圖另外附了一個 Kaner 菱形 SVG 節奏圖，本批未做——見
-       docs/DEFERRED_DEFECTS.md。 -->
+       renderJudgments/renderShare 照舊運作），只是從常駐版面搬進抽屜殼。 -->
   <div class="stats">
     <div class="stat">
       <div class="stat-label">主席開口</div>
@@ -1189,6 +1220,72 @@
     el("timeline").innerHTML = parts.join("");
   }
 
+  // ── 右欄：會議節奏（Kaner 菱形，Track F）──
+  // 菱形在任一 x 位置的上／下邊界是兩條直線內插（見工作單推導，x=246 代入算出
+  // 31.2/64.8，跟提案圖第 157 行的寫死座標對得上，拿來當這兩個函式的驗算基準）。
+  function kanerUpperY(x) {
+    return x <= 160 ? 48 - 38 * (x - 6) / 154 : 10 + 38 * (x - 160) / 154;
+  }
+  function kanerLowerY(x) {
+    return x <= 160 ? 48 + 38 * (x - 6) / 154 : 86 - 38 * (x - 160) / 154;
+  }
+  function renderKanerDiamond() {
+    var svg = el("kaner-diamond");
+    if (!svg) return;
+    var m = state.meeting;
+    // 沒有會議資料時分母用 1 只是避免除以 0，圖形仍會畫出來（marker 停在最左端），
+    // 跟其他 KPI 格子在會議開始前顯示 0 是同一種「誠實佔位」邏輯。
+    var total = (m && m.duration_min > 0) ? m.duration_min * 60 : 1;
+    // 分界點預設均分三等份；一旦真的發生過對應的階段切換，改用第一次切過去的
+    // 那筆真實時間（之後就不再是均分猜測）。
+    var b1 = total / 3, b2 = total * 2 / 3, gotB1 = false, gotB2 = false;
+    var trans = state.phaseTransitions;
+    for (var i = 0; i < trans.length; i++) {
+      if (!gotB1 && trans[i].to === "呻吟區") { b1 = trans[i].t; gotB1 = true; }
+      if (!gotB2 && trans[i].to === "收斂期") { b2 = trans[i].t; gotB2 = true; }
+    }
+    if (b2 < b1) b2 = b1;   // 真實資料若跳過拉鋸直接切到收斂，仍保持左到右不倒退
+
+    function px(t) { return 6 + Math.max(0, Math.min(1, t / total)) * 308; }
+    var cx = px(state.serverNow), bx1 = px(b1), bx2 = px(b2);
+    var uy = kanerUpperY(cx).toFixed(1), ly = kanerLowerY(cx).toFixed(1);
+
+    var fillPath = cx <= 160
+      ? "M 6 48 L " + cx.toFixed(1) + " " + uy + " L " + cx.toFixed(1) + " " + ly + " Z"
+      : "M 6 48 L 160 10 L " + cx.toFixed(1) + " " + uy + " L " + cx.toFixed(1) + " " + ly + " L 160 86 Z";
+
+    svg.innerHTML =
+      '<path d="M 6 48 L 160 10 L 314 48 L 160 86 Z" fill="var(--card-bg)"></path>' +
+      '<path d="' + fillPath + '" fill="var(--kaner-fill)"></path>' +
+      '<line x1="' + bx1.toFixed(1) + '" y1="' + kanerUpperY(bx1).toFixed(1) + '" x2="' + bx1.toFixed(1) + '" y2="' + kanerLowerY(bx1).toFixed(1) + '" stroke="var(--kaner-track)" stroke-width="1" stroke-dasharray="3 4"></line>' +
+      '<line x1="' + bx2.toFixed(1) + '" y1="' + kanerUpperY(bx2).toFixed(1) + '" x2="' + bx2.toFixed(1) + '" y2="' + kanerLowerY(bx2).toFixed(1) + '" stroke="var(--kaner-track)" stroke-width="1" stroke-dasharray="3 4"></line>' +
+      '<path d="M 6 48 L 160 10 L 314 48 L 160 86 Z" fill="none" stroke="var(--dim)" stroke-width="1.5" stroke-linejoin="round"></path>' +
+      '<line x1="' + cx.toFixed(1) + '" y1="24" x2="' + cx.toFixed(1) + '" y2="72" stroke="var(--text)" stroke-width="2"></line>' +
+      '<circle cx="' + cx.toFixed(1) + '" cy="48" r="3.5" fill="var(--text)"></circle>';
+
+    // 三欄標籤寬度比例跟著上面算出的三個真實區段時長走（不是永遠 42/20/38）。
+    var w1 = Math.max(1, b1), w2 = Math.max(1, b2 - b1), w3 = Math.max(1, total - b2);
+    var sum = w1 + w2 + w3;
+    var labelsEl = el("kaner-labels");
+    labelsEl.style.gridTemplateColumns =
+      (w1 / sum * 100).toFixed(2) + "fr " + (w2 / sum * 100).toFixed(2) + "fr " + (w3 / sum * 100).toFixed(2) + "fr";
+    var activeIdx = m ? (m.phase === "發散期" ? 0 : m.phase === "呻吟區" ? 1 : m.phase === "收斂期" ? 2 : -1) : -1;
+    labelsEl.innerHTML = ["發想", "拉鋸", "決定"].map(function (t, i) {
+      return '<div class="kaner-label' + (i === activeIdx ? " active" : "") + '">' + t + '</div>';
+    }).join("");
+
+    el("kaner-now").textContent = m ? "目前：" + (PHASE_LABEL[m.phase] || m.phase) + "階段" : "—";
+
+    // 有真的發生過轉換才引用那一筆；完全沒發生過就講真話，不照抄提案圖那句
+    // 「主席取得評估授權後開始收斂」——那是示範用的假敘述，沒有對應的真實判斷邏輯。
+    var last = trans.length ? trans[trans.length - 1] : null;
+    var curLabel = m ? (PHASE_LABEL[m.phase] || m.phase) : null;
+    el("kaner-caption").innerHTML = last
+      ? '<span class="mono kaner-caption-time">' + esc(fmtClock(last.t)) + '</span> 由' +
+        esc(PHASE_LABEL[last.from] || last.from) + '進入' + esc(PHASE_LABEL[last.to] || last.to)
+      : (curLabel ? '尚未切換階段，目前處於「' + esc(curLabel) + '」' : '尚無會議資料');
+  }
+
   // ── 右欄：主席的思考最近三次 ──
   // 三態措辭：忍住＝自己判斷不需要開口；開口＝決定要講而且真的講了；受阻＝決定要
   // 講、卻被 Chair 判 dropped／failed 擋下（沒講成）。pending＝結果還沒到，用
@@ -1496,6 +1593,7 @@
 
   function handleEvent(ev) {
     state.serverNow = ev.t;
+    renderKanerDiamond();   // 唯一時鐘來源就是這裡；不另開 setInterval，見工作單背景說明
     var data = ev.data;
     // 見 state.awaitingQueuedJudgment 的說明：每次呼叫都先取出、清空，只有這次
     // 事件剛好是 "queued" 才會用到（掛回 data._judgment），其餘事件類型讓它作廢。
@@ -1533,6 +1631,7 @@
         }
         state.meeting = data;
         renderTop();
+        renderKanerDiamond();   // 剛推進 phaseTransitions／換了 duration_min，重畫一次撿最新值
         break;
       case "utterance":
         delete state.partials[data.speaker];   // 定稿到了，活的那行由正式逐字稿取代
@@ -1676,7 +1775,7 @@
         }
         if (!lastMarkIs(data.phase)) state.phaseMarks.push({ t: ev.t, phase: data.phase });
         state.phaseHint = null;
-        renderTop(); renderTimeline();
+        renderTop(); renderTimeline(); renderKanerDiamond();   // 剛推進 phaseTransitions，重畫一次撿最新分界點
         break;
       case "phase_suggestion":
         // 偵測器的一次讀數。不代表主席行為，只在狀態列加一個括號提示。
@@ -1790,6 +1889,7 @@
       renderJudgments();
       renderShare();
       renderTimeline();
+      renderKanerDiamond();
       renderTop();
       renderAlerts();
       renderMinutesLive();
@@ -1807,6 +1907,7 @@
   renderJudgments();
   renderShare();
   renderTimeline();
+  renderKanerDiamond();
   renderAlerts();
   renderMinutesLive();
   renderObservations();

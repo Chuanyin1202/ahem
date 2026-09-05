@@ -11,6 +11,18 @@
     "Billis",
     "達哥"
   ],
+  "windows": [
+    {
+      "id": "O1",
+      "kind": "opportunity",
+      "range_seconds": [
+        296,
+        334
+      ],
+      "expect_type": "議程超時",
+      "why": "會議宣告 6 分鐘，門檻 min(300, 360/6)=60 秒 → 剩 60 秒（t=300）時提醒"
+    }
+  ],
   "lines": [
     [
       3,

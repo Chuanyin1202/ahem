@@ -11,6 +11,37 @@
     "Billis",
     "達哥"
   ],
+  "windows": [
+    {
+      "id": "S1",
+      "kind": "no_intervention",
+      "range_seconds": [
+        0,
+        68
+      ],
+      "why": "開場三人輪流、有實質推進，還沒有失衡"
+    },
+    {
+      "id": "O1",
+      "kind": "opportunity",
+      "range_seconds": [
+        110,
+        245
+      ],
+      "expect_type": "發言權失衡",
+      "why": "Alex 於 70 秒接走 Billis 未講完的話後開始獨白，前半段"
+    },
+    {
+      "id": "O2",
+      "kind": "opportunity",
+      "range_seconds": [
+        245,
+        381
+      ],
+      "expect_type": "發言權失衡",
+      "why": "獨白後半，Billis 僅在 152／322 秒應聲、達哥 238 秒僅回一個「對」。同上，長窗口切兩段"
+    }
+  ],
   "lines": [
     [
       3,

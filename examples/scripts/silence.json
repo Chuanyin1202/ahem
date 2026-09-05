@@ -11,6 +11,28 @@
     "Billis",
     "達哥"
   ],
+  "windows": [
+    {
+      "id": "O1",
+      "kind": "opportunity",
+      "range_seconds": [
+        40,
+        128
+      ],
+      "expect_type": "全場沉默",
+      "why": "16 秒之後全場靜默到 130 秒；test 檔位門檻 30 秒"
+    },
+    {
+      "id": "O2",
+      "kind": "opportunity",
+      "range_seconds": [
+        175,
+        318
+      ],
+      "expect_type": "全場沉默",
+      "why": "148 秒之後再度靜默到 320 秒。第二次要明顯晚於第一次——退避門檻 ×1.5"
+    }
+  ],
   "lines": [
     [
       3,

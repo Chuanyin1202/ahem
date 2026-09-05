@@ -11,6 +11,27 @@
     "Billis",
     "達哥"
   ],
+  "windows": [
+    {
+      "id": "S1",
+      "kind": "no_intervention",
+      "range_seconds": [
+        0,
+        40
+      ],
+      "why": "開場三人一來一往，正常討論"
+    },
+    {
+      "id": "O1",
+      "kind": "opportunity",
+      "range_seconds": [
+        95,
+        330
+      ],
+      "expect_type": "發言超時",
+      "why": "達哥自 42 秒起不間斷發言，中間無人插話或應聲；test 檔位門檻 60 秒"
+    }
+  ],
   "lines": [
     [
       3,

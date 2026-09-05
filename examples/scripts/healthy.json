@@ -11,6 +11,17 @@
     "Billis",
     "達哥"
   ],
+  "windows": [
+    {
+      "id": "S1",
+      "kind": "no_intervention",
+      "range_seconds": [
+        0,
+        215
+      ],
+      "why": "三人輪流、彼此接話、有實質推進並收出決定。任何介入都是誤報"
+    }
+  ],
   "lines": [
     [
       3,

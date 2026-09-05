@@ -11,6 +11,27 @@
     "Billis",
     "達哥"
   ],
+  "windows": [
+    {
+      "id": "S1",
+      "kind": "no_intervention",
+      "range_seconds": [
+        0,
+        100
+      ],
+      "why": "達哥於 14.9 秒講完，test 檔位門檻 90 秒 → 冷落在 105 秒才成立"
+    },
+    {
+      "id": "O1",
+      "kind": "opportunity",
+      "range_seconds": [
+        100,
+        330
+      ],
+      "expect_type": "有人被冷落",
+      "why": "達哥最後發言結束於 14.9 秒，之後 Alex 與 Billis 一來一往到底；test 檔位門檻 90 秒 → 105 秒觸發"
+    }
+  ],
   "lines": [
     [
       3,

@@ -153,8 +153,10 @@
   .chair-badge--speaking { background: var(--pill-speaking-bg); color: var(--accent); }
   .chair-badge--holding { background: var(--pill-holding-bg); color: var(--pill-holding-fg); }
   .chair-badge--warning { background: var(--pill-warning-bg); color: var(--pill-warning-fg); }
-  .chair-badge-label { font-size: 12px; font-weight: 600; }
-  .chair-badge-caption { font-size: 11px; color: var(--muted); }
+  /* 2026-09-05 astra 審查：頂部時鐘 36px、主席狀態徽章卻只有 12px，落差太大——
+     徽章拉到 15px，caption 跟著微調維持相對比例，不動 padding/圖示尺寸。 */
+  .chair-badge-label { font-size: 15px; font-weight: 600; }
+  .chair-badge-caption { font-size: 12px; color: var(--muted); }
   .chair-badge-caption.warn { color: var(--pill-warning-fg); }
 
   /* ── 主席故障告示 ──
@@ -218,7 +220,10 @@
     background: var(--track); border-radius: 0 6px 6px 0;
   }
   .u-chair .who { font-size: 11px; letter-spacing: 0.18em; color: var(--accent); }
-  .u-chair .say { font-size: 17px; line-height: 1.7; color: var(--text); overflow-wrap: anywhere; }
+  /* 2026-09-05 astra 審查：主席發言只比一般逐字稿大 1px(17px/16px)，遠看跟
+     一般發言分不出大小差距，主要靠 2px 細線與淺灰底辨識——加大字級＋字重，
+     讓「這是主席在說話」不用湊近看也認得出來。 */
+  .u-chair .say { font-size: 23px; font-weight: 600; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
 
   /* ── 右：資料欄 ── */
   .right {
@@ -293,6 +298,13 @@
   .ml-what { font-size: 14px; font-weight: 500; line-height: 1.55; color: var(--text); }
   .ml-muted { color: var(--muted); }
   .ml-empty { font-size: 12px; color: var(--muted); }
+  /* 2026-09-05 astra 審查：展開較舊項目的原生折疊區塊，字級跟 .section-hint
+     同一階，維持「這是次要資訊」的份量，不用額外顏色。 */
+  .ml-more { margin-bottom: 10px; }
+  .ml-more summary { font-size: 11px; color: var(--muted); cursor: pointer; user-select: none; }
+  .ml-more summary:hover { color: var(--text); }
+  .ml-more[open] summary { margin-bottom: 10px; }
+  .ml-more .ml-list { margin: 0; }
 
   .judge-list { display: flex; flex-direction: column; gap: 10px; }
   .judge { display: grid; grid-template-columns: 40px 1fr; gap: 10px; font-size: 12px; line-height: 1.55; }
@@ -328,10 +340,12 @@
   .u-line.now { transition: opacity .6s ease; }
   .u-line.now.stale { opacity: .35; }
   .u-line.settle .u-text { animation: settle .35s ease-out; }
-  .u-line.rewrite-settle .u-text { animation: crossfade .25s ease-out; }
-  @keyframes crossfade { from { opacity: .15; } to { opacity: 1; } }
-  .u-live.rewrite { animation: flick .15s ease; }
-  @keyframes flick { from { opacity: .25; } to { opacity: 1; } }
+  /* 2026-09-05 astra 審查：ASR 改寫時逐字稿同時有兩層閃動(crossfade+flick)，
+     跟其他動效疊加造成閱讀疲勞——這裡拿掉動畫本身，JS 仍會加
+     .rewrite-settle／.rewrite 這兩個 class（保留掛點，改寫時仍有一次立即的
+     文字替換，只是不再閃爍），不用回頭改 JS。 */
+  .u-line.rewrite-settle .u-text {}
+  .u-live.rewrite {}
   @keyframes settle { from { color: var(--dim); } to { color: inherit; } }
   @keyframes blink { to { visibility: hidden; } }
   .gc-head { display: flex; align-items: baseline; gap: 8px; }
@@ -381,12 +395,17 @@
   .obs-row .ot { color: var(--dim); }
   .obs-row .ok { font-weight: 700; color: var(--text); }
   /* T-G：心聲類（class 名稱維持 ok-critique 內部識別不改，顯示文字是「心聲」）
-     是真的呼叫 LLM，跟其餘三類規則算出來的不同——用主席的強調色區分，見
-     renderObservations()。 */
-  .obs-row .ok.ok-critique { color: var(--accent); }
+     原本用主席的強調色區分，2026-09-05 astra 審查指出這會跟主席發言搶注意力、
+     也會蓋過真正的異常警示——標籤文字本身（「心聲」）已經夠識別，改用跟其他
+     三類一樣的中性深色粗體（見上面 .obs-row .ok），不再需要 .ok-critique 這個
+     顏色覆寫（JS 仍會加這個 class，這裡刻意留空白規則以保留識別掛點，方便
+     之後若要用非顏色的方式區分——例如圖示——不必回頭改 JS）。 */
+  .obs-row .ok.ok-critique {}
   .obs-row .ox { color: var(--body-soft); overflow-wrap: anywhere; }
-  .obs-cursor { color: var(--body-soft); animation: ahem-pulse 1s step-end infinite; }
   .obs-note { font-size: 10px; color: var(--muted); }
+  /* 2026-09-05 astra 審查：面板同時有標題列的呼吸圓點(.obs-dot)跟清單尾端的
+     閃爍游標(.obs-cursor)兩個動效在搶注意力，只留一個「持續判讀中」的訊號
+     （標題列那個），刪掉清單裡的游標動畫——見下面 renderObservations()。 */
 
   /* ── 群體動力：滑入式覆疊抽屜（Track D，D3；提案圖行 19-21/126-233）──
      內容＝既有的 KPI／時間軸／主席的思考／發言分佈四塊，資料與渲染邏輯完全
@@ -1426,17 +1445,31 @@
   // 刻意不清空——見 state 宣告處與 handleEvent 的 "minutes" 分支）。
   // listStyle: "card"（決議/未解決，白卡片）｜"plain"（待辦，純文字列，提案圖本來就沒裝卡片）
   // 「剛更新」只標最後一筆——這幾組都是只增不減的預覽陣列，最後一筆＝最新一筆是查得到的事實，不是猜的。
+  // 2026-09-05 astra 審查：右欄狹窄（實測約 273px 可用寬度），全列產出項目會把
+  // AI 即時觀察推出首屏——改成只常駐顯示最新 2 項，其餘（較舊的）收進原生
+  // <details>，點開才看得到。用 <details>/<summary> 是刻意選擇：不用額外寫
+  // 開合狀態的 JS，瀏覽器原生就有（見馬尾判斷梯第 4 階：平台原生功能優先）。
+  var MINUTES_GROUP_VISIBLE = 2;
   function renderMinutesGroup(title, items, renderItem, listStyle) {
     if (!items.length) return "";
     var cls = "ml-list " + (listStyle === "card" ? "ml-list--card" : "ml-list--plain") +
       (title === "未解決事項" ? " ml-list--unresolved" : "");
     var last = items.length - 1;
+    function li(it, i) {
+      var badge = (listStyle === "card" && i === last && items.length > 1) ? '<div class="ml-badge-new">剛更新</div>' : "";
+      return "<li>" + badge + renderItem(it) + "</li>";
+    }
+    var visible = items.length > MINUTES_GROUP_VISIBLE ? items.slice(-MINUTES_GROUP_VISIBLE) : items;
+    var visibleStart = items.length - visible.length;
+    var hidden = items.slice(0, visibleStart);
+    var hiddenHtml = hidden.length
+      ? '<details class="ml-more"><summary>展開其餘 ' + hidden.length + ' 項</summary><ul class="' + cls + '">' +
+        hidden.map(function (it, i) { return li(it, i); }).join("") + '</ul></details>'
+      : "";
     return '<div class="ml-group"><div class="ml-group-head"><div class="ml-group-title">' + esc(title) +
       '</div><div class="ml-count">' + items.length + '</div></div>' +
-      '<ul class="' + cls + '">' + items.map(function (it, i) {
-        var badge = (listStyle === "card" && i === last && items.length > 1) ? '<div class="ml-badge-new">剛更新</div>' : "";
-        return "<li>" + badge + renderItem(it) + "</li>";
-      }).join("") + '</ul></div>';
+      hiddenHtml +
+      '<ul class="' + cls + '">' + visible.map(function (it, i) { return li(it, visibleStart + i); }).join("") + '</ul></div>';
   }
 
   function renderMinutesLive() {
@@ -1474,6 +1507,8 @@
   var SHARE_DOMINANCE_THRESHOLD = 0.65;  // 65%：夠高值得提醒，又不會在正常討論中亂觸發（可調）
   var DEADLOCK_COOLDOWN_S = 60;          // 僵局介入之後 60 秒沒有再介入，視為「已解除」（可調）
   var NOTICE_TIME_LEFT_RATIO = 0.3;      // 剩餘時間低於這個比例才提醒風險（可調）
+  var OBS_VISIBLE_RECENT = 2;            // 2026-09-05 astra 審查：常駐顯示最新 N 則，其餘收進 <details>
+  var obsLastRenderSig = null;           // 內容沒變就不重畫、不重捲（見 renderObservations）
 
   // 觀察類：發言分佈某人佔比過高。
   function computeObservation() {
@@ -1546,6 +1581,16 @@
     return kind;
   }
 
+  function obsRow(o) {
+    // 「心聲」是真的呼叫 LLM 判斷出來的，跟其餘三類規則算出來的不一樣——
+    // 2026-09-05 起不再用顏色區分（見上面 .obs-row .ok.ok-critique 的說明），
+    // 標籤文字「心聲」本身就是識別，class 仍保留給未來想用非顏色方式強調時掛。
+    var isCritique = o.kind === "critique_meeting" || o.kind.indexOf("critique_person:") === 0;
+    return '<div class="obs-row"><span class="ot mono">' + esc(fmtEventTime(o.t)) + '</span>' +
+      '&nbsp; <span class="ok' + (isCritique ? ' ok-critique' : '') + '">' + esc(obsLabelFor(o.kind)) + '：</span>' +
+      '<span class="ox">' + esc(o.text) + '</span></div>';
+  }
+
   function renderObservations() {
     var box = el("obs-list");
     if (!box) return;
@@ -1554,20 +1599,31 @@
     pushObservation("notice", computeNotice());
     if (!state.observations.length) {
       box.innerHTML = '<div class="obs-empty">尚無觀察</div>';
+      obsLastRenderSig = "";
       return;
     }
-    // state.observations 是新→舊；畫面照設計稿由舊到新往下排，最新一則帶打字游標。
-    var rows = state.observations.slice(0, 8).slice().reverse();
-    box.innerHTML = rows.map(function (o, i) {
-      // 「心聲」是真的呼叫 LLM 判斷出來的，跟其餘三類規則算出來的不一樣——
-      // 標籤顏色改用 --accent（主席唯一的強調色）誠實區分，不新增裸 hex。
-      var isCritique = o.kind === "critique_meeting" || o.kind.indexOf("critique_person:") === 0;
-      return '<div class="obs-row"><span class="ot mono">' + esc(fmtEventTime(o.t)) + '</span>' +
-        '&nbsp; <span class="ok' + (isCritique ? ' ok-critique' : '') + '">' + esc(obsLabelFor(o.kind)) + '：</span>' +
-        '<span class="ox">' + esc(o.text) + '</span>' +
-        (i === rows.length - 1 ? '<span class="obs-cursor mono">▍</span>' : '') +
-        '</div>';
-    }).join("");
+    // 2026-09-05 astra 審查：8 則同時攤開太密，評審看投影時也無法自己捲動找
+    // 重點——改成常駐「目前重點」（最新一則留意，若存在——留意代表仍需處理
+    // 的事，優先於其他規則算出來的觀察）＋最新 OBS_VISIBLE_RECENT 則，其餘
+    // 收進原生 <details>（同 renderMinutesGroup 的做法）。
+    var activeNotice = null;
+    for (var ni = 0; ni < state.observations.length; ni++) {
+      if (state.observations[ni].kind === "notice") { activeNotice = state.observations[ni]; break; }
+    }
+    var visible = state.observations.slice(0, OBS_VISIBLE_RECENT).slice();
+    if (activeNotice && visible.indexOf(activeNotice) === -1) visible.unshift(activeNotice);
+    // state.observations 是新→舊；畫面照設計稿由舊到新往下排。
+    visible.sort(function (a, b) { return a.t - b.t; });
+    var hidden = state.observations.filter(function (o) { return visible.indexOf(o) === -1; }).reverse();
+
+    var sig = hidden.concat(visible).map(function (o) { return o.t + "|" + o.kind + "|" + o.text; }).join("\n");
+    if (sig === obsLastRenderSig) return;  // 內容沒變就不重畫、不重捲——不然使用者往上滑讀歷史會一直被拉回底部
+    obsLastRenderSig = sig;
+
+    var hiddenHtml = hidden.length
+      ? '<details class="ml-more"><summary>展開較舊的 ' + hidden.length + ' 則</summary>' + hidden.map(obsRow).join("") + '</details>'
+      : "";
+    box.innerHTML = hiddenHtml + visible.map(obsRow).join("");
     box.scrollTop = box.scrollHeight;
   }
 

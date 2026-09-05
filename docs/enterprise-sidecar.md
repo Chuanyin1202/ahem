@@ -3,8 +3,10 @@
 ## Scope and architecture
 
 Upstream `Chuanyin1202/ahem` remains the meeting-chair source of truth. This branch
-starts at `f025fef4100659e6b22d9ebca6a33b2470c068ec`, selecting the local workbench
-from the contributor's `1cdfea4` rather than merging its security/core changes.
+now includes main `ec831d3f29c974b65fa36b036d3d58eea3798737`, including its new
+spectator UI, live minutes and AI critique. The workbench was selected from the
+contributor's `1cdfea4` rather than merging its old security/core changes.
+See [review policies](sidecar-review-policies.md) for the eight fixes and migration.
 
 ```text
 Discord -> Ahem live -> STT / decisions / TTS / spectator (unchanged)
@@ -128,6 +130,6 @@ backup may restore old credentials/permissions and requires a separate review.
 ## Validation / PR decision
 
 See [current evidence](evidence/enterprise-sidecar/README.md). Local synthetic
-integration can be proposed as a **draft, opt-in PR**, not an instruction to merge
-before demo. Remaining gates: Linux CI, clean deployment dependencies, Raspberry
+integration remains opt-in, not an instruction to merge before demo. These local
+updates have not been published to the PR. Remaining gates: new Linux CI, clean deployment dependencies, Raspberry
 Pi real voice shutdown/disk behavior, source lifecycle, and product acceptance.

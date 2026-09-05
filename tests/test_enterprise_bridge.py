@@ -98,6 +98,26 @@ def test_receipts_are_tenant_scoped_and_transactional(tmp_path):
     ws.db.close()
 
 
+def test_current_main_preview_events_survive_bridge(tmp_path):
+    ws = setup(tmp_path)
+    source = tmp_path / 'current-main'
+    source.mkdir(mode=0o700)
+    events = EVENTS + [
+        dict(kind='minutes', t=21, data={'preview': True, 'participant_md': 'PRIVATE live summary'}),
+        dict(kind='ai_critique', t=22, data={'text': 'PRIVATE chair observation'}),
+        dict(kind='minutes', t=23, data={'participant_md': 'PRIVATE final summary', 'host_md': 'PRIVATE host record'}),
+    ]
+    _write_events_jsonl(SimpleNamespace(events=[Record(**e) for e in events]), source/'current.events.jsonl')
+    assert sync_once(ws, source, identities()[0]['token']) == dict(imported=1, duplicates=0, rejected=0)
+    row = ws.db.execute('SELECT * FROM meetings').fetchone()
+    assert 'PRIVATE' not in row['aggregate']
+    assert b'PRIVATE' not in row['blob']
+    restored = json.loads(ws.store.decrypt_text(row['blob'], meeting_id=row['id'], artifact_type='events', purpose='integration test', operator=True))
+    assert restored == events
+    assert sync_once(ws, source, identities()[0]['token'])['duplicates'] == 1
+    ws.db.close()
+
+
 def test_revocation_during_file_read_prevents_import(tmp_path, monkeypatch):
     from meeting_host import enterprise_bridge as bridge
     ws=setup(tmp_path)

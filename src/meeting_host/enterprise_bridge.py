@@ -37,6 +37,9 @@ def sync_once(ws, source, token, policy='team', days=7):
         raise PermissionError('Valid operator credential required')
     report = {'imported': 0, 'duplicates': 0, 'rejected': 0}
     for path in sorted(source.glob('*.events.jsonl')):
+        actor = ws.identify(token)
+        if actor is None or actor['role'] != 'operator':
+            raise PermissionError('Credential no longer valid')
         try:
             raw = read_private(path)
             # Content identity survives rename/retry; names and paths are not stored.
@@ -47,6 +50,8 @@ def sync_once(ws, source, token, policy='team', days=7):
                 report['duplicates'] += 1
                 continue
             events = [json.loads(line) for line in raw.decode('utf-8').splitlines() if line.strip()]
+            if ws.identify(token) is None:
+                raise PermissionError('Credential no longer valid')
             ws.ingest(actor, events, policy, days, source_id=digest)
             report['imported'] += 1
         except (OSError, ValueError, TypeError):

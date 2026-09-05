@@ -8,6 +8,17 @@ from test_enterprise import setup,identities,ORIGIN,login
 
 H={'Origin':ORIGIN}
 
+def test_cross_process_rotation_rejects_cached_token_and_session(tmp_path):
+    reader=setup(tmp_path)
+    writer=setup(tmp_path)
+    token=identities()[1]['token']
+    actor=reader.identify(token)
+    assert actor and not reader.disabled(actor)
+    writer.issue_credential({'id':'viewer','tenant':'org-a','role':'viewer'},5)
+    assert reader.identify(token) is None
+    assert reader.disabled(actor)
+    reader.db.close();writer.db.close()
+
 def test_create_rotate_expire_restart(tmp_path):
     async def run():
         ws=setup(tmp_path)

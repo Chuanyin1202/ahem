@@ -96,3 +96,19 @@ def test_receipts_are_tenant_scoped_and_transactional(tmp_path):
         ws.ingest(identities()[0], EVENTS, 'team', 7, source_id='b'*64)
     assert ws.db.execute('SELECT COUNT(*) FROM meetings').fetchone()[0] == 2
     ws.db.close()
+
+
+def test_revocation_during_file_read_prevents_import(tmp_path, monkeypatch):
+    from meeting_host import enterprise_bridge as bridge
+    ws=setup(tmp_path)
+    source,path=export(tmp_path)
+    original=bridge.read_private
+    def revoke_then_read(path):
+        raw=original(path)
+        ws.db.execute("INSERT INTO disabled_members VALUES ('operator')")
+        ws.db.commit()
+        return raw
+    monkeypatch.setattr(bridge,'read_private',revoke_then_read)
+    assert sync_once(ws,source,identities()[0]['token'])['rejected']==1
+    assert ws.db.execute('SELECT COUNT(*) FROM meetings').fetchone()[0]==0
+    ws.db.close()

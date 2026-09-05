@@ -126,14 +126,17 @@ class Workspace:
         digest = hashlib.sha256(token.encode()).hexdigest()
         for expected, identity in self.identities.items():
             if hmac.compare_digest(expected, digest):
-                if self.disabled(identity):
+                actor = dict(identity, _credential_digest=expected)
+                if self.disabled(actor):
                     return None
-                return identity
+                return actor
         return None
 
     def disabled(self, actor):
-        expired=self.db.execute('SELECT expires FROM member_credentials WHERE actor=?',(actor['id'],)).fetchone()
-        return (expired is not None and expired[0] <= time.time()) or self.db.execute('SELECT 1 FROM disabled_members WHERE actor=?', (actor['id'],)).fetchone() is not None
+        expired=self.db.execute('SELECT expires,digest FROM member_credentials WHERE actor=?',(actor['id'],)).fetchone()
+        rotated = (expired is not None and '_credential_digest' in actor
+                   and not hmac.compare_digest(actor['_credential_digest'], expired['digest']))
+        return rotated or (expired is not None and expired[0] <= time.time()) or self.db.execute('SELECT 1 FROM disabled_members WHERE actor=?', (actor['id'],)).fetchone() is not None
 
     def issue_credential(self, profile, days):
         token=secrets.token_urlsafe(32)
